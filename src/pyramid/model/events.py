@@ -24,7 +24,7 @@ class NumericEventList(BufferData):
         if isinstance(other, self.__class__):
             return (self.event_data.size == 0 and other.event_data.size == 0) or np.array_equal(self.event_data, other.event_data)
         else:
-            return False    
+            return False
 
     def copy(self) -> Self:
         """Implementing BufferData superclass."""
@@ -164,4 +164,113 @@ class NumericEventList(BufferData):
         return NumericEventList(range_event_data)
 
 
-# TODO: implement a TextEventList
+@dataclass
+class TextEventList(BufferData):
+    """Wrap an array of timestamps and an array of text data.
+
+    Although the timestamps and text are stored as separate arrays, with different data types,
+    we can think of TextEventList as a 2D array with shape (n,2) where the rows look like:
+        [timestamp, text],
+        [timestamp, text],
+        [timestamp, text],
+        ...
+    """
+
+    timestamp_data: np.ndarray
+    """1D array backing the event times.
+
+    timestamp_data must have shape (n,), where n is the number of events.
+    It should have a numeric data type, like numpy.float32 or numpy.float64.
+    """
+
+    text_data: np.ndarray
+    """1D array backing the event text.
+
+    text_data must have shape (n,), where n is the number of events.
+    It should have a unicode string data type from numpy.str_, for example "<U16", "<U64", "<U256", etc.
+    """
+
+    def __eq__(self, other: object) -> bool:
+        """Compare data arrays as-a-whole instead of element-wise."""
+        if isinstance(other, self.__class__):
+            if (self.timestamp_data.size == 0 and other.timestamp_data.size == 0 and self.text_data.size == 0 and other.text_data.size == 0):
+                return True
+            else:
+                return np.array_equal(self.timestamp_data, other.timestamp_data) and np.array_equal(self.text_data, other.text_data)
+        else:
+            return False
+
+    def copy(self) -> Self:
+        """Implementing BufferData superclass."""
+        return TextEventList(self.timestamp_data.copy(), self.text_data.copy())
+
+    def get_time_selector(self, start_time: float, end_time: float) -> np.ndarray:
+        if start_time is None:
+            tail_selector = np.repeat(True, self.timestamp_data.shape[0])
+        else:
+            tail_selector = self.timestamp_data >= start_time
+
+        if end_time is None:
+            head_selector = np.repeat(True, self.timestamp_data.shape[0])
+        else:
+            head_selector = self.timestamp_data < end_time
+
+        return tail_selector & head_selector
+
+    def copy_time_range(self, start_time: float = None, end_time: float = None) -> Self:
+        """Implementing BufferData superclass."""
+        rows_in_range = self.get_time_selector(start_time, end_time)
+        range_timestamp_data = self.timestamp_data[rows_in_range]
+        range_text_data = self.text_data[rows_in_range]
+        return TextEventList(range_timestamp_data, range_text_data)
+
+    def append(self, other: Self) -> None:
+        """Implementing BufferData superclass."""
+        self.timestamp_data = np.concatenate([self.timestamp_data, other.timestamp_data])
+        self.text_data = np.concatenate([self.text_data, other.text_data])
+
+    def discard_before(self, start_time: float) -> None:
+        """Implementing BufferData superclass."""
+        rows_to_keep = self.timestamp_data >= start_time
+        self.timestamp_data = self.timestamp_data[rows_to_keep]
+        self.text_data = self.text_data[rows_to_keep]
+
+    def shift_times(self, shift: float) -> None:
+        """Implementing BufferData superclass."""
+        if self.timestamp_data.size > 0:
+            self.timestamp_data += shift
+
+    def get_end_time(self) -> float:
+        """Implementing BufferData superclass."""
+        if self.event_count():
+            return self.timestamp_data.max()
+        else:
+            return None
+
+    def event_count(self) -> int:
+        """Get the number of events in the list -- the length of the text event data."""
+        return self.text_data.size
+
+    def get_times_of(
+        self,
+        event_value: str,
+        value_index: int = 0,
+        start_time: float = None,
+        end_time: float = None
+    ) -> np.ndarray:
+        """Get times of any events matching the given event_value.
+
+        This ignores value_index and always searches the text_data array.
+
+        By default this searches all events in the list.
+        Pass in start_time restrict to events at or after start_time.
+        Pass in end_time restrict to events strictly before end_time.
+        """
+        rows_in_range = self.get_time_selector(start_time, end_time)
+        matching_rows = (self.text_data == event_value)
+        return self.timestamp_data[rows_in_range & matching_rows]
+
+    def get_values(self, start_time: float = None, end_time: float = None) -> np.ndarray:
+        """Get just the event text values, ignoring event times."""
+        rows_in_range = self.get_time_selector(start_time, end_time)
+        return self.text_data[rows_in_range]

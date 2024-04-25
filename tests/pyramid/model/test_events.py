@@ -1,6 +1,6 @@
 import numpy as np
 
-from pyramid.model.events import NumericEventList
+from pyramid.model.events import NumericEventList, TextEventList
 
 
 def test_numeric_list_getters():
@@ -167,4 +167,120 @@ def test_numeric_list_equality():
     assert baz_events != "wrong type"
 
 
-# TODO: tests for TextEventList
+def test_text_list_getters():
+    event_count = 100
+    raw_data = list(range(event_count))
+    timestamp_data = np.array(raw_data, dtype=np.float32)
+    text_data = np.array(raw_data, dtype=np.str_)
+    event_list = TextEventList(timestamp_data, text_data)
+
+    assert event_list.get_end_time() == 99
+    assert event_list.event_count() == event_count
+    assert np.array_equal(event_list.timestamp_data, range(event_count))
+    assert np.array_equal(event_list.text_data, [str(t) for t in range(event_count)])
+
+    assert np.array_equal(event_list.get_values(start_time=40), [str(t) for t in range(40, 100)])
+    assert np.array_equal(event_list.get_values(end_time=60), [str(t) for t in range(60)])
+    assert np.array_equal(event_list.get_values(start_time=40, end_time=60), [str(t) for t in range(40, 60)])
+
+    assert np.array_equal(event_list.get_times_of('0'), np.array([0.0]))
+    assert np.array_equal(event_list.get_times_of('1'), np.array([1.0]))
+    assert np.array_equal(event_list.get_times_of('99'), np.array([99.0]))
+    assert event_list.get_times_of('-1').size == 0
+    assert event_list.get_times_of('no way').size == 0
+    assert event_list.get_times_of('1000').size == 0
+
+    assert np.array_equal(event_list.get_times_of('5', start_time=4.0), np.array([5.0]))
+    assert np.array_equal(event_list.get_times_of('5', start_time=5.0), np.array([5.0]))
+    assert event_list.get_times_of('5', start_time=6.0).size == 0
+    assert event_list.get_times_of('5', end_time=4.0).size == 0
+    assert event_list.get_times_of('5', end_time=5.0).size == 0
+    assert np.array_equal(event_list.get_times_of('5', end_time=6.0), np.array([5.0]))
+    assert np.array_equal(event_list.get_times_of('5', start_time=4.0, end_time=6.0), np.array([5.0]))
+
+
+def test_text_list_append():
+    event_count = 100
+    half_count = int(event_count / 2)
+    event_list_a = TextEventList(np.array(range(half_count)), np.array(range(half_count), dtype="U"))
+    event_list_b = TextEventList(np.array(range(half_count, event_count)),
+                                 np.array(range(half_count, event_count), dtype="U"))
+    event_list_a.append(event_list_b)
+
+    assert event_list_a.event_count() == event_count
+    assert np.array_equal(event_list_a.timestamp_data, np.array(range(event_count)))
+    assert np.array_equal(event_list_a.text_data, np.array(range(event_count), dtype="U"))
+
+
+def test_text_list_discard_before():
+    event_count = 100
+    half_count = int(event_count / 2)
+    event_list = TextEventList(np.array(range(event_count)), np.array(range(event_count), dtype="U"))
+
+    event_list.discard_before(half_count)
+    assert np.array_equal(event_list.timestamp_data, np.array(range(half_count, event_count)))
+    assert np.array_equal(event_list.text_data, np.array(range(half_count, event_count), dtype="U"))
+
+
+def test_text_list_shift_times():
+    event_count = 100
+    event_list = TextEventList(np.array(range(event_count)), np.array(range(event_count), dtype="U"))
+
+    event_list.shift_times(5)
+    assert np.array_equal(event_list.timestamp_data, 5 + np.array(range(100)))
+
+
+def test_text_list_shift_times_empty():
+    event_list = TextEventList(np.empty([0,], dtype=np.float32), np.empty([0,], dtype=np.str_))
+    event_list.shift_times(5)
+    assert event_list.timestamp_data.size == 0
+    assert event_list.get_end_time() == None
+
+
+def test_text_list_copy_time_range():
+    event_count = 100
+    event_list = TextEventList(np.array(range(event_count)), np.array(range(event_count), dtype="U"))
+
+    range_event_list = event_list.copy_time_range(40, 60)
+    assert np.array_equal(range_event_list.timestamp_data, np.array(range(40, 60)))
+    assert np.array_equal(range_event_list.text_data, np.array(range(40, 60), dtype="U"))
+
+    tail_event_list = event_list.copy_time_range(start_time=40)
+    assert np.array_equal(tail_event_list.timestamp_data, np.array(range(40, event_count)))
+    assert np.array_equal(tail_event_list.text_data, np.array(range(40, event_count), dtype="U"))
+
+    head_event_list = event_list.copy_time_range(end_time=60)
+    assert np.array_equal(head_event_list.timestamp_data, np.array(range(0, 60)))
+    assert np.array_equal(head_event_list.text_data, np.array(range(0, 60), dtype="U"))
+
+    # original list should be unchanged
+    assert np.array_equal(event_list.timestamp_data, np.array(range(100)))
+    assert np.array_equal(event_list.text_data, np.array(range(100), dtype="U"))
+
+
+def test_text_list_equality():
+    foo_events = TextEventList(np.array(range(100)), np.array(range(100), dtype="U"))
+    bar_events = TextEventList(np.array(range(1000)), np.array(range(1000), dtype="U"))
+    baz_events = TextEventList(np.array(range(1000)), np.array(range(1000), dtype="U"))
+    empty_events = TextEventList(np.empty([0,], dtype=np.float32), np.empty([0,], dtype=np.str_))
+
+    assert foo_events == foo_events.copy()
+
+    assert foo_events == foo_events
+    assert bar_events == bar_events
+    assert baz_events == baz_events
+    assert bar_events == baz_events
+    assert baz_events == bar_events
+    assert empty_events == empty_events
+
+    assert foo_events != bar_events
+    assert bar_events != foo_events
+    assert foo_events != baz_events
+    assert baz_events != foo_events
+    assert foo_events != empty_events
+    assert empty_events != foo_events
+
+    assert foo_events != "wrong type"
+    assert bar_events != "wrong type"
+    assert baz_events != "wrong type"
+    assert empty_events != "wrong type"
