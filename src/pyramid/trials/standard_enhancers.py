@@ -238,3 +238,6 @@ class ExpressionEnhancer(TrialEnhancer):
             value = bool(value)
 
         trial.add_enhancement(self.value_name, value, self.value_category)
+
+
+# TODO: a key-value enhancer for parsing out TextEventLists

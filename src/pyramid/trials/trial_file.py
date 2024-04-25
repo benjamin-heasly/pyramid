@@ -106,6 +106,8 @@ class JsonTrialFile(TrialFile):
     def load_numeric_event_list(self, raw_list: list) -> NumericEventList:
         return NumericEventList(np.array(raw_list))
 
+    # TODO: support dump/load TextEventList
+
     def dump_signal_chunk(self, signal_chunk: SignalChunk) -> dict:
         return {
             "signal_data": signal_chunk.sample_data.tolist(),
@@ -212,6 +214,8 @@ class Hdf5TrialFile(TrialFile):
 
     def load_numeric_event_list(self, dataset: h5py.Dataset) -> NumericEventList:
         return NumericEventList(np.array(dataset[()]))
+
+    # TODO: support dump/load TextEventList
 
     def dump_signal_chunk(self, signal_chunk: SignalChunk, name: str, signals_group: h5py.Group) -> dict:
         if signal_chunk.sample_data.size > 1:

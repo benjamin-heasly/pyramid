@@ -14,6 +14,8 @@ sample_numeric_events = {
     "complex": NumericEventList(event_data=np.array([[0.1, 0, 42.42], [0.2, 1, 42.42], [0.3, 0, 43.43]]))
 }
 
+# TODO: include sample text events
+
 sample_signals = {
     "empty": SignalChunk(
         sample_data=np.empty([0, 2]),

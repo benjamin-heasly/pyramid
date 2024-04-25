@@ -1,4 +1,4 @@
-from typing import Any, Callable
+from typing import Any
 from dataclasses import dataclass, field
 import logging
 
@@ -23,6 +23,8 @@ class Trial():
     numeric_events: dict[str, NumericEventList] = field(default_factory=dict)
     """Named lists of numeric events assigned to this trial."""
 
+    #TODO: support text_events
+
     signals: dict[str, SignalChunk] = field(default_factory=dict)
     """Named signal chunks assigned to this trial."""
 
@@ -37,6 +39,9 @@ class Trial():
         if isinstance(data, NumericEventList):
             self.numeric_events[name] = data
             return True
+
+        #TODO: support text_events
+
         elif isinstance(data, SignalChunk):
             self.signals[name] = data
             return True
@@ -132,6 +137,7 @@ class TrialDelimiter():
         This has the side-effects of incrementing trial_start_time and trial_count.
         """
         trials = {}
+        # TODO: move get_times_of up to BufferData
         next_start_times = self.start_buffer.data.get_times_of(self.start_value, self.start_value_index)
         for next_start_time in next_start_times:
             if next_start_time > self.start_time:

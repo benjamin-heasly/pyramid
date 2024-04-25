@@ -186,6 +186,9 @@ class NumericEventsPlotter(Plotter):
         self.history = []
 
 
+# TODO: implement text events plotter -- maybe as a table of n rows of [trial, trial time, text]
+
+
 class SignalChunksPlotter(Plotter):
     """Plot Pyramid SignalChunk data from buffers with names that match a pattern and channels in a list."""
 

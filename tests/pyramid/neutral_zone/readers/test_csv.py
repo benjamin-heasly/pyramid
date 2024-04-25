@@ -119,6 +119,9 @@ def test_numeric_events_skip_nonnumeric_lines(fixture_path):
     assert reader.file_stream is None
 
 
+# TODO: various tests for CsvTextEventReader
+
+
 def test_signals_safe_to_spam_exit(fixture_path):
     csv_file = Path(fixture_path, 'signals', 'empty.csv').as_posix()
     reader = CsvSignalReader(csv_file)

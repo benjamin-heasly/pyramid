@@ -268,6 +268,7 @@ class ReaderRouter():
         if self.sync_config is not None and self.sync_registry is not None:
             # Add any new sync events to the sync registry.
             event_data = read_result.get(self.sync_config.reader_result_name, None)
+            # TODO: move get_times_of up to BufferData
             if event_data is not None and isinstance(event_data, NumericEventList):
                 sync_event_times = event_data.get_times_of(
                     event_value=self.sync_config.event_value,

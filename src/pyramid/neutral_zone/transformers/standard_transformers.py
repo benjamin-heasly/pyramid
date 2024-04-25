@@ -44,8 +44,12 @@ class FilterRange(Transformer):
         self.value_index = value_index
 
     def transform(self, data: BufferData) -> BufferData:
+        # TODO: also support TextEventList
         if isinstance(data, NumericEventList):
             return data.copy_value_range(self.min, self.max, self.value_index)
         else:  # pragma: no cover
             logging.warning(f"FilterRange doesn't know how to apply to {data.__class__.__name__}")
             return data
+
+
+# TODO: implement SmashCase transformer for text events

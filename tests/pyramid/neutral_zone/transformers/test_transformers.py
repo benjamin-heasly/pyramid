@@ -77,3 +77,6 @@ def test_filter_range():
     expected_data = [[t, 10*t] for t in range(25, 75)]
     expected = NumericEventList(np.array(expected_data))
     assert transformed == expected
+
+
+# TODO: test for SmashCase transformer for text events

@@ -72,6 +72,9 @@ def test_numeric_events_plotter():
         assert "baz" not in plotter.history[1]
 
 
+# TODO: test for TextEventsPlotter
+
+
 def test_signal_chunks_plotter():
     trial_0 = Trial(0.0, 1.0, 0.5)
     trial_0.add_buffer_data(

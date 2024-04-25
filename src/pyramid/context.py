@@ -345,6 +345,7 @@ class PyramidContext():
                 if buffer is self.trial_extractor.wrt_buffer:
                     wrt_buffer_name = name
 
+                # TODO: also support TextEventList
                 if isinstance(buffer.data, NumericEventList):
                     event_list_label += f"|<{name}>{name}"
                 elif isinstance(buffer.data, SignalChunk):

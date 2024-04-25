@@ -165,3 +165,6 @@ def test_numeric_list_equality():
     assert foo_events != "wrong type"
     assert bar_events != "wrong type"
     assert baz_events != "wrong type"
+
+
+# TODO: tests for TextEventList

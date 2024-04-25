@@ -162,3 +162,6 @@ class NumericEventList(BufferData):
         rows_in_range = top_selector & bottom_selector
         range_event_data = self.event_data[rows_in_range, :]
         return NumericEventList(range_event_data)
+
+
+# TODO: implement a TextEventList

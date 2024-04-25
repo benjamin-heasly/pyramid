@@ -106,6 +106,8 @@ def test_configure_readers():
     allow_simulate_delay = True
     (readers, named_buffers, reader_routers, sync_registry) = configure_readers(readers_config, allow_simulate_delay)
 
+    # TODO: also include a TextEvent reader and List
+
     expected_readers = {
         "start_reader": DelaySimulatorReader(CsvNumericEventReader("default.csv", result_name="start")),
         "wrt_reader": CsvNumericEventReader(result_name="wrt"),

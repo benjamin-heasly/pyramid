@@ -283,3 +283,6 @@ def test_expression_enhancer_bool_conversion(tmp_path):
 
     nonzero = trial.get_enhancement("nonzero")
     assert type(nonzero) == bool
+
+
+# Test for key-value enhancer

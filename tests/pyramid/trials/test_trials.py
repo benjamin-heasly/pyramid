@@ -37,6 +37,9 @@ class FakeNumericEventReader(Reader):
         }
 
 
+# TODO: a FakeTextEventreader
+
+
 def router_for_reader_and_routes(reader: Reader, routes: list[ReaderRoute]):
     initial_results = reader.get_initial()
     named_buffers = {}
@@ -163,6 +166,9 @@ def test_delimit_multiple_trials_per_read():
 
 
 def test_populate_trials_from_private_buffers():
+
+    #TODO: include TextEventList (change one to text?)
+
     # Expect trials starting at times 0, 1, 2, and 3.
     start_reader = FakeNumericEventReader(script=[[[1, 1010]], [[2, 1010]], [[3, 1010]]])
     start_route = ReaderRoute("events", "start")
@@ -299,6 +305,8 @@ def test_populate_trials_from_shared_buffers():
     start_router = router_for_reader_and_routes(start_reader, [start_route, wrt_route])
 
     delimiter = TrialDelimiter(start_router.named_buffers["start"], 1010)
+
+    #TODO: include TextEventList (change one to text?)
 
     # Expect "foo" events in trials 0, 1, and 2, before the wrt times.
     foo_reader = FakeNumericEventReader(script=[[[0.2, 0]], [[1.2, 0], [1.3, 1]], [[2.2, 0], [2.3, 1]]])
@@ -570,6 +578,7 @@ def test_enhance_trials():
 
 
 def test_add_buffer_data_and_enhancements():
+    #TODO: include TextEventList
     event_list = NumericEventList(np.array([[0, 0]]))
     signal_chunk = SignalChunk(
         sample_data=NumericEventList(np.array([[0, 0], [1, 1]])),

@@ -98,6 +98,9 @@ def peek_at_csv(csv_file: str, dialect: str, **fmtparams) -> list[str]:
         return []
 
 
+# TODO: implement a CsvTextEventReader
+
+
 class CsvSignalReader(Reader):
     """Read numeric signals from a CSV of numbers.
 
