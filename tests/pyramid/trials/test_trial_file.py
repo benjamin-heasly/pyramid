@@ -63,14 +63,14 @@ sample_trials = [
     ),
     Trial(
         start_time=1.0,
-        end_time=2.0,
-        wrt_time=1.5,
+        end_time=1.5,
+        wrt_time=1.25,
         numeric_events=sample_numeric_events
     ),
     Trial(
-        start_time=1.0,
+        start_time=1.5,
         end_time=2.0,
-        wrt_time=1.5,
+        wrt_time=1.75,
         text_events=sample_text_events
     ),
     Trial(
@@ -175,7 +175,7 @@ def test_hdf5_empty_trial_file(tmp_path):
         assert not file_path.exists()
 
     # But it can be created or truncated.
-    with JsonTrialFile(file_path, create_empty=True) as trial_file:
+    with Hdf5TrialFile(file_path, truncate=True) as trial_file:
         assert file_path.exists()
         trials = [trial for trial in trial_file.read_trials()]
 
