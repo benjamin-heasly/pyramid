@@ -30,4 +30,4 @@ trialFile = TrialFile(sampleTrialFile);
 assert(isequal(class(trialFile.openIterator()), 'JsonTrialIterator'));
 expectedTrials = sampleTrials();
 filterFun = @(trial) ~isempty(trial.enhancements);
-assert(isequal(trialFile.read(filterFun), expectedTrials(4:5)), 'Sample trial file should produce expected trials with filter.');
+assert(isequal(trialFile.read(filterFun), expectedTrials(5:6)), 'Sample trial file should produce expected trials with filter.');

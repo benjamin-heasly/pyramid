@@ -7,9 +7,15 @@
 function trials = sampleTrials()
 
 % Numeric event data, reused in different trials.
-emptyEvents = [];
-simpleEvents = [0.1 0; 0.2 1; 0.3 0];
-complexEvents = [0.1 0 42.42; 0.2 1 42.42; 0.3 0 43.43];
+emptyNumericEvents = [];
+simpleNumericEvents = [0.1 0; 0.2 1; 0.3 0];
+complexNumericEvents = [0.1 0 42.42; 0.2 1 42.42; 0.3 0 43.43];
+
+% Text event data, reused in different trials.
+emptyTextEvents = struct('timestamp_data', {[]}, 'text_data', {[]});
+shortTextEvents = struct('timestamp_data', {[0.1; 0.2]}, 'text_data', {{'0'; '1'}});
+emojiText = compose('smile for THREE :-) \xd83d\xde04');
+longTextEvents = struct('timestamp_data', {[0.1; 0.2; 0.3]}, 'text_data', {{'the number zero'; '#1 is the best!'; emojiText{1}}});
 
 % Signal data, reused in different trials.
 emptySignal.signal_data = [];
@@ -49,50 +55,69 @@ trials(1).start_time = 0;
 trials(1).end_time = 1;
 trials(1).wrt_time = 0;
 trials(1).numeric_events = [];
+trials(1).text_events = [];
 trials(1).signals = [];
 trials(1).enhancements = [];
 trials(1).enhancement_categories = [];
 
 % A trial with only numeric events.
 trials(2).start_time = 1;
-trials(2).end_time = 2;
-trials(2).wrt_time = 1.5;
-trials(2).numeric_events.empty = emptyEvents;
-trials(2).numeric_events.simple = simpleEvents;
-trials(2).numeric_events.complex = complexEvents;
+trials(2).end_time = 1.5;
+trials(2).wrt_time = 1.25;
+trials(2).numeric_events.empty = emptyNumericEvents;
+trials(2).numeric_events.simple = simpleNumericEvents;
+trials(2).numeric_events.complex = complexNumericEvents;
+trials(2).text_events = [];
 trials(2).signals = [];
 trials(2).enhancements = [];
 trials(2).enhancement_categories = [];
 
-% A trial with only signals.
-trials(3).start_time = 2;
-trials(3).end_time = 3;
-trials(3).wrt_time = 2.5;
+% A trial with only text events
+trials(3).start_time = 1.5;
+trials(3).end_time = 2;
+trials(3).wrt_time = 1.75;
 trials(3).numeric_events = [];
-trials(3).signals.empty = emptySignal;
-trials(3).signals.simple = simpleSignal;
-trials(3).signals.complex = complexSignal;
+trials(3).text_events.empty = emptyTextEvents;
+trials(3).text_events.short = shortTextEvents;
+trials(3).text_events.long = longTextEvents;
+trials(3).signals = [];
 trials(3).enhancements = [];
 trials(3).enhancement_categories = [];
 
-% A trial with only per-trial enhancements.
-trials(4).start_time = 3;
-trials(4).end_time = 4;
-trials(4).wrt_time = 3.5;
+% A trial with only signals.
+trials(4).start_time = 2;
+trials(4).end_time = 3;
+trials(4).wrt_time = 2.5;
 trials(4).numeric_events = [];
-trials(4).signals = [];
-trials(4).enhancements = enhancements;
-trials(4).enhancement_categories = enhancement_categories;
+trials(4).text_events = [];
+trials(4).signals.empty = emptySignal;
+trials(4).signals.simple = simpleSignal;
+trials(4).signals.complex = complexSignal;
+trials(4).enhancements = [];
+trials(4).enhancement_categories = [];
 
-% A trial with everyting!
-trials(5).start_time = 4;
-trials(5).end_time = [];
-trials(5).wrt_time = 4.5;
-trials(5).numeric_events.empty = emptyEvents;
-trials(5).numeric_events.simple = simpleEvents;
-trials(5).numeric_events.complex = complexEvents;
-trials(5).signals.empty = emptySignal;
-trials(5).signals.simple = simpleSignal;
-trials(5).signals.complex = complexSignal;
+% A trial with only per-trial enhancements.
+trials(5).start_time = 3;
+trials(5).end_time = 4;
+trials(5).wrt_time = 3.5;
+trials(5).numeric_events = [];
+trials(5).text_events = [];
+trials(5).signals = [];
 trials(5).enhancements = enhancements;
 trials(5).enhancement_categories = enhancement_categories;
+
+% A trial with everyting!
+trials(6).start_time = 4;
+trials(6).end_time = [];
+trials(6).wrt_time = 4.5;
+trials(6).numeric_events.empty = emptyNumericEvents;
+trials(6).numeric_events.simple = simpleNumericEvents;
+trials(6).numeric_events.complex = complexNumericEvents;
+trials(6).text_events.empty = emptyTextEvents;
+trials(6).text_events.short = shortTextEvents;
+trials(6).text_events.long = longTextEvents;
+trials(6).signals.empty = emptySignal;
+trials(6).signals.simple = simpleSignal;
+trials(6).signals.complex = complexSignal;
+trials(6).enhancements = enhancements;
+trials(6).enhancement_categories = enhancement_categories;
