@@ -2,7 +2,7 @@ from pathlib import Path
 import numpy as np
 from pytest import raises
 
-from pyramid.model.events import NumericEventList
+from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
 from pyramid.trials.trials import Trial
 from pyramid.trials.trial_file import TrialFile, JsonTrialFile, Hdf5TrialFile
@@ -14,7 +14,14 @@ sample_numeric_events = {
     "complex": NumericEventList(event_data=np.array([[0.1, 0, 42.42], [0.2, 1, 42.42], [0.3, 0, 43.43]]))
 }
 
-# TODO: include sample text events
+sample_text_events = {
+    "empty": TextEventList(timestamp_data=np.empty([0,]), text_data=np.empty([0,], dtype="U")),
+    "short": TextEventList(timestamp_data=np.array([0.1, 0.2]), text_data=np.array(["0", "1"], dtype="U")),
+    "long": TextEventList(
+        timestamp_data=np.array([0.1, 0.2, 0.3]),
+        text_data=np.array(["the number zero", "#1 is the best!", u"smile for THREE :-) \U0001f604"], dtype="U")
+    )
+}
 
 sample_signals = {
     "empty": SignalChunk(
@@ -30,7 +37,8 @@ sample_signals = {
         channel_ids=["x"]
     ),
     "complex": SignalChunk(
-        sample_data=np.array([[0, 10, 100], [1, 11, 100.1], [2, 12, 100.2], [3, 13, 100.3], [0, 10, 100], [5, 15, 100.5]]),
+        sample_data=np.array([[0, 10, 100], [1, 11, 100.1], [2, 12, 100.2],
+                             [3, 13, 100.3], [0, 10, 100], [5, 15, 100.5]]),
         sample_frequency=100,
         first_sample_time=-0.5,
         channel_ids=["a", "b", "c"]
@@ -43,7 +51,7 @@ sample_enhancements = {
     "float": 1.11,
     "empty_dict": {},
     "empty_list": [],
-    "dict": {"a": 1, "b":2},
+    "dict": {"a": 1, "b": 2},
     "list": ["a", 1, "b", 2]
 }
 
@@ -58,6 +66,12 @@ sample_trials = [
         end_time=2.0,
         wrt_time=1.5,
         numeric_events=sample_numeric_events
+    ),
+    Trial(
+        start_time=1.0,
+        end_time=2.0,
+        wrt_time=1.5,
+        text_events=sample_text_events
     ),
     Trial(
         start_time=2.0,
@@ -77,6 +91,7 @@ sample_trials = [
         end_time=None,
         wrt_time=4.5,
         numeric_events=sample_numeric_events,
+        text_events=sample_text_events,
         signals=sample_signals,
         enhancements=sample_enhancements,
         enhancement_categories={"value": list(sample_enhancements.keys())}

@@ -8,7 +8,7 @@ import json
 import h5py
 import numpy as np
 
-from pyramid.model.events import NumericEventList
+from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
 from pyramid.trials.trials import Trial
 
@@ -106,7 +106,17 @@ class JsonTrialFile(TrialFile):
     def load_numeric_event_list(self, raw_list: list) -> NumericEventList:
         return NumericEventList(np.array(raw_list))
 
-    # TODO: support dump/load TextEventList
+    def dump_text_event_list(self, text_event_list: TextEventList) -> dict:
+        return {
+            "timestamp_data": text_event_list.timestamp_data.tolist(),
+            "text_data": text_event_list.text_data.tolist()
+        }
+
+    def load_text_event_list(self, raw_dict: dict) -> TextEventList:
+        return TextEventList(
+            timestamp_data=np.array(raw_dict["timestamp_data"]),
+            text_data=np.array(raw_dict["text_data"], dtype=np.str_)
+        )
 
     def dump_signal_chunk(self, signal_chunk: SignalChunk) -> dict:
         return {
@@ -136,6 +146,11 @@ class JsonTrialFile(TrialFile):
                 name: self.dump_numeric_event_list(event_list) for name, event_list in trial.numeric_events.items()
             }
 
+        if trial.text_events:
+            raw_dict["text_events"] = {
+                name: self.dump_text_event_list(event_list) for name, event_list in trial.text_events.items()
+            }
+
         if trial.signals:
             raw_dict["signals"] = {
                 name: self.dump_signal_chunk(signal_chunk) for name, signal_chunk in trial.signals.items()
@@ -155,6 +170,11 @@ class JsonTrialFile(TrialFile):
             for name, event_data in raw_dict.get("numeric_events", {}).items()
         }
 
+        text_events = {
+            name: self.load_text_event_list(event_data)
+            for name, event_data in raw_dict.get("text_events", {}).items()
+        }
+
         signals = {
             name: self.load_signal_chunk(signal_data)
             for name, signal_data in raw_dict.get("signals", {}).items()
@@ -165,6 +185,7 @@ class JsonTrialFile(TrialFile):
             end_time=raw_dict["end_time"],
             wrt_time=raw_dict["wrt_time"],
             numeric_events=numeric_events,
+            text_events=text_events,
             signals=signals,
             enhancements=raw_dict.get("enhancements", {}),
             enhancement_categories=raw_dict.get("enhancement_categories", {})
@@ -215,7 +236,31 @@ class Hdf5TrialFile(TrialFile):
     def load_numeric_event_list(self, dataset: h5py.Dataset) -> NumericEventList:
         return NumericEventList(np.array(dataset[()]))
 
-    # TODO: support dump/load TextEventList
+    def dump_text_event_list(
+        self,
+        text_event_list: TextEventList,
+        name: str,
+        text_events_group: h5py.Group
+    ) -> None:
+        subgroup = text_events_group.create_group(name)
+        encoded_text = np.char.encode(text_event_list.text_data, 'UTF-8')
+        if encoded_text.size > 1:
+            subgroup.create_dataset("timestamp_data", data=text_event_list.timestamp_data, compression="gzip")
+            subgroup.create_dataset("text_data", data=encoded_text, compression="gzip")
+        else:
+            subgroup.create_dataset("timestamp_data", data=text_event_list.timestamp_data)
+            subgroup.create_dataset("text_data", data=encoded_text)
+
+    def load_text_event_list(self, subgroup: h5py.Group) -> TextEventList:
+        text_data = subgroup["text_data"][()]
+        if text_data.size < 1:
+            decoded_text = np.empty([0,], dtype=np.str_)
+        else:
+            decoded_text = np.char.decode(text_data, 'UTF-8')
+        return TextEventList(
+            timestamp_data=np.array(subgroup["timestamp_data"][()]),
+            text_data=decoded_text
+        )
 
     def dump_signal_chunk(self, signal_chunk: SignalChunk, name: str, signals_group: h5py.Group) -> dict:
         if signal_chunk.sample_data.size > 1:
@@ -224,12 +269,12 @@ class Hdf5TrialFile(TrialFile):
             dataset = signals_group.create_dataset(name, data=signal_chunk.sample_data)
 
         if signal_chunk.sample_frequency is None:
-            dataset.attrs["sample_frequency"] = np.empty([0,0])
+            dataset.attrs["sample_frequency"] = np.empty([0, 0])
         else:
             dataset.attrs["sample_frequency"] = signal_chunk.sample_frequency
 
         if signal_chunk.first_sample_time is None:
-            dataset.attrs["first_sample_time"] = np.empty([0,0])
+            dataset.attrs["first_sample_time"] = np.empty([0, 0])
         else:
             dataset.attrs["first_sample_time"] = signal_chunk.first_sample_time
 
@@ -255,7 +300,7 @@ class Hdf5TrialFile(TrialFile):
     def dump_trial(self, trial: Trial, trial_group: h5py.Group) -> None:
         trial_group.attrs["start_time"] = trial.start_time
         if trial.end_time is None:
-            trial_group.attrs["end_time"] = np.empty([0,0])
+            trial_group.attrs["end_time"] = np.empty([0, 0])
         else:
             trial_group.attrs["end_time"] = trial.end_time
         trial_group.attrs["wrt_time"] = trial.wrt_time
@@ -264,6 +309,11 @@ class Hdf5TrialFile(TrialFile):
             numeric_events_group = trial_group.create_group("numeric_events")
             for name, event_list in trial.numeric_events.items():
                 self.dump_numeric_event_list(event_list, name, numeric_events_group)
+
+        if trial.text_events:
+            text_events_group = trial_group.create_group("text_events")
+            for name, event_list in trial.text_events.items():
+                self.dump_text_event_list(event_list, name, text_events_group)
 
         if trial.signals:
             signals_group = trial_group.create_group("signals")
@@ -284,6 +334,12 @@ class Hdf5TrialFile(TrialFile):
         if numeric_events_group:
             for name, dataset in numeric_events_group.items():
                 numeric_events[name] = self.load_numeric_event_list(dataset)
+
+        text_events = {}
+        text_events_group = trial_group.get("text_events", None)
+        if text_events_group:
+            for name, subgroup in text_events_group.items():
+                text_events[name] = self.load_text_event_list(subgroup)
 
         signals = {}
         signals_group = trial_group.get("signals", None)
@@ -312,6 +368,7 @@ class Hdf5TrialFile(TrialFile):
             end_time=end_time,
             wrt_time=trial_group.attrs["wrt_time"],
             numeric_events=numeric_events,
+            text_events=text_events,
             signals=signals,
             enhancements=enhancements,
             enhancement_categories=enhancement_categories
