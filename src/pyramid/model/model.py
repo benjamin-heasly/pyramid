@@ -3,6 +3,8 @@ from importlib import import_module
 from typing import Any, Self
 from inspect import signature
 
+import numpy as np
+
 from pyramid.file_finder import FileFinder
 
 class DynamicImport():
@@ -93,6 +95,25 @@ class BufferData():
     def get_end_time(self) -> float:
         """Report the time of the latest data item still in the buffer."""
         raise NotImplementedError  # pragma: no cover
+
+    def get_times_of(
+        self,
+        value: Any,
+        value_index: int = 0,
+        start_time: float = None,
+        end_time: float = None
+    ) -> np.ndarray:
+        """Find times when a given value occurred.
+
+        Implementations that store scalar values should look for the given 
+        value in their backing data and can ignore the optional value_index.
+        Implementations that store non-scalar values, perhaps with multiple columns per time,
+        can use value_index to look within a given column.
+
+        By default implementations should search all events in the buffered data.
+        Callers can pass in start_time restrict to data at or after start_time.
+        Callers can pass in end_time restrict to data strictly before end_time.
+        """
 
 
 class Buffer():

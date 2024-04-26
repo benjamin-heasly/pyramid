@@ -72,23 +72,19 @@ class NumericEventList(BufferData):
 
     def get_times_of(
         self,
-        event_value: float,
+        value: Any,
         value_index: int = 0,
         start_time: float = None,
         end_time: float = None
     ) -> np.ndarray:
-        """Get times of any events matching the given event_value.
+        """Implementing BufferData superclass.
 
         By default this searches the first value per event.
         Pass in value_index>0 to use a different value per event.
-
-        By default this searches all events in the list.
-        Pass in start_time restrict to events at or after start_time.
-        Pass in end_time restrict to events strictly before end_time.
         """
         rows_in_range = self.get_time_selector(start_time, end_time)
         value_column = value_index + 1
-        matching_rows = (self.event_data[:, value_column] == event_value)
+        matching_rows = (self.event_data[:, value_column] == value)
         return self.event_data[rows_in_range & matching_rows, 0]
 
     def apply_offset_then_gain(self, offset: float = 0, gain: float = 1, value_index: int = 0) -> None:
@@ -247,28 +243,24 @@ class TextEventList(BufferData):
         else:
             return None
 
-    def event_count(self) -> int:
-        """Get the number of events in the list -- the length of the text event data."""
-        return self.text_data.size
-
     def get_times_of(
         self,
-        event_value: str,
+        value: Any,
         value_index: int = 0,
         start_time: float = None,
         end_time: float = None
     ) -> np.ndarray:
-        """Get times of any events matching the given event_value.
+        """Implementing BufferData superclass.
 
         This ignores value_index and always searches the text_data array.
-
-        By default this searches all events in the list.
-        Pass in start_time restrict to events at or after start_time.
-        Pass in end_time restrict to events strictly before end_time.
         """
         rows_in_range = self.get_time_selector(start_time, end_time)
-        matching_rows = (self.text_data == event_value)
+        matching_rows = (self.text_data == value)
         return self.timestamp_data[rows_in_range & matching_rows]
+
+    def event_count(self) -> int:
+        """Get the number of events in the list -- the length of the text event data."""
+        return self.text_data.size
 
     def get_values(self, start_time: float = None, end_time: float = None) -> np.ndarray:
         """Get just the event text values, ignoring event times."""

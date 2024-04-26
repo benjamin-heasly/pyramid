@@ -137,7 +137,6 @@ class TrialDelimiter():
         This has the side-effects of incrementing trial_start_time and trial_count.
         """
         trials = {}
-        # TODO: move get_times_of up to BufferData
         next_start_times = self.start_buffer.data.get_times_of(self.start_value, self.start_value_index)
         for next_start_time in next_start_times:
             if next_start_time > self.start_time:

@@ -54,8 +54,7 @@ class SignalChunk(BufferData):
             self.channel_ids
         )
 
-    def copy_time_range(self, start_time: float = None, end_time: float = None) -> Self:
-        """Implementing BufferData superclass."""
+    def get_time_selector(self, start_time: float = None, end_time: float = None):
         sample_times = self.get_times()
         if start_time is None:
             tail_selector = True
@@ -67,7 +66,11 @@ class SignalChunk(BufferData):
         else:
             head_selector = sample_times < end_time
 
-        rows_in_range = tail_selector & head_selector
+        return (sample_times, tail_selector & head_selector)
+
+    def copy_time_range(self, start_time: float = None, end_time: float = None) -> Self:
+        """Implementing BufferData superclass."""
+        (sample_times, rows_in_range) = self.get_time_selector(start_time, end_time)
 
         range_sample_data = self.sample_data[rows_in_range, :]
         if range_sample_data.size > 0:
@@ -114,6 +117,25 @@ class SignalChunk(BufferData):
             return self.first_sample_time + duration
         else:
             return None
+
+    def get_times_of(
+        self,
+        value: Any,
+        value_index: int = 0,
+        start_time: float = None,
+        end_time: float = None
+    ) -> np.ndarray:
+        """Implementing BufferData superclass.
+
+        This searches the value_index-th channel for exact occurrences of the given value.
+        value_index should be a raw index into the data, not a string or other channel_id.
+        """
+        (_, rows_in_range) = self.get_time_selector(start_time, end_time)
+        matching_rows = (self.sample_data[:, value_index] == value)
+        sample_indexes = np.nonzero(rows_in_range & matching_rows)[0]
+        sample_offsets = sample_indexes / self.sample_frequency
+        sample_times = self.first_sample_time + sample_offsets
+        return sample_times
 
     def apply_offset_then_gain(self, offset: float = 0, gain: float = 1, channel_id: str | int = None) -> None:
         """Transform sample data by a constant gain and offset.

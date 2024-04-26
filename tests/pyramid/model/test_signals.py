@@ -23,6 +23,27 @@ def test_signal_chunk_getters():
     assert np.array_equal(signal_chunk.get_channel_values("b"), np.array(range(sample_count)) + 10)
     assert np.array_equal(signal_chunk.get_channel_values("c"), np.array(range(sample_count)) * 10)
 
+    assert np.array_equal(signal_chunk.get_times_of(0.0), np.array([0.0]))
+    assert np.array_equal(signal_chunk.get_times_of(1.0), np.array([0.1]))
+    assert np.array_equal(signal_chunk.get_times_of(99.0), np.array([9.9]))
+    assert np.array_equal(signal_chunk.get_times_of(10.0, value_index=1), np.array([0.0]))
+    assert np.array_equal(signal_chunk.get_times_of(11.0, value_index=1), np.array([0.1]))
+    assert np.array_equal(signal_chunk.get_times_of(109.0, value_index=1), np.array([9.9]))
+    assert np.array_equal(signal_chunk.get_times_of(0.0, value_index=2), np.array([0.0]))
+    assert np.array_equal(signal_chunk.get_times_of(10.0, value_index=2), np.array([0.1]))
+    assert np.array_equal(signal_chunk.get_times_of(990.0, value_index=2), np.array([9.9]))
+    assert signal_chunk.get_times_of(-1.0).size == 0
+    assert signal_chunk.get_times_of(10.42).size == 0
+    assert signal_chunk.get_times_of(1000).size == 0
+
+    assert np.array_equal(signal_chunk.get_times_of(5.0, start_time=0.4), np.array([0.5]))
+    assert np.array_equal(signal_chunk.get_times_of(5.0, start_time=0.5), np.array([0.5]))
+    assert signal_chunk.get_times_of(5.0, start_time=0.6).size == 0
+    assert signal_chunk.get_times_of(5.0, end_time=0.4).size == 0
+    assert signal_chunk.get_times_of(5.0, end_time=0.5).size == 0
+    assert np.array_equal(signal_chunk.get_times_of(5.0, end_time=0.6), np.array([0.5]))
+    assert np.array_equal(signal_chunk.get_times_of(5.0, start_time=0.4, end_time=6.0), np.array([0.5]))
+
 
 def test_signal_chunk_append():
     sample_count = 100
