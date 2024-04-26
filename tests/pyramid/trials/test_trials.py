@@ -2,7 +2,7 @@ from typing import Any
 import numpy as np
 
 from pyramid.model.model import Buffer, BufferData
-from pyramid.model.events import NumericEventList
+from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
 from pyramid.neutral_zone.readers.readers import Reader, ReaderRoute, ReaderRouter
 from pyramid.trials.trials import Trial, TrialDelimiter, TrialExtractor, TrialEnhancer, TrialExpression, TrialCollecter
@@ -37,7 +37,32 @@ class FakeNumericEventReader(Reader):
         }
 
 
-# TODO: a FakeTextEventreader
+class FakeTextEventReader(Reader):
+
+    def __init__(self, script=[]) -> None:
+        self.index = -1
+        self.script = script
+
+    def read_next(self) -> dict[str, TextEventList]:
+        # Incrementing this index is like consuming a system or library resource:
+        # - advance a file cursor
+        # - increment past a file data block
+        # - poll a network connection
+        self.index += 1
+
+        # Return dummy events from the contrived script, which might contain gaps and require retries.
+        if self.index < len(self.script) and self.script[self.index]:
+            (timestamps, text) = self.script[self.index]
+            return {
+                "events": TextEventList(np.array(timestamps, dtype=np.float64), np.array(text, dtype="U"))
+            }
+        else:
+            return None
+
+    def get_initial(self) -> dict[str, BufferData]:
+        return {
+            "events": TextEventList(np.empty([0,], dtype=np.float64), np.empty([0,], dtype="U"))
+        }
 
 
 def router_for_reader_and_routes(reader: Reader, routes: list[ReaderRoute]):
@@ -167,8 +192,6 @@ def test_delimit_multiple_trials_per_read():
 
 def test_populate_trials_from_private_buffers():
 
-    #TODO: include TextEventList (change one to text?)
-
     # Expect trials starting at times 0, 1, 2, and 3.
     start_reader = FakeNumericEventReader(script=[[[1, 1010]], [[2, 1010]], [[3, 1010]]])
     start_route = ReaderRoute("events", "start")
@@ -177,7 +200,7 @@ def test_populate_trials_from_private_buffers():
     delimiter = TrialDelimiter(start_router.named_buffers["start"], 1010)
 
     # Expect wrt times half way through trials 1, 2, and 3.
-    wrt_reader = FakeNumericEventReader(script=[[[1.5, 42]], [[2.5, 42], [2.6, 42]], [[3.5, 42]]])
+    wrt_reader = FakeTextEventReader(script=[([1.5], ["42"]), ([2.5, 2.6], ["42", "42"]), ([3.5], ["42"])])
     wrt_route = ReaderRoute("events", "wrt")
     wrt_router = router_for_reader_and_routes(wrt_reader, [wrt_route])
 
@@ -187,13 +210,13 @@ def test_populate_trials_from_private_buffers():
     foo_router = router_for_reader_and_routes(foo_reader, [foo_route])
 
     # Expect "bar" events in trials 0 and 3, before the wrt times.
-    bar_reader = FakeNumericEventReader(script=[[[0.1, 1]], [[3.1, 0]]])
+    bar_reader = FakeTextEventReader(script=[([0.1], ["1"]), ([3.1], ["0"])])
     bar_route = ReaderRoute("events", "bar")
     bar_router = router_for_reader_and_routes(bar_reader, [bar_route])
 
     extractor = TrialExtractor(
         wrt_router.named_buffers["wrt"],
-        wrt_value=42,
+        wrt_value="42",
         named_buffers={
             "foo": foo_router.named_buffers["foo"],
             "bar": bar_router.named_buffers["bar"]
@@ -219,8 +242,10 @@ def test_populate_trials_from_private_buffers():
         end_time=1.0,
         wrt_time=0.0,
         numeric_events={
-            "foo": NumericEventList(np.array([[0.2, 0]])),
-            "bar": NumericEventList(np.array([[0.1, 1]]))
+            "foo": NumericEventList(np.array([[0.2, 0]]))
+        },
+        text_events={
+            "bar": TextEventList(np.array([0.1], dtype=np.float64), np.array(["1"], dtype="U"))
         }
     )
 
@@ -240,8 +265,10 @@ def test_populate_trials_from_private_buffers():
         end_time=2.0,
         wrt_time=1.5,
         numeric_events={
-            "foo": NumericEventList(np.array([[1.2 - 1.5, 0], [1.3 - 1.5, 1]])),
-            "bar": NumericEventList(np.empty([0, 2]))
+            "foo": NumericEventList(np.array([[1.2 - 1.5, 0], [1.3 - 1.5, 1]]))
+        },
+        text_events={
+            "bar": TextEventList(np.empty([0,], dtype=np.float64), np.empty([0,], dtype="U"))
         }
     )
 
@@ -260,8 +287,10 @@ def test_populate_trials_from_private_buffers():
         end_time=3.0,
         wrt_time=2.5,
         numeric_events={
-            "foo": NumericEventList(np.array([[2.2 - 2.5, 0], [2.3 - 2.5, 1]])),
-            "bar": NumericEventList(np.empty([0, 2]))
+            "foo": NumericEventList(np.array([[2.2 - 2.5, 0], [2.3 - 2.5, 1]]))
+        },
+        text_events={
+            "bar": TextEventList(np.empty([0,], dtype=np.float64), np.empty([0,], dtype="U"))
         }
     )
 
@@ -281,8 +310,10 @@ def test_populate_trials_from_private_buffers():
         end_time=None,
         wrt_time=3.5,
         numeric_events={
-            "foo": NumericEventList(np.empty([0, 2])),
-            "bar": NumericEventList(np.array([[3.1 - 3.5, 0]]))
+            "foo": NumericEventList(np.empty([0, 2]))
+        },
+        text_events={
+            "bar": TextEventList(np.array([3.1 - 3.5], dtype=np.float64), np.array(["0"], dtype="U"))
         }
     )
 
@@ -290,23 +321,21 @@ def test_populate_trials_from_private_buffers():
 def test_populate_trials_from_shared_buffers():
     # Expect trials starting at times 0, 1, 2, and 3.
     # Mix in the wrt times half way through trials 1, 2, and 3.
-    start_reader = FakeNumericEventReader(
+    start_reader = FakeTextEventReader(
         script=[
-            [[1, 1010]],
-            [[1.5, 42]],
-            [[2, 1010]],
-            [[2.5, 42], [2.6, 42]],
-            [[3, 1010]],
-            [[3.5, 42]]
+            ([1], ["1010"]),
+            ([1.5], ["42"]),
+            ([2], ["1010"]),
+            ([2.5, 2.6], ["42", "42"]),
+            ([3], ["1010"]),
+            ([3.5], ["42"])
         ]
     )
     start_route = ReaderRoute("events", "start")
     wrt_route = ReaderRoute("events", "wrt")
     start_router = router_for_reader_and_routes(start_reader, [start_route, wrt_route])
 
-    delimiter = TrialDelimiter(start_router.named_buffers["start"], 1010)
-
-    #TODO: include TextEventList (change one to text?)
+    delimiter = TrialDelimiter(start_router.named_buffers["start"], "1010")
 
     # Expect "foo" events in trials 0, 1, and 2, before the wrt times.
     foo_reader = FakeNumericEventReader(script=[[[0.2, 0]], [[1.2, 0], [1.3, 1]], [[2.2, 0], [2.3, 1]]])
@@ -320,7 +349,7 @@ def test_populate_trials_from_shared_buffers():
 
     extractor = TrialExtractor(
         start_router.named_buffers["wrt"],
-        wrt_value=42,
+        wrt_value="42",
         named_buffers={
             "foo": foo_router.named_buffers["foo"],
             "bar": bar_router.named_buffers["bar"]
@@ -578,8 +607,8 @@ def test_enhance_trials():
 
 
 def test_add_buffer_data_and_enhancements():
-    #TODO: include TextEventList
-    event_list = NumericEventList(np.array([[0, 0]]))
+    numeric_event_list = NumericEventList(np.array([[0, 0]]))
+    text_event_list = TextEventList(np.array([0.0]), np.array(["0"]))
     signal_chunk = SignalChunk(
         sample_data=NumericEventList(np.array([[0, 0], [1, 1]])),
         sample_frequency=1.0,
@@ -590,7 +619,8 @@ def test_add_buffer_data_and_enhancements():
     trial = Trial(start_time=0.0, end_time=1.0)
 
     # Buffer data should be added by name and type.
-    assert trial.add_buffer_data("events", event_list)
+    assert trial.add_buffer_data("numeric_events", numeric_event_list)
+    assert trial.add_buffer_data("text_events", text_event_list)
     assert trial.add_buffer_data("signal", signal_chunk)
 
     # Buffer data must be a BufferData type.
@@ -598,7 +628,8 @@ def test_add_buffer_data_and_enhancements():
     assert not trial.add_buffer_data("string", "a string!")
 
     # Enhancements that are a BufferData type should be added by name and type.
-    assert trial.add_enhancement("events_2", event_list)
+    assert trial.add_enhancement("numeric_events_2", numeric_event_list)
+    assert trial.add_enhancement("text_events_2", text_event_list)
     assert trial.add_enhancement("signal_2", signal_chunk)
 
     # Enhancements should be added by name in the default "value" category.
@@ -644,8 +675,12 @@ def test_add_buffer_data_and_enhancements():
         start_time=0.0,
         end_time=1.0,
         numeric_events={
-            "events": event_list,
-            "events_2": event_list
+            "numeric_events": numeric_event_list,
+            "numeric_events_2": numeric_event_list
+        },
+        text_events={
+            "text_events": text_event_list,
+            "text_events_2": text_event_list
         },
         signals={
             "signal": signal_chunk,
