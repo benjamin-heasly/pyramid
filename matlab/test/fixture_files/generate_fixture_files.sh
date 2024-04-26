@@ -3,7 +3,7 @@
 # This script is intended to generate fixture files for testing the Pyramid trial file reading.
 # It grabs copies of the same files used to test Pyramid Python trial file readers.
 # It does this by:
-#   - running the Pyramid trial file tests vis hatch and pytest
+#   - running the Pyramid trial file tests via hatch and pytest
 #   - grabbing the temp files generated and used during the tests and copying them here
 
 # Stop on errors.
