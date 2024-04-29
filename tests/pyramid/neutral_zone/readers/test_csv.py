@@ -3,15 +3,36 @@ import numpy as np
 from pathlib import Path
 from pytest import fixture, raises
 
-from pyramid.model.events import NumericEventList
+from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
-from pyramid.neutral_zone.readers.csv import CsvNumericEventReader, CsvSignalReader
+from pyramid.neutral_zone.readers.csv import CsvNumericEventReader, CsvTextEventReader, CsvSignalReader
 
 
 @fixture
 def fixture_path(request):
     this_file = Path(request.module.__file__)
     return Path(this_file.parent, 'fixture_files')
+
+
+def test_numeric_events_equality():
+    foo_reader_1 = CsvNumericEventReader("foo.foo")
+    foo_reader_2 = CsvNumericEventReader("foo.foo", result_name="different")
+    foo_reader_3 = CsvNumericEventReader("foo.foo", dialect="different")
+    foo_reader_4 = CsvNumericEventReader("foo.foo", other="different")
+    bar_reader_1 = CsvNumericEventReader("bar.bar")
+
+    assert foo_reader_1 == foo_reader_1
+    assert foo_reader_2 == foo_reader_2
+    assert foo_reader_3 == foo_reader_3
+    assert foo_reader_4 == foo_reader_4
+    assert bar_reader_1 == bar_reader_1
+
+    assert foo_reader_1 != foo_reader_2
+    assert foo_reader_1 != foo_reader_3
+    assert foo_reader_1 != foo_reader_4
+    assert foo_reader_1 != bar_reader_1
+
+    assert foo_reader_1 != "wrong type!"
 
 
 def test_numeric_events_safe_to_spam_exit(fixture_path):
@@ -22,7 +43,7 @@ def test_numeric_events_safe_to_spam_exit(fixture_path):
     reader.__exit__(None, None, None)
     reader.__exit__(None, None, None)
 
-    assert reader.file_stream is None
+    assert reader.reader.file_stream is None
 
 
 def test_numeric_events_empty_file(fixture_path):
@@ -37,7 +58,7 @@ def test_numeric_events_empty_file(fixture_path):
     }
     assert initial == expected_initial
     assert exception_info.errisinstance(StopIteration)
-    assert reader.file_stream is None
+    assert reader.reader.file_stream is None
 
 
 def test_numeric_events_with_header_line(fixture_path):
@@ -64,7 +85,7 @@ def test_numeric_events_with_header_line(fixture_path):
             reader.read_next()
         assert exception_info.errisinstance(StopIteration)
 
-    assert reader.file_stream is None
+    assert reader.reader.file_stream is None
 
 
 def test_numeric_events_with_no_header_line(fixture_path):
@@ -88,7 +109,7 @@ def test_numeric_events_with_no_header_line(fixture_path):
             reader.read_next()
         assert exception_info.errisinstance(StopIteration)
 
-    assert reader.file_stream is None
+    assert reader.reader.file_stream is None
 
 
 def test_numeric_events_skip_nonnumeric_lines(fixture_path):
@@ -116,10 +137,163 @@ def test_numeric_events_skip_nonnumeric_lines(fixture_path):
             reader.read_next()
         assert exception_info.errisinstance(StopIteration)
 
-    assert reader.file_stream is None
+    assert reader.reader.file_stream is None
 
 
-# TODO: various tests for CsvTextEventReader
+def test_text_events_equality():
+    foo_reader_1 = CsvTextEventReader("foo.foo")
+    foo_reader_2 = CsvTextEventReader("foo.foo", result_name="different")
+    foo_reader_3 = CsvTextEventReader("foo.foo", dialect="different")
+    foo_reader_4 = CsvTextEventReader("foo.foo", other="different")
+    bar_reader_1 = CsvTextEventReader("bar.bar")
+
+    assert foo_reader_1 == foo_reader_1
+    assert foo_reader_2 == foo_reader_2
+    assert foo_reader_3 == foo_reader_3
+    assert foo_reader_4 == foo_reader_4
+    assert bar_reader_1 == bar_reader_1
+
+    assert foo_reader_1 != foo_reader_2
+    assert foo_reader_1 != foo_reader_3
+    assert foo_reader_1 != foo_reader_4
+    assert foo_reader_1 != bar_reader_1
+
+    assert foo_reader_1 != "wrong type!"
+
+
+def test_text_events_safe_to_spam_exit(fixture_path):
+    csv_file = Path(fixture_path, 'text_events', 'empty.csv').as_posix()
+    reader = CsvTextEventReader(csv_file)
+    reader.__exit__(None, None, None)
+    reader.__enter__()
+    reader.__exit__(None, None, None)
+    reader.__exit__(None, None, None)
+
+    assert reader.reader.file_stream is None
+
+
+def test_text_events_empty_file(fixture_path):
+    csv_file = Path(fixture_path, 'text_events', 'empty.csv').as_posix()
+    with CsvTextEventReader(csv_file) as reader:
+        initial = reader.get_initial()
+        with raises(StopIteration) as exception_info:
+            reader.read_next()
+
+    expected_initial = {
+        reader.result_name: TextEventList(np.empty([0]), np.empty([0], dtype=np.str_))
+    }
+    assert initial == expected_initial
+    assert exception_info.errisinstance(StopIteration)
+    assert reader.reader.file_stream is None
+
+
+def test_text_events_with_header_line(fixture_path):
+    csv_file = Path(fixture_path, 'text_events', 'header_line.csv').as_posix()
+    with CsvTextEventReader(csv_file) as reader:
+        initial = reader.get_initial()
+        expected_initial = {
+            reader.result_name: TextEventList(np.empty([0]), np.empty([0], dtype=np.str_))
+        }
+        assert initial == expected_initial
+
+        # Consume the header line.
+        assert reader.read_next() is None
+
+        # Read first and second column from 32 lines...
+        for t in range(32):
+            result = reader.read_next()
+            event_list = result[reader.result_name]
+            expected_event_list = TextEventList(np.array([t]), np.array([str(t+100)], dtype=np.str_))
+            assert event_list == expected_event_list
+
+        # ...then be done.
+        with raises(StopIteration) as exception_info:
+            reader.read_next()
+        assert exception_info.errisinstance(StopIteration)
+
+    assert reader.reader.file_stream is None
+
+
+def test_text_events_with_no_header_line(fixture_path):
+    csv_file = Path(fixture_path, 'text_events', 'no_header_line.csv').as_posix()
+    with CsvTextEventReader(csv_file) as reader:
+        initial = reader.get_initial()
+        expected_initial = {
+            reader.result_name: TextEventList(np.empty([0]), np.empty([0], dtype=np.str_))
+        }
+        assert initial == expected_initial
+
+        # Read first and second column from 32 lines...
+        for t in range(32):
+            result = reader.read_next()
+            event_list = result[reader.result_name]
+            expected_event_list = TextEventList(np.array([t]), np.array([str(t+100)], dtype=np.str_))
+            assert event_list == expected_event_list
+
+        # ...then be done.
+        with raises(StopIteration) as exception_info:
+            reader.read_next()
+        assert exception_info.errisinstance(StopIteration)
+
+    assert reader.reader.file_stream is None
+
+
+def test_text_events_skip_nonnumeric_timestamps(fixture_path):
+    csv_file = Path(fixture_path, 'text_events', 'nonnumeric_lines.csv').as_posix()
+    nonnumeric_timestamp_lines = [1, 15, 28]
+    with CsvTextEventReader(csv_file) as reader:
+        initial = reader.get_initial()
+        expected_initial = {
+            reader.result_name: TextEventList(np.empty([0]), np.empty([0], dtype=np.str_))
+        }
+        assert initial == expected_initial
+
+        # Read 32 lines...
+        for t in range(32):
+            result = reader.read_next()
+            if t in nonnumeric_timestamp_lines:
+                assert result is None
+            else:
+                event_list = result[reader.result_name]
+                expected_event_list = TextEventList(np.array([t]), np.array([str(t+100)], dtype=np.str_))
+                assert event_list == expected_event_list
+
+        # ...then be done.
+        with raises(StopIteration) as exception_info:
+            reader.read_next()
+        assert exception_info.errisinstance(StopIteration)
+
+    assert reader.reader.file_stream is None
+
+
+def test_signals_equality():
+    foo_reader_1 = CsvSignalReader("foo.foo")
+    foo_reader_2 = CsvSignalReader("foo.foo", result_name="different")
+    foo_reader_3 = CsvSignalReader("foo.foo", dialect="different")
+    foo_reader_4 = CsvSignalReader("foo.foo", other="different")
+    foo_reader_5 = CsvSignalReader("foo.foo", sample_frequency="different")
+    foo_reader_6 = CsvSignalReader("foo.foo", next_sample_time="different")
+    foo_reader_7 = CsvSignalReader("foo.foo", lines_per_chunk="different")
+    bar_reader_1 = CsvSignalReader("bar.bar")
+
+    assert foo_reader_1 == foo_reader_1
+    assert foo_reader_2 == foo_reader_2
+    assert foo_reader_3 == foo_reader_3
+    assert foo_reader_4 == foo_reader_4
+    assert foo_reader_5 == foo_reader_5
+    assert foo_reader_6 == foo_reader_6
+    assert foo_reader_7 == foo_reader_7
+    assert bar_reader_1 == bar_reader_1
+
+    assert foo_reader_1 != foo_reader_2
+    assert foo_reader_1 != foo_reader_3
+    assert foo_reader_1 != foo_reader_4
+    assert foo_reader_1 != foo_reader_5
+    assert foo_reader_1 != foo_reader_6
+    assert foo_reader_1 != foo_reader_7
+    assert foo_reader_1 != bar_reader_1
+
+    assert foo_reader_1 != "wrong type!"
 
 
 def test_signals_safe_to_spam_exit(fixture_path):
@@ -130,7 +304,7 @@ def test_signals_safe_to_spam_exit(fixture_path):
     reader.__exit__(None, None, None)
     reader.__exit__(None, None, None)
 
-    assert reader.file_stream is None
+    assert reader.reader.file_stream is None
 
 
 def test_signals_empty_file(fixture_path):
@@ -144,7 +318,7 @@ def test_signals_empty_file(fixture_path):
         np.empty([0, 0]), reader.sample_frequency, first_sample_time=0.0, channel_ids=[])}
     assert initial == expected_initial
     assert exception_info.errisinstance(StopIteration)
-    assert reader.file_stream is None
+    assert reader.reader.file_stream is None
 
 
 def test_signals_only_complete_chunks(fixture_path):
@@ -181,7 +355,7 @@ def test_signals_only_complete_chunks(fixture_path):
             reader.read_next()
         assert exception_info.errisinstance(StopIteration)
 
-    assert reader.file_stream is None
+    assert reader.reader.file_stream is None
 
 
 def test_signals_last_partial_chunk(fixture_path):
@@ -232,7 +406,7 @@ def test_signals_last_partial_chunk(fixture_path):
             reader.read_next()
         assert exception_info.errisinstance(StopIteration)
 
-    assert reader.file_stream is None
+    assert reader.reader.file_stream is None
 
 
 def test_signals_skip_nonnumeric_lines(fixture_path):
@@ -269,4 +443,4 @@ def test_signals_skip_nonnumeric_lines(fixture_path):
             reader.read_next()
         assert exception_info.errisinstance(StopIteration)
 
-    assert reader.file_stream is None
+    assert reader.reader.file_stream is None

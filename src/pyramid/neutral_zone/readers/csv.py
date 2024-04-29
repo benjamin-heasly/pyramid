@@ -6,27 +6,21 @@ import numpy as np
 
 from pyramid.file_finder import FileFinder
 from pyramid.model.model import BufferData
-from pyramid.model.events import NumericEventList
+from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
 from pyramid.neutral_zone.readers.readers import Reader
 
 
-class CsvNumericEventReader(Reader):
-    """Read numeric events from a CSV of numbers.
-
-    Skips lines that contain non-numeric values.
-    """
+class CsvReader():
+    """A shared util to iterate through rows of a CSV, manage context state, etc."""
 
     def __init__(
         self,
         csv_file: str = None,
-        file_finder: FileFinder = FileFinder(),
-        result_name: str = "events",
         dialect: str = 'excel',
         **fmtparams
     ) -> None:
-        self.csv_file = file_finder.find(csv_file)
-        self.result_name = result_name
+        self.csv_file = csv_file
         self.dialect = dialect
         self.fmtparams = fmtparams
 
@@ -34,15 +28,14 @@ class CsvNumericEventReader(Reader):
         self.csv_reader = None
 
     def __eq__(self, other: object) -> bool:
-        """Compare CSV readers field-wise, to support use of this class in tests."""
+        """Compare CsvReaders field-wise, to support use of this class in tests."""
         if isinstance(other, self.__class__):
             return (
                 self.csv_file == other.csv_file
-                and self.result_name == other.result_name
                 and self.dialect == other.dialect
                 and self.fmtparams == other.fmtparams
             )
-        else:  # pragma: no cover
+        else: # pragma: no cover
             return False
 
     def __enter__(self) -> Self:
@@ -62,20 +55,77 @@ class CsvNumericEventReader(Reader):
             self.file_stream = None
         self.csv_reader = None
 
+    def peek_first(self) -> list[str]:
+        """Open the CSV, peek at the first line, then close it.
+
+        This is useful to discover header data before opening the context for reading.
+        """
+        try:
+            with open(self.csv_file, mode='r', newline='') as f:
+                reader = csv.reader(f, self.dialect, **self.fmtparams)
+                return reader.__next__()
+        except Exception:
+            logging.error(f"Unable to peek at CSV file {self.csv_file}", exc_info=True)
+            return []
+
+    def next(self) -> list[str]:
+        """Read the next line of the CSV, or throw StopIteration."""
+        return self.csv_reader.__next__()
+
+
+class CsvNumericEventReader(Reader):
+    """Read numeric events from a CSV of numbers.
+
+    Skips lines that contain non-numeric values.
+    """
+
+    def __init__(
+        self,
+        csv_file: str = None,
+        file_finder: FileFinder = FileFinder(),
+        result_name: str = "events",
+        dialect: str = 'excel',
+        **fmtparams
+    ) -> None:
+        self.reader = CsvReader(file_finder.find(csv_file), dialect, **fmtparams)
+        self.result_name = result_name
+
+    def __eq__(self, other: object) -> bool:
+        """Compare CSV readers field-wise, to support use of this class in tests."""
+        if isinstance(other, self.__class__):
+            return (
+                self.reader == other.reader
+                and self.result_name == other.result_name
+            )
+        else:
+            return False
+
+    def __enter__(self) -> Self:
+        self.reader.__enter__()
+        return self
+
+    def __exit__(
+        self,
+        __exc_type: type[BaseException] | None,
+        __exc_value: BaseException | None,
+        __traceback: TracebackType | None
+    ) -> bool | None:
+        return self.reader.__exit__(__exc_type, __exc_value, __traceback)
+
     def read_next(self) -> dict[str, BufferData]:
-        line_num = self.csv_reader.line_num
-        next_row = self.csv_reader.__next__()
+        line_num = self.reader.csv_reader.line_num
+        next_row = self.reader.next()
         try:
             numeric_row = [float(element) for element in next_row]
             return {
                 self.result_name: NumericEventList(np.array([numeric_row]))
             }
         except ValueError as error:
-            logging.info(f"Skipping CSV '{self.csv_file}' line {line_num} {next_row} because {error.args}")
+            logging.info(f"Skipping CSV '{self.reader.csv_file}' line {line_num} {next_row} because {error.args}")
             return None
 
     def get_initial(self) -> dict[str, BufferData]:
-        first_row = peek_at_csv(self.csv_file, self.dialect, **self.fmtparams)
+        first_row = self.reader.peek_first()
         if first_row:
             column_count = len(first_row)
         else:
@@ -87,18 +137,59 @@ class CsvNumericEventReader(Reader):
         }
 
 
-def peek_at_csv(csv_file: str, dialect: str, **fmtparams) -> list[str]:
-    try:
-        # Peek at the first line of the CSV to get the first row.
-        with open(csv_file, mode='r', newline='') as f:
-            reader = csv.reader(f, dialect, **fmtparams)
-            return reader.__next__()
-    except Exception:
-        logging.error(f"Unable to peek at CSV file {csv_file}", exc_info=True)
-        return []
+class CsvTextEventReader(Reader):
+    """Read text events from a CSV."""
 
+    def __init__(
+        self,
+        csv_file: str = None,
+        file_finder: FileFinder = FileFinder(),
+        result_name: str = "events",
+        dialect: str = 'excel',
+        **fmtparams
+    ) -> None:
+        self.reader = CsvReader(file_finder.find(csv_file), dialect, **fmtparams)
+        self.result_name = result_name
 
-# TODO: implement a CsvTextEventReader
+    def __eq__(self, other: object) -> bool:
+        """Compare CSV readers field-wise, to support use of this class in tests."""
+        if isinstance(other, self.__class__):
+            return (
+                self.reader == other.reader
+                and self.result_name == other.result_name
+            )
+        else:
+            return False
+
+    def __enter__(self) -> Self:
+        self.reader.__enter__()
+        return self
+
+    def __exit__(
+        self,
+        __exc_type: type[BaseException] | None,
+        __exc_value: BaseException | None,
+        __traceback: TracebackType | None
+    ) -> bool | None:
+        return self.reader.__exit__(__exc_type, __exc_value, __traceback)
+
+    def read_next(self) -> dict[str, BufferData]:
+        line_num = self.reader.csv_reader.line_num
+        next_row = self.reader.next()
+        try:
+            timestamp = float(next_row[0])
+            value = next_row[1]
+            return {
+                self.result_name: TextEventList(np.array([timestamp]), np.array([value], dtype=np.str_))
+            }
+        except ValueError as error:
+            logging.info(f"Skipping CSV '{self.reader.csv_file}' line {line_num} {next_row} because {error.args}")
+            return None
+
+    def get_initial(self) -> dict[str, BufferData]:
+        return {
+            self.result_name: TextEventList(np.empty([0,]), np.empty([0,], dtype=np.str_))
+        }
 
 
 class CsvSignalReader(Reader):
@@ -119,22 +210,16 @@ class CsvSignalReader(Reader):
         dialect: str = 'excel',
         **fmtparams
     ) -> None:
-        self.csv_file = file_finder.find(csv_file)
+        self.reader = CsvReader(file_finder.find(csv_file), dialect, **fmtparams)
+        self.result_name = result_name
         self.sample_frequency = sample_frequency
         self.next_sample_time = next_sample_time
         self.lines_per_chunk = lines_per_chunk
         self.result_name = result_name
-        self.dialect = dialect
-        self.fmtparams = fmtparams
-
-        self.file_stream = None
-        self.csv_reader = None
         self.channel_ids = None
 
     def __enter__(self) -> Self:
-        # See https://docs.python.org/3/library/csv.html#id3 for why this has newline=''
-        self.file_stream = open(self.csv_file, mode='r', newline='')
-        self.csv_reader = csv.reader(self.file_stream, self.dialect, **self.fmtparams)
+        self.reader.__enter__()
         return self
 
     def __exit__(
@@ -143,17 +228,14 @@ class CsvSignalReader(Reader):
         __exc_value: BaseException | None,
         __traceback: TracebackType | None
     ) -> bool | None:
-        if self.file_stream:
-            self.file_stream.close()
-            self.file_stream = None
-        self.csv_reader = None
+        return self.reader.__exit__(__exc_type, __exc_value, __traceback)
 
     def read_next(self) -> dict[str, BufferData]:
         chunk = []
         while len(chunk) < self.lines_per_chunk:
-            line_num = self.csv_reader.line_num 
+            line_num = self.reader.csv_reader.line_num
             try:
-                next_row = self.csv_reader.__next__()
+                next_row = self.reader.next()
             except StopIteration:
                 # We reached the end.  We still want to return the last, partial chunk below.
                 break
@@ -162,7 +244,7 @@ class CsvSignalReader(Reader):
                 numeric_row = [float(element) for element in next_row]
                 chunk.append(numeric_row)
             except ValueError as error:
-                logging.info(f"Skipping CSV '{self.csv_file}' line {line_num} {next_row} because {error.args}")
+                logging.info(f"Skipping CSV '{self.reader.csv_file}' line {line_num} {next_row} because {error.args}")
                 continue
 
         if chunk:
@@ -180,7 +262,7 @@ class CsvSignalReader(Reader):
             raise StopIteration
 
     def get_initial(self) -> dict[str, BufferData]:
-        self.channel_ids = peek_at_csv(self.csv_file, self.dialect, **self.fmtparams)
+        self.channel_ids = self.reader.peek_first()
         initial = SignalChunk(
             np.empty([0, len(self.channel_ids)]),
             self.sample_frequency,
