@@ -54,8 +54,8 @@ classdef Hdf5TrialIterator < handle
                 switch subgroupName
                     case 'numeric_events'
                         for dataset = dataGroup.Datasets'
-                            dataPath = [dataGroup.Name '/' dataset.Name];
                             % HDF5 read includes decompression as needed.
+                            dataPath = [dataGroup.Name '/' dataset.Name];
                             data = h5read(obj.trialFile, dataPath);
                             if isempty(data)
                                 trial.numeric_events.(dataset.Name) = [];
@@ -64,10 +64,37 @@ classdef Hdf5TrialIterator < handle
                             end
                         end
 
+                    case 'text_events'
+                        for textSubgroup = dataGroup.Groups'
+                            % HDF5 read includes decompression as needed.
+                            timestampDataPath = [textSubgroup.Name '/' 'timestamp_data'];
+                            timestampData = h5read(obj.trialFile, timestampDataPath);
+                            textDataPath = [textSubgroup.Name '/' 'text_data'];
+                            textData = h5read(obj.trialFile, textDataPath);
+                            textSubgroupName = textSubgroup.Name(numel(dataGroup.Name)+2:end);
+                            if isempty(timestampData) || isempty(textData)
+                                trial.text_events.(textSubgroupName).timestamp_data = [];
+                                trial.text_events.(textSubgroupName).text_data = [];
+                            else
+                                trial.text_events.(textSubgroupName).timestamp_data  = double(timestampData);
+
+                                % Pack text into cell array of strings.
+                                textDataCell = cell(numel(textData), 1);
+                                for ii = 1:numel(textData)
+                                    % Strip trailing null padding.
+                                    unpadded = strip(textData{ii}, char(0));
+
+                                    % treat bytes as UTF-8.
+                                    textDataCell{ii} = native2unicode(double(unpadded), "UTF-8");
+                                end
+                                trial.text_events.(textSubgroupName).text_data = textDataCell;
+                            end
+                        end
+
                     case 'signals'
                         for dataset = dataGroup.Datasets'
-                            dataPath = [dataGroup.Name '/' dataset.Name];
                             % HDF5 read includes decompression as needed.
+                            dataPath = [dataGroup.Name '/' dataset.Name];
                             data = h5read(obj.trialFile, dataPath);
                             if isempty(data)
                                 trial.signals.(dataset.Name).signal_data = [];
