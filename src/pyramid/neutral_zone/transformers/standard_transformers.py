@@ -1,7 +1,9 @@
 import logging
 
+import numpy as np
+
 from pyramid.model.model import BufferData
-from pyramid.model.events import NumericEventList
+from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
 from pyramid.neutral_zone.transformers.transformers import Transformer
 
@@ -44,7 +46,6 @@ class FilterRange(Transformer):
         self.value_index = value_index
 
     def transform(self, data: BufferData) -> BufferData:
-        # TODO: also support TextEventList
         if isinstance(data, NumericEventList):
             return data.copy_value_range(self.min, self.max, self.value_index)
         else:  # pragma: no cover
@@ -52,4 +53,18 @@ class FilterRange(Transformer):
             return data
 
 
-# TODO: implement SmashCase transformer for text events
+class SmashCase(Transformer):
+    """Filter text event values, transforming them to all UPPER or all lower case."""
+
+    def __init__(self, upper_case: bool = True, **kwargs) -> None:
+        self.upper_case = upper_case
+
+    def transform(self, data: BufferData):
+        if isinstance(data, TextEventList):
+            if (self.upper_case):
+                return TextEventList(data.timestamp_data, np.char.upper(data.text_data))
+            else:
+                return TextEventList(data.timestamp_data, np.char.lower(data.text_data))
+        else:  # pragma: no cover
+            logging.warning(f"SmashCase doesn't know how to apply to {data.__class__.__name__}")
+            return data

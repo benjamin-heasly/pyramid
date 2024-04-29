@@ -1,10 +1,10 @@
 import numpy as np
 
 from pyramid.file_finder import FileFinder
-from pyramid.model.events import NumericEventList
+from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
 from pyramid.neutral_zone.transformers.transformers import Transformer
-from pyramid.neutral_zone.transformers.standard_transformers import OffsetThenGain, FilterRange
+from pyramid.neutral_zone.transformers.standard_transformers import OffsetThenGain, FilterRange, SmashCase
 
 
 def test_installed_transformer_dynamic_import():
@@ -39,6 +39,17 @@ def test_filter_range_dynamic_imports_with_kwargs():
     )
     assert filter_range.min == -100
     assert filter_range.max == 55
+
+
+def test_smash_case_dynamic_imports_with_kwargs():
+    filter_range_spec = "pyramid.neutral_zone.transformers.standard_transformers.SmashCase"
+    filter_range = Transformer.from_dynamic_import(
+        filter_range_spec,
+        FileFinder(),
+        upper_case=False,
+        ignore="ignore me"
+    )
+    assert filter_range.upper_case == False
 
 
 def test_offset_then_gain_event_list():
@@ -79,4 +90,18 @@ def test_filter_range():
     assert transformed == expected
 
 
-# TODO: test for SmashCase transformer for text events
+def test_smash_case():
+    event_list = TextEventList(
+        np.array([0, 1, 2, 3]),
+        np.array(["aBc", "AbC", "qWeRtY123456!@#$%^", ""], dtype=np.str_)
+    )
+
+    to_upper = SmashCase(upper_case=True)
+    all_caps = to_upper.transform(event_list)
+    assert np.array_equal(all_caps.timestamp_data, event_list.timestamp_data)
+    assert all_caps.text_data.tolist() == ["ABC", "ABC", "QWERTY123456!@#$%^", ""]
+
+    to_lower = SmashCase(upper_case=False)
+    no_caps = to_lower.transform(event_list)
+    assert np.array_equal(no_caps.timestamp_data, event_list.timestamp_data)
+    assert no_caps.text_data.tolist() == ["abc", "abc", "qwerty123456!@#$%^", ""]
