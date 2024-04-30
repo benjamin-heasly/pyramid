@@ -1,5 +1,6 @@
 from typing import Any
 from numpy import bool_
+import logging
 import csv
 
 from pyramid.file_finder import FileFinder
@@ -240,4 +241,150 @@ class ExpressionEnhancer(TrialEnhancer):
         trial.add_enhancement(self.value_name, value, self.value_category)
 
 
-# TODO: a key-value enhancer for parsing out TextEventLists
+class TextKeyValueEnhancer(TrialEnhancer):
+    """Parse text events for key-value pairs, form them into enhancements, and add them to the trial.
+
+    Each event should have text_data formated like these:
+
+        - "name=<name>, value=<value>, type=<type>"
+        - "name=fpon"
+        - "name=fp_x, value=0, type=double"
+
+    In general, the expected format is:
+
+        - Event text_data is one list of **entries** that are separated by commas (",").
+        - Each **entry** is a key-value pair with **key** and **value** separted by an equals sign ("=").
+        - Both **key** and **value** can have surrounding whitespace, which will be trimmed.
+
+    For each text event in a named buffer, this enhancer will parse out the keys and values,
+    form them into an enhancement, and add this to the current trial. The formation works like this:
+
+        - Look for an entry with **key** "name".  Use its **value** as the name of the trial enhancement.
+            - If there is no "name" entry, skip the text event.
+        - Look for an entry with **key** "value".  Parse its **value** to get the value for the enhancement.
+            - If there is no "value" entry, the enhancement will take the value of the event's timestamp (and category "time").
+        - Look for an entry with **key** "type".  If present, this can be a hint for how to parse the "value" entry:
+            - type=float or type=double -> Try to parse "value" as a Python float (with category "value").
+            - type=int or type=long -> Try to parse "value" as a Python int (with category "id").
+            - type=str -> Take "value" as-is as a Python str (with category "value").
+            - no "type" entry or unknown type -> Take "value" as-is as a Python str (with category "value").
+        - Look for a key called "category".  If present, this can specify the enhancement's category explicitly
+          and override the default categories (as guessed above).
+
+    The literal delimiters and keys used for parsing can be cusomized as args to this enhancer.
+
+    Args:
+        buffer_name:            Name of a trial TextEventList buffer to read from.
+        entry_delimiter:        How parse data into entries (default is ",")
+        key_value_delimiter:    How to parse each entry into a **key** and **value** (default is "=")
+        name_key:               Key to use for the name of each enhancement (default is "name")
+        value_key:              Key to use for the value of each enhancement (default is "value")
+        type_key:               Key to use for the type of each value (default is "type")
+        category_key:           Key to use for the category of each enhancement (default is "category")
+        float_types:            List of types to parse as Python floats (default is ["float", "double"])
+        float_default:          Default value to use when float parsing fails (default is 0.0)
+        int_types:              List of types to parse as Python ints (default is ["int", "long"])
+        int_default:            Default value to use when int parsing fails (default is 0)
+        timestamp_category:     Enhancement category to use with event timestamps (default is "time")
+        str_category:           Default enhancement category to use with str values (default is "value")
+        int_category:           Default enhancement category to use with int values (default is "id")
+        float_category:         Default enhancement category to use with float values (default is "value")
+    """
+
+    def __init__(
+        self,
+        buffer_name: str,
+        entry_delimiter: str = ",",
+        key_value_delimiter: str = "=",
+        name_key: str = "name",
+        value_key: str = "value",
+        type_key: str = "type",
+        category_key: str = "category",
+        float_types: list[str] = ["float", "double"],
+        float_default: float = 0.0,
+        int_types: list[str] = ["int", "long"],
+        int_default: int = 0,
+        timestamp_category: str = "time",
+        str_category: str = "value",
+        int_category: str = "id",
+        float_category: str = "value",
+    ) -> None:
+        self.buffer_name = buffer_name
+        self.entry_delimiter = entry_delimiter
+        self.key_value_delimiter = key_value_delimiter
+        self.name_key = name_key
+        self.value_key = value_key
+        self.type_key = type_key
+        self.category_key = category_key
+        self.float_types = float_types
+        self.float_default = float_default
+        self.int_types = int_types
+        self.int_default = int_default
+        self.timestamp_category = timestamp_category
+        self.str_category = str_category
+        self.int_category = int_category
+        self.float_category = float_category
+
+    def enhance(
+        self,
+        trial: Trial,
+        trial_number: int,
+        experiment_info: dict[str: Any],
+        subject_info: dict[str: Any]
+    ) -> None:
+        event_list = trial.text_events[self.buffer_name]
+        for index in range(event_list.event_count()):
+            timestamp = event_list.timestamp_data[index]
+            text = str(event_list.text_data[index])
+            info = self.parse_entries(text)
+            if not self.name_key in info:
+                logging.warning(f"Skipping text that has no name key '{self.name_key}': {text}")
+                continue
+            name = info[self.name_key]
+            (value, category) = self.parse_value(info, timestamp)
+            trial.add_enhancement(name, value, category)
+
+    def parse_entries(self, text: str) -> dict[str, str]:
+        entries = text.split(self.entry_delimiter)
+        info = {}
+        for entry in entries:
+            parts = entry.split(self.key_value_delimiter, maxsplit=1)
+            if len(parts) != 2:
+                logging.warning(f"Unable to parse key-value text: {entry}")
+                continue
+            key = parts[0].strip()
+            value = parts[1].strip()
+            info[key] = value
+        return info
+
+    def parse_value(self, info: dict[str, str], timestamp: float) -> tuple[Any, str]:
+        raw_value = info.get(self.value_key, None)
+        if raw_value is None:
+            # Use the event's timesetamp as the enhancement value, with category "time".
+            return (timestamp, self.timestamp_category)
+
+        # Parse out a value based on the type, if provided.
+        # Also guess a default enhancement category for the type.
+        type = info.get(self.type_key, None)
+        if type in self.int_types:
+            category = self.int_category
+            try:
+                value = int(raw_value)
+            except Exception:
+                logging.warning(f"Could not parse value as int, using default ({self.int_default}): {raw_value}")
+                value = self.int_default
+        elif type in self.float_types:
+            category = self.float_category
+            try:
+                value = float(raw_value)
+            except Exception:
+                logging.warning(f"Could not parse value as float, using default ({self.float_default}): {raw_value}")
+                value = self.float_default
+        else:
+            category = self.str_category
+            value = raw_value
+
+        # Look for an explicit category to override the default guessed above.
+        category = info.get(self.category_key, category)
+
+        return (value, category)

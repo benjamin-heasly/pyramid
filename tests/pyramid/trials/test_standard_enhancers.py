@@ -2,9 +2,9 @@ from pathlib import Path
 import numpy as np
 
 from pyramid.file_finder import FileFinder
-from pyramid.model.events import NumericEventList
+from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.trials.trials import Trial
-from pyramid.trials.standard_enhancers import PairedCodesEnhancer, EventTimesEnhancer, ExpressionEnhancer
+from pyramid.trials.standard_enhancers import PairedCodesEnhancer, EventTimesEnhancer, ExpressionEnhancer, TextKeyValueEnhancer
 
 
 def test_paired_codes_enhancer(tmp_path):
@@ -285,4 +285,112 @@ def test_expression_enhancer_bool_conversion(tmp_path):
     assert type(nonzero) == bool
 
 
-# Test for key-value enhancer
+def test_text_key_value_enhancer():
+    enhancer = TextKeyValueEnhancer(buffer_name="text")
+
+    text = [
+        "garbage",
+        "unknown=ignored",
+        "name=name_2",
+        "  name  =  name_3  ",
+        "name=name_4,value=value_4",
+        "name=name_5,value=value_5,type=garbage",
+        "name=name_6,value=not an int,type=int",
+        "name=name_7,value=42,type=int",
+        "name=name_8,value=not a float,type=float",
+        "name=name_9,value=3.14,type=float",
+        "name=name_10,value=special,category=special",
+    ]
+    event_list = TextEventList(np.array(range(len(text))), np.array(text, dtype=np.str_))
+    trial = Trial(
+        start_time=0,
+        end_time=20,
+        wrt_time=0,
+        text_events={
+            "text": event_list,
+        }
+    )
+
+    enhancer.enhance(trial, 0, {}, {})
+
+    assert trial.enhancements == {
+        "name_2": 2,
+        "name_3": 3,
+        "name_4": "value_4",
+        "name_5": "value_5",
+        "name_6": 0,
+        "name_7": 42,
+        "name_8": 0.0,
+        "name_9": 3.14,
+        "name_10": "special",
+    }
+    assert trial.enhancement_categories == {
+        "time": ["name_2", "name_3"],
+        "value": ["name_4", "name_5", "name_8", "name_9"],
+        "id": ["name_6", "name_7"],
+        "special": ["name_10"]
+    }
+
+
+def test_text_key_value_enhancer_configure_literals():
+    enhancer = TextKeyValueEnhancer(
+        buffer_name="crazy_text",
+        entry_delimiter = "|",
+        key_value_delimiter = "->",
+        name_key = "N",
+        value_key = "V",
+        type_key = "T",
+        category_key = "C",
+        float_types = ["F", "D"],
+        float_default = -1e6,
+        int_types = ["I", "L"],
+        int_default= -1,
+        timestamp_category = "tim",
+        str_category = "stringo",
+        int_category = "rupert grint",
+        float_category = "floaty mcfloatface"
+    )
+
+    text = [
+        "garbage",
+        "unknown->ignored",
+        "N->name_2",
+        "  N  ->  name_3  ",
+        "N->name_4|V->value_4",
+        "N->name_5|V->value_5|T->garbage",
+        "N->name_6|V->not an int|T->I",
+        "N->name_7|V->42|T->I",
+        "N->name_8|V->not a float|T->F",
+        "N->name_9|V->3.14|T->F",
+        "N->name_10|V->special|C->special",
+    ]
+    event_list = TextEventList(np.array(range(len(text))), np.array(text, dtype=np.str_))
+    trial = Trial(
+        start_time=0,
+        end_time=20,
+        wrt_time=0,
+        text_events={
+            "crazy_text": event_list,
+        }
+    )
+
+    enhancer.enhance(trial, 0, {}, {})
+
+    assert trial.enhancements == {
+        "name_2": 2,
+        "name_3": 3,
+        "name_4": "value_4",
+        "name_5": "value_5",
+        "name_6": -1,
+        "name_7": 42,
+        "name_8": -1e6,
+        "name_9": 3.14,
+        "name_10": "special",
+    }
+    assert trial.enhancement_categories == {
+        "tim": ["name_2", "name_3"],
+        "stringo": ["name_4", "name_5"],
+        "rupert grint": ["name_6", "name_7"],
+        "floaty mcfloatface": ["name_8", "name_9"],
+        "special": ["name_10"]
+    }
