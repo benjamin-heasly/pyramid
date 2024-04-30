@@ -1,12 +1,15 @@
+import time
+
 import numpy as np
 
-from pyramid.model.events import NumericEventList
+from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
 from pyramid.trials.trials import Trial
 from pyramid.plotters.plotters import PlotFigureController
 from pyramid.plotters.standard_plotters import (
     BasicInfoPlotter,
     NumericEventsPlotter,
+    TextEventsPlotter,
     SignalChunksPlotter,
     EnhancementTimesPlotter,
     EnhancementXYPlotter,
@@ -24,6 +27,7 @@ def test_basic_info_plotter():
     }
     plotter = BasicInfoPlotter()
     with PlotFigureController([plotter], experiment_info, subject_info) as controller:
+        # TODO: most of these trial_numbers are off by one!
         controller.plot_next(trial, trial_number=1)
         controller.update()
 
@@ -72,7 +76,71 @@ def test_numeric_events_plotter():
         assert "baz" not in plotter.history[1]
 
 
-# TODO: test for TextEventsPlotter
+def test_text_events_plotter_no_filter():
+    trial_0 = Trial(0.0, 1.0, 0.5)
+    trial_0.add_buffer_data("foo", TextEventList(np.array(range(2)), np.array(range(2), dtype=np.str_)))
+    trial_0.add_buffer_data("bar", TextEventList(np.array(range(8)), np.array(range(8), dtype=np.str_)))
+    trial_0.add_buffer_data("baz", TextEventList(np.array(range(1)), np.array(range(1), dtype=np.str_)))
+    plotter = TextEventsPlotter()
+    with PlotFigureController([plotter]) as controller:
+
+        controller.update()
+        assert len(plotter.history) == 0
+
+        controller.plot_next(trial_0, trial_number=0)
+        controller.update()
+        assert len(plotter.history) == 11
+        trials = [row[0] for row in plotter.history]
+        assert trials == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        buffers = [row[1] for row in plotter.history]
+        assert buffers == ["foo", "foo", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "baz"]
+
+
+def test_text_events_plotter_with_filter():
+    trial_0 = Trial(0.0, 1.0, 0.5)
+    trial_0.add_buffer_data("foo", TextEventList(np.array(range(2)), np.array(range(2), dtype=np.str_)))
+    trial_0.add_buffer_data("bar", TextEventList(np.array(range(8)), np.array(range(8), dtype=np.str_)))
+    trial_0.add_buffer_data("baz", TextEventList(np.array(range(1)), np.array(range(1), dtype=np.str_)))
+    trial_1 = Trial(1.0, 2.0, 1.5)
+    trial_1.add_buffer_data("foo", TextEventList(np.array(range(2)), np.array(range(2), dtype=np.str_)))
+    trial_1.add_buffer_data("bar", TextEventList(np.array(range(8)), np.array(range(8), dtype=np.str_)))
+    trial_1.add_buffer_data("baz", TextEventList(np.array(range(1)), np.array(range(1), dtype=np.str_)))
+    trial_2 = Trial(2.0, 3.0, 2.5)
+    trial_2.add_buffer_data("foo", TextEventList(np.array(range(2)), np.array(range(2), dtype=np.str_)))
+    trial_2.add_buffer_data("bar", TextEventList(np.array(range(3)), np.array(range(3), dtype=np.str_)))
+    trial_2.add_buffer_data("baz", TextEventList(np.array(range(1)), np.array(range(1), dtype=np.str_)))
+    plotter = TextEventsPlotter(match_pattern="foo|bar")
+    with PlotFigureController([plotter]) as controller:
+
+        controller.update()
+        assert len(plotter.history) == 0
+
+        controller.plot_next(trial_0, trial_number=0)
+        controller.update()
+        assert len(plotter.history) == 10
+        trials = [row[0] for row in plotter.history]
+        assert trials == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        buffers = [row[1] for row in plotter.history]
+        assert buffers == ["foo", "foo", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "bar"]
+
+        controller.plot_next(trial_1, trial_number=1)
+        controller.update()
+        assert len(plotter.history) == 20
+        trials = [row[0] for row in plotter.history]
+        assert trials == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        buffers = [row[1] for row in plotter.history]
+        assert buffers == ["foo", "foo", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "bar",
+                           "foo", "foo", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "bar"]
+
+        controller.plot_next(trial_2, trial_number=2)
+        controller.update()
+        assert len(plotter.history) == 20
+        trials = [row[0] for row in plotter.history]
+        assert trials == [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2]
+        buffers = [row[1] for row in plotter.history]
+        assert buffers == ["bar", "bar", "bar", "bar", "bar",
+                           "foo", "foo", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "bar",
+                           "foo", "foo", "bar", "bar", "bar"]
 
 
 def test_signal_chunks_plotter():
@@ -208,7 +276,8 @@ def test_enhancement_xy_plotter():
         controller.update()
         assert len(plotter.history) == 1
         assert plotter.history[0]["foox"] == (trial_0.get_enhancement("foox"), trial_0.get_enhancement("fooy"))
-        assert plotter.history[0]["bar"] == ([trial_0.get_enhancement("bar")['x']], [trial_0.get_enhancement("bar")['y']])
+        assert plotter.history[0]["bar"] == ([trial_0.get_enhancement("bar")['x']],
+                                             [trial_0.get_enhancement("bar")['y']])
         assert "bazx" not in plotter.history[0]
         assert "bazy" not in plotter.history[0]
 
@@ -216,11 +285,13 @@ def test_enhancement_xy_plotter():
         controller.update()
         assert len(plotter.history) == 2
         assert plotter.history[0]["foox"] == (trial_0.get_enhancement("foox"), trial_0.get_enhancement("fooy"))
-        assert plotter.history[0]["bar"] == ([trial_0.get_enhancement("bar")['x']], [trial_0.get_enhancement("bar")['y']])
+        assert plotter.history[0]["bar"] == ([trial_0.get_enhancement("bar")['x']],
+                                             [trial_0.get_enhancement("bar")['y']])
         assert "bazx" not in plotter.history[0]
         assert "bazy" not in plotter.history[0]
         assert plotter.history[1]["foox"] == (trial_1.get_enhancement("foox"), trial_1.get_enhancement("fooy"))
-        assert plotter.history[1]["bar"] == ([trial_1.get_enhancement("bar")['x']], [trial_1.get_enhancement("bar")['y']])
+        assert plotter.history[1]["bar"] == ([trial_1.get_enhancement("bar")['x']],
+                                             [trial_1.get_enhancement("bar")['y']])
         assert "bazx" not in plotter.history[1]
         assert "bazy" not in plotter.history[1]
 

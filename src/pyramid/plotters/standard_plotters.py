@@ -24,8 +24,8 @@ def name_to_color(name: str, alpha: float = 1.0) -> str:
     return color_map(index, alpha=alpha)
 
 
-def format_number(number):
-    """Choose an arbitrary, consistent way to format numbers in UI widgets."""
+def format_time(number):
+    """Choose an arbitrary, consistent way to format times in UI widgets."""
     if number is None:
         return ""
     else:
@@ -87,11 +87,11 @@ class BasicInfoPlotter(Plotter):
         subject_info: dict[str: Any]
     ) -> None:
         elapsed = time.time() - self.start_time
-        self.trials_table.get_celld()[(0, 1)].get_text().set_text(format_number(elapsed))
+        self.trials_table.get_celld()[(0, 1)].get_text().set_text(format_time(elapsed))
         self.trials_table.get_celld()[(1, 1)].get_text().set_text(trial_number)
-        self.trials_table.get_celld()[(2, 1)].get_text().set_text(format_number(current_trial.start_time))
-        self.trials_table.get_celld()[(3, 1)].get_text().set_text(format_number(current_trial.wrt_time))
-        self.trials_table.get_celld()[(4, 1)].get_text().set_text(format_number(current_trial.end_time))
+        self.trials_table.get_celld()[(2, 1)].get_text().set_text(format_time(current_trial.start_time))
+        self.trials_table.get_celld()[(3, 1)].get_text().set_text(format_time(current_trial.wrt_time))
+        self.trials_table.get_celld()[(4, 1)].get_text().set_text(format_time(current_trial.end_time))
 
     def clean_up(self, fig: Figure) -> None:
         pass
@@ -186,7 +186,75 @@ class NumericEventsPlotter(Plotter):
         self.history = []
 
 
-# TODO: implement text events plotter -- maybe as a table of n rows of [trial, trial time, text]
+class TextEventsPlotter(Plotter):
+    """Plot Pyramid TextEventList data from buffers with names that match a pattern."""
+
+    def __init__(
+        self,
+        history_size: int = 20,
+        match_pattern: str = None,
+        column_labels: list[str] = ["trial", "buffer", "time", "text"],
+        column_widths: list[float] = [0.1, 0.15, 0.1, 0.65],
+    ) -> None:
+        self.history_size = history_size
+        self.history = []
+        self.match_pattern = match_pattern
+        self.column_labels = column_labels
+        self.column_widths = column_widths
+
+    def set_up(
+        self,
+        fig: Figure,
+        experiment_info: dict[str: Any],
+        subject_info: dict[str: Any]
+    ) -> None:
+        self.ax = fig.subplots()
+        if self.match_pattern:
+            self.ax.set_title(f"Text Events: {self.match_pattern}")
+        else:
+            self.ax.set_title("Text Events")
+        self.ax.axis("off")
+
+        self.text_table = self.ax.table(
+            cellText=[["", "", "", ""]],
+            colLabels=self.column_labels,
+            colWidths=self.column_widths,
+            cellLoc="left",
+            loc="center"
+        )
+
+    def update(
+        self,
+        fig: Figure,
+        current_trial: Trial,
+        trial_number: int,
+        experiment_info: dict[str: Any],
+        subject_info: dict[str: Any]
+    ) -> None:
+        # Update finite, rolling history.
+        for name, event_list in current_trial.text_events.items():
+            if (self.match_pattern is None or re.fullmatch(self.match_pattern, name)) and event_list.event_count() > 0:
+                for index in range(event_list.event_count()):
+                    timestamp = event_list.timestamp_data[index]
+                    text = event_list.text_data[index]
+                    new_row = [trial_number, name, format_time(timestamp), text]
+                    self.history.append(new_row)
+        self.history = self.history[-self.history_size:]
+
+        # Show rolling history.
+        row_colors = [name_to_color(row[1]) for row in self.history]
+        self.text_table.remove()
+        self.text_table = self.ax.table(
+            cellText=self.history,
+            colLabels=self.column_labels,
+            colWidths=self.column_widths,
+            rowColours=row_colors,
+            cellLoc="left",
+            loc="center"
+        )
+
+    def clean_up(self, fig: Figure) -> None:
+        self.history = []
 
 
 class SignalChunksPlotter(Plotter):
