@@ -70,7 +70,7 @@ def test_numeric_list_shift_times():
 
 
 def test_numeric_list_shift_times_empty():
-    event_list = NumericEventList(np.empty([0, 2]))
+    event_list = NumericEventList.empty(1)
     event_list.shift_times(5)
     assert event_list.get_times().size == 0
 
@@ -231,7 +231,7 @@ def test_text_list_shift_times():
 
 
 def test_text_list_shift_times_empty():
-    event_list = TextEventList(np.empty([0,], dtype=np.float32), np.empty([0,], dtype=np.str_))
+    event_list = TextEventList.empty()
     event_list.shift_times(5)
     assert event_list.timestamp_data.size == 0
     assert event_list.get_end_time() == None
@@ -262,7 +262,7 @@ def test_text_list_equality():
     foo_events = TextEventList(np.array(range(100)), np.array(range(100), dtype="U"))
     bar_events = TextEventList(np.array(range(1000)), np.array(range(1000), dtype="U"))
     baz_events = TextEventList(np.array(range(1000)), np.array(range(1000), dtype="U"))
-    empty_events = TextEventList(np.empty([0,], dtype=np.float32), np.empty([0,], dtype=np.str_))
+    empty_events = TextEventList.empty()
 
     assert foo_events == foo_events.copy()
 

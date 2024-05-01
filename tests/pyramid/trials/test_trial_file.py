@@ -9,13 +9,13 @@ from pyramid.trials.trial_file import TrialFile, JsonTrialFile, Hdf5TrialFile
 
 
 sample_numeric_events = {
-    "empty": NumericEventList(event_data=np.empty([0, 2])),
+    "empty": NumericEventList.empty(1),
     "simple": NumericEventList(event_data=np.array([[0.1, 0], [0.2, 1], [0.3, 0]])),
     "complex": NumericEventList(event_data=np.array([[0.1, 0, 42.42], [0.2, 1, 42.42], [0.3, 0, 43.43]]))
 }
 
 sample_text_events = {
-    "empty": TextEventList(timestamp_data=np.empty([0,]), text_data=np.empty([0,], dtype="U")),
+    "empty": TextEventList.empty(),
     "short": TextEventList(timestamp_data=np.array([0.1, 0.2]), text_data=np.array(["0", "1"], dtype="U")),
     "long": TextEventList(
         timestamp_data=np.array([0.1, 0.2, 0.3]),
@@ -24,8 +24,7 @@ sample_text_events = {
 }
 
 sample_signals = {
-    "empty": SignalChunk(
-        sample_data=np.empty([0, 2]),
+    "empty": SignalChunk.empty(
         sample_frequency=None,
         first_sample_time=None,
         channel_ids=["q", "r"]

@@ -611,25 +611,20 @@ class OpenEphysZmqReader(Reader):
         if self.continuous_data:
             for channel_num, name in self.continuous_data.items():
                 # An incomplete placeholder to be amended when the first data arrive.
-                initial[name] = SignalChunk(
-                    sample_data=np.empty([0, 1], dtype='float32'),
-                    sample_frequency=None,
-                    first_sample_time=None,
-                    channel_ids=[int(channel_num)]
-                )
+                initial[name] = SignalChunk.empty(channel_ids=[int(channel_num)], dtype='float32')
 
         if self.events:
             # [timestamp, ttl_word, event_line, event_state]
-            initial[self.events] = NumericEventList(np.empty([0, 4], dtype=np.float64))
+            initial[self.events] = NumericEventList.empty(3)
 
         if self.spikes:
             if isinstance(self.spikes, str):
                 # [timestamp, sorted_id]
-                initial[self.spikes] = NumericEventList(np.empty([0, 2], dtype=np.float64))
+                initial[self.spikes] = NumericEventList.empty(1)
             elif isinstance(self.spikes, dict):
                 for name in self.spikes.values():
                     # [timestamp, sorted_id]
-                    initial[name] = NumericEventList(np.empty([0, 2], dtype=np.float64))
+                    initial[name] = NumericEventList.empty(1)
 
         return initial
 

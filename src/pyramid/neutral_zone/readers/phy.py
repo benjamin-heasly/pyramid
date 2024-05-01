@@ -181,5 +181,5 @@ class PhyClusterEventReader(Reader):
     def get_initial(self) -> dict[str, BufferData]:
         return {
             # [time, cluster_id]
-            self.result_name: NumericEventList(np.empty([0, 2]))
+            self.result_name: NumericEventList.empty(1)
         }

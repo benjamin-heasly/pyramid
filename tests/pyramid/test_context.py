@@ -1,7 +1,6 @@
 from pathlib import Path
 from pytest import fixture
 import yaml
-import numpy as np
 
 from pyramid.model.model import Buffer
 from pyramid.model.events import NumericEventList, TextEventList
@@ -115,11 +114,11 @@ def test_configure_readers():
     assert readers == expected_readers
 
     expected_named_buffers = {
-        "start": Buffer(NumericEventList(np.empty([0, 2]))),
-        "wrt": Buffer(NumericEventList(np.empty([0, 2]))),
-        "foo": Buffer(TextEventList(np.empty([0,]), np.empty([0,], dtype=np.str_))),
-        "bar": Buffer(NumericEventList(np.empty([0, 2]))),
-        "bar_2": Buffer(NumericEventList(np.empty([0, 2]))),
+        "start": Buffer(NumericEventList.empty(1)),
+        "wrt": Buffer(NumericEventList.empty(1)),
+        "foo": Buffer(TextEventList.empty()),
+        "bar": Buffer(NumericEventList.empty(1)),
+        "bar_2": Buffer(NumericEventList.empty(1)),
     }
     assert named_buffers == expected_named_buffers
 
@@ -184,8 +183,8 @@ def test_configure_trials():
     }
 
     named_buffers = {
-        "start": Buffer(NumericEventList(np.empty([0, 2]))),
-        "wrt": Buffer(NumericEventList(np.empty([0, 2])))
+        "start": Buffer(NumericEventList.empty(1)),
+        "wrt": Buffer(NumericEventList.empty(1))
     }
     (trial_delimiter, trial_extractor, start_buffer_name) = configure_trials(trials_config, named_buffers)
 
@@ -264,11 +263,11 @@ def test_from_yaml_and_reader_overrides(fixture_path):
     }
 
     expected_named_buffers = {
-        "start": Buffer(NumericEventList(np.empty([0, 2]))),
-        "wrt": Buffer(NumericEventList(np.empty([0, 2]))),
-        "foo": Buffer(TextEventList(np.empty([0,]), np.empty([0,], dtype=np.str_))),
-        "bar": Buffer(NumericEventList(np.empty([0, 2]))),
-        "bar_2": Buffer(NumericEventList(np.empty([0, 2]))),
+        "start": Buffer(NumericEventList.empty(1)),
+        "wrt": Buffer(NumericEventList.empty(1)),
+        "foo": Buffer(TextEventList.empty()),
+        "bar": Buffer(NumericEventList.empty(1)),
+        "bar_2": Buffer(NumericEventList.empty(1)),
     }
 
     sync = ReaderSyncConfig(is_reference=True, reader_result_name="start", event_value=1010, reader_name="start_reader")

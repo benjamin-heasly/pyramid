@@ -45,6 +45,22 @@ class SignalChunk(BufferData):
         else:
             return False
 
+    @classmethod
+    def empty(
+        cls,
+        sample_frequency: float = None,
+        first_sample_time: float = None,
+        channel_ids: list[str | int] = [],
+        dtype = np.float64
+    ) -> Self:
+        """Convenience for creating an empty signal chunk with given params and data type."""
+        return SignalChunk(
+            np.empty([0, len(channel_ids)], dtype=dtype),
+            sample_frequency,
+            first_sample_time,
+            channel_ids
+        )
+
     def copy(self) -> Self:
         """Implementing BufferData superclass."""
         return SignalChunk(
@@ -171,8 +187,7 @@ class SignalChunk(BufferData):
         return sample_times
 
     def get_channel_values(self, channel_id: str | int = None) -> np.ndarray:
-        """Get sample values from one channel, by id.
-        """
+        """Get sample values from one channel, by id."""
         if channel_id is None:
             channel_id = self.channel_ids[0]
         channel_index = self.channel_ids.index(channel_id)

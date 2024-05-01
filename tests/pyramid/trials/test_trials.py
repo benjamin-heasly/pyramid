@@ -33,7 +33,7 @@ class FakeNumericEventReader(Reader):
 
     def get_initial(self) -> dict[str, BufferData]:
         return {
-            "events": NumericEventList(np.empty([0, 2]))
+            "events": NumericEventList.empty(1)
         }
 
 
@@ -61,7 +61,7 @@ class FakeTextEventReader(Reader):
 
     def get_initial(self) -> dict[str, BufferData]:
         return {
-            "events": TextEventList(np.empty([0,], dtype=np.float64), np.empty([0,], dtype="U"))
+            "events": TextEventList.empty()
         }
 
 
@@ -268,7 +268,7 @@ def test_populate_trials_from_private_buffers():
             "foo": NumericEventList(np.array([[1.2 - 1.5, 0], [1.3 - 1.5, 1]]))
         },
         text_events={
-            "bar": TextEventList(np.empty([0,], dtype=np.float64), np.empty([0,], dtype="U"))
+            "bar": TextEventList.empty()
         }
     )
 
@@ -290,7 +290,7 @@ def test_populate_trials_from_private_buffers():
             "foo": NumericEventList(np.array([[2.2 - 2.5, 0], [2.3 - 2.5, 1]]))
         },
         text_events={
-            "bar": TextEventList(np.empty([0,], dtype=np.float64), np.empty([0,], dtype="U"))
+            "bar": TextEventList.empty()
         }
     )
 
@@ -310,7 +310,7 @@ def test_populate_trials_from_private_buffers():
         end_time=None,
         wrt_time=3.5,
         numeric_events={
-            "foo": NumericEventList(np.empty([0, 2]))
+            "foo": NumericEventList.empty(1)
         },
         text_events={
             "bar": TextEventList(np.array([3.1 - 3.5], dtype=np.float64), np.array(["0"], dtype="U"))
@@ -398,7 +398,7 @@ def test_populate_trials_from_shared_buffers():
         wrt_time=1.5,
         numeric_events={
             "foo": NumericEventList(np.array([[1.2 - 1.5, 0], [1.3 - 1.5, 1]])),
-            "bar": NumericEventList(np.empty([0, 2]))
+            "bar": NumericEventList.empty(1)
         }
     )
 
@@ -419,7 +419,7 @@ def test_populate_trials_from_shared_buffers():
         wrt_time=2.5,
         numeric_events={
             "foo": NumericEventList(np.array([[2.2 - 2.5, 0], [2.3 - 2.5, 1]])),
-            "bar": NumericEventList(np.empty([0, 2]))
+            "bar": NumericEventList.empty(1)
         }
     )
 
@@ -440,7 +440,7 @@ def test_populate_trials_from_shared_buffers():
         end_time=None,
         wrt_time=3.5,
         numeric_events={
-            "foo": NumericEventList(np.empty([0, 2])),
+            "foo": NumericEventList.empty(1),
             "bar": NumericEventList(np.array([[3.1 - 3.5, 0]]))
         }
     )

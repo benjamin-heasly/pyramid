@@ -34,7 +34,7 @@ class FakeNumericEventReader(Reader):
 
     def get_initial(self) -> dict[str, BufferData]:
         return {
-            "events": NumericEventList(np.empty([0, 2]))
+            "events": NumericEventList.empty(1)
         }
 
 

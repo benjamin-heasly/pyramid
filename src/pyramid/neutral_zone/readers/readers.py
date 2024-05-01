@@ -1,5 +1,5 @@
 from types import TracebackType
-from typing import Any, ContextManager
+from typing import Any, ContextManager, Self
 from dataclasses import dataclass, field
 import logging
 
@@ -29,7 +29,7 @@ class Reader(DynamicImport, ContextManager):
     desired forms, and eventually assigned to trials.
     """
 
-    def __enter__(self) -> Any:
+    def __enter__(self) -> Self:
         """Connect to a data source and acquire related system or library resources.
 
         Return an object that we can "read_next()" on -- probably return self.

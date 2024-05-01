@@ -1,5 +1,3 @@
-import time
-
 import numpy as np
 
 from pyramid.model.events import NumericEventList, TextEventList
@@ -50,11 +48,11 @@ def test_numeric_events_plotter():
     trial_0 = Trial(0.0, 1.0, 0.5)
     trial_0.add_buffer_data("foo", NumericEventList(np.array([[0, 100], [1, 101], [2, 102]])))
     trial_0.add_buffer_data("bar", NumericEventList(np.array([[0, 42], [1, 43], [2, 42]])))
-    trial_0.add_buffer_data("baz", NumericEventList(np.empty([0, 2])))
+    trial_0.add_buffer_data("baz", NumericEventList.empty(1))
     trial_1 = Trial(1.0, 2.0, 1.5)
     trial_1.add_buffer_data("foo", NumericEventList(np.array([[0, 200], [1, 201], [2, 202]])))
     trial_1.add_buffer_data("bar", NumericEventList(np.array([[0, 52], [1, 53], [2, 52]])))
-    trial_1.add_buffer_data("baz", NumericEventList(np.empty([0, 2])))
+    trial_1.add_buffer_data("baz", NumericEventList.empty(1))
     plotter = NumericEventsPlotter(match_pattern="foo|bar")
     with PlotFigureController([plotter]) as controller:
         controller.plot_next(trial_0, trial_number=0)
@@ -164,8 +162,7 @@ def test_signal_chunks_plotter():
     )
     trial_0.add_buffer_data(
         "baz",
-        SignalChunk(
-            sample_data=np.empty([0, 2]),
+        SignalChunk.empty(
             sample_frequency=1,
             first_sample_time=0,
             channel_ids=[14, 15]
@@ -192,8 +189,7 @@ def test_signal_chunks_plotter():
     )
     trial_1.add_buffer_data(
         "baz",
-        SignalChunk(
-            sample_data=np.empty([0, 2]),
+        SignalChunk.empty(
             sample_frequency=1,
             first_sample_time=0,
             channel_ids=[14, 15]
@@ -299,11 +295,11 @@ def test_spike_events_plotter():
     trial_0 = Trial(0.0, 1.0, 0.5)
     trial_0.add_buffer_data("foo", NumericEventList(np.array([[0, 1, 0], [1, 1, 1], [2, 1, 0]])))
     trial_0.add_buffer_data("bar", NumericEventList(np.array([[0, 2, 0], [1, 2, 1], [2, 2, 2]])))
-    trial_0.add_buffer_data("baz", NumericEventList(np.empty([0, 2])))
+    trial_0.add_buffer_data("baz", NumericEventList.empty(1))
     trial_1 = Trial(1.0, 2.0, 1.5)
     trial_1.add_buffer_data("foo", NumericEventList(np.array([[0, 1, 1], [1, 1, 1], [2, 3, 0]])))
     trial_1.add_buffer_data("bar", NumericEventList(np.array([[0, 2, 2], [1, 4, 1], [2, 2, 0]])))
-    trial_1.add_buffer_data("baz", NumericEventList(np.empty([0, 2])))
+    trial_1.add_buffer_data("baz", NumericEventList.empty(1))
     plotter = SpikeEventsPlotter(
         match_pattern="foo|bar",
         value_index=1,

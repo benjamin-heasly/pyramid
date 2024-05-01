@@ -26,6 +26,12 @@ class NumericEventList(BufferData):
         else:
             return False
 
+    @classmethod
+    def empty(cls, values_per_event: int = 1, dtype = np.float64) -> Self:
+        """Convenience for creating an empty event list of given width and data type."""
+        column_count = 1 + values_per_event
+        return NumericEventList(np.empty([0, column_count], dtype=dtype))
+
     def copy(self) -> Self:
         """Implementing BufferData superclass."""
         return NumericEventList(self.event_data.copy())
@@ -195,6 +201,11 @@ class TextEventList(BufferData):
                 return np.array_equal(self.timestamp_data, other.timestamp_data) and np.array_equal(self.text_data, other.text_data)
         else:
             return False
+
+    @classmethod
+    def empty(cls, dtype = np.str_) -> Self:
+        """Convenience for creating an empty event list with given text data type."""
+        return TextEventList(np.empty([0,]), np.empty([0,], dtype=dtype))
 
     def copy(self) -> Self:
         """Implementing BufferData superclass."""

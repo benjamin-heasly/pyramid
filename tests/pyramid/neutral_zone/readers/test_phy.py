@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from pytest import fixture, raises
-import numpy as np
 
 from pyramid.file_finder import FileFinder
 from pyramid.model.events import NumericEventList
@@ -18,7 +17,7 @@ def test_gold_phy(fixture_path):
     params_file = Path(fixture_path, 'phy', 'gold-phy', 'params.py')
     with PhyClusterEventReader(params_file, FileFinder()) as reader:
         assert reader.get_initial() == {
-            "spikes": NumericEventList(np.empty([0, 2]))
+            "spikes": NumericEventList.empty(1)
         }
 
         # Expect Plexon 40k sample rate
@@ -87,7 +86,7 @@ def test_phy_data_master(fixture_path):
     params_file = Path(fixture_path, 'phy', 'phy-data-master', 'template', 'params.py')
     with PhyClusterEventReader(params_file, FileFinder()) as reader:
         assert reader.get_initial() == {
-            "spikes": NumericEventList(np.empty([0, 2]))
+            "spikes": NumericEventList.empty(1)
         }
 
         # Expect 25k sample rate from who knows where.

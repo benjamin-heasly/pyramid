@@ -77,12 +77,7 @@ def test_signal_chunk_append():
 
 def test_signal_chunk_append_fill_in_missing_fields():
     # An empty placeholder signal chunk, as if we haven't read any data yet.
-    signal_chunk_a = SignalChunk(
-        sample_data=np.empty([0, 1]),
-        sample_frequency=None,
-        first_sample_time=None,
-        channel_ids=["0"]
-    )
+    signal_chunk_a = SignalChunk.empty(channel_ids=["0"])
 
     # A full signal chunk, perhaps the first data we read in.
     signal_chunk_b = SignalChunk(
@@ -142,11 +137,10 @@ def test_signal_chunk_shift_times():
 
 
 def test_signal_chunk_shift_times_empty():
-    signal_chunk = SignalChunk(
-        np.empty([0, 3]),
-        10,
-        0,
-        ["a", "b", "c"]
+    signal_chunk = SignalChunk.empty(
+        sample_frequency=10,
+        first_sample_time=0,
+        channel_ids=["a", "b", "c"]
     )
     signal_chunk.shift_times(5)
     assert signal_chunk.get_times().size == 0

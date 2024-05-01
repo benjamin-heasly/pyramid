@@ -54,7 +54,7 @@ def test_numeric_events_empty_file(fixture_path):
             reader.read_next()
 
     expected_initial = {
-        reader.result_name: NumericEventList(np.empty([0, 2]))
+        reader.result_name: NumericEventList.empty(1)
     }
     assert initial == expected_initial
     assert exception_info.errisinstance(StopIteration)
@@ -66,7 +66,7 @@ def test_numeric_events_with_header_line(fixture_path):
     with CsvNumericEventReader(csv_file) as reader:
         initial = reader.get_initial()
         expected_initial = {
-            reader.result_name: NumericEventList(np.empty([0, 3]))
+            reader.result_name: NumericEventList.empty(2)
         }
         assert initial == expected_initial
 
@@ -93,7 +93,7 @@ def test_numeric_events_with_no_header_line(fixture_path):
     with CsvNumericEventReader(csv_file) as reader:
         initial = reader.get_initial()
         expected_initial = {
-            reader.result_name: NumericEventList(np.empty([0, 3]))
+            reader.result_name: NumericEventList.empty(2)
         }
         assert initial == expected_initial
 
@@ -118,7 +118,7 @@ def test_numeric_events_skip_nonnumeric_lines(fixture_path):
     with CsvNumericEventReader(csv_file) as reader:
         initial = reader.get_initial()
         expected_initial = {
-            reader.result_name: NumericEventList(np.empty([0, 3]))
+            reader.result_name: NumericEventList.empty(2)
         }
         assert initial == expected_initial
 
@@ -180,7 +180,7 @@ def test_text_events_empty_file(fixture_path):
             reader.read_next()
 
     expected_initial = {
-        reader.result_name: TextEventList(np.empty([0]), np.empty([0], dtype=np.str_))
+        reader.result_name: TextEventList.empty()
     }
     assert initial == expected_initial
     assert exception_info.errisinstance(StopIteration)
@@ -192,7 +192,7 @@ def test_text_events_with_header_line(fixture_path):
     with CsvTextEventReader(csv_file) as reader:
         initial = reader.get_initial()
         expected_initial = {
-            reader.result_name: TextEventList(np.empty([0]), np.empty([0], dtype=np.str_))
+            reader.result_name: TextEventList.empty()
         }
         assert initial == expected_initial
 
@@ -219,7 +219,7 @@ def test_text_events_with_no_header_line(fixture_path):
     with CsvTextEventReader(csv_file) as reader:
         initial = reader.get_initial()
         expected_initial = {
-            reader.result_name: TextEventList(np.empty([0]), np.empty([0], dtype=np.str_))
+            reader.result_name: TextEventList.empty()
         }
         assert initial == expected_initial
 
@@ -244,7 +244,7 @@ def test_text_events_skip_nonnumeric_timestamps(fixture_path):
     with CsvTextEventReader(csv_file) as reader:
         initial = reader.get_initial()
         expected_initial = {
-            reader.result_name: TextEventList(np.empty([0]), np.empty([0], dtype=np.str_))
+            reader.result_name: TextEventList.empty()
         }
         assert initial == expected_initial
 
@@ -314,8 +314,7 @@ def test_signals_empty_file(fixture_path):
         with raises(StopIteration) as exception_info:
             reader.read_next()
 
-    expected_initial = {reader.result_name: SignalChunk(
-        np.empty([0, 0]), reader.sample_frequency, first_sample_time=0.0, channel_ids=[])}
+    expected_initial = {reader.result_name: SignalChunk.empty(reader.sample_frequency, 0.0, [])}
     assert initial == expected_initial
     assert exception_info.errisinstance(StopIteration)
     assert reader.reader.file_stream is None
@@ -326,8 +325,7 @@ def test_signals_only_complete_chunks(fixture_path):
     with CsvSignalReader(csv_file, lines_per_chunk=10) as reader:
         initial = reader.get_initial()
         expected_initial = {
-            reader.result_name: SignalChunk(
-                np.empty([0, 3]),
+            reader.result_name: SignalChunk.empty(
                 reader.sample_frequency,
                 first_sample_time=0.0,
                 channel_ids=["a", "b", "c"]
@@ -363,8 +361,7 @@ def test_signals_last_partial_chunk(fixture_path):
     with CsvSignalReader(csv_file, lines_per_chunk=11) as reader:
         initial = reader.get_initial()
         expected_initial = {
-            reader.result_name: SignalChunk(
-                np.empty([0, 3]),
+            reader.result_name: SignalChunk.empty(
                 reader.sample_frequency,
                 first_sample_time=0.0,
                 channel_ids=["a", "b", "c"]
@@ -414,8 +411,7 @@ def test_signals_skip_nonnumeric_lines(fixture_path):
     with CsvSignalReader(csv_file, lines_per_chunk=10) as reader:
         initial = reader.get_initial()
         expected_initial = {
-            reader.result_name: SignalChunk(
-                np.empty([0, 3]),
+            reader.result_name: SignalChunk.empty(
                 reader.sample_frequency,
                 first_sample_time=0.0,
                 channel_ids=["a", "b", "c"]

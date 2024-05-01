@@ -68,8 +68,6 @@ class DynamicImport():
 class BufferData():
     """An interface to tell us what Pyramid data types must have in common in order to flow from Reader to Trial."""
 
-    # TODO: an empty method for making a convenient, canonical empty buffer
-
     def copy(self) -> Self:
         """Create a new, independent copy of the data -- allows reusing raw data along multuple routes/buffers."""
         raise NotImplementedError  # pragma: no cover

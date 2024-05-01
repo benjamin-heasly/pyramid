@@ -133,7 +133,7 @@ class CsvNumericEventReader(Reader):
             logging.warning("Using default column count for CSV events: {column_count}")
 
         return {
-            self.result_name: NumericEventList(np.empty([0, column_count]))
+            self.result_name: NumericEventList.empty(column_count - 1)
         }
 
 
@@ -188,7 +188,7 @@ class CsvTextEventReader(Reader):
 
     def get_initial(self) -> dict[str, BufferData]:
         return {
-            self.result_name: TextEventList(np.empty([0,]), np.empty([0,], dtype=np.str_))
+            self.result_name: TextEventList.empty()
         }
 
 
@@ -263,10 +263,5 @@ class CsvSignalReader(Reader):
 
     def get_initial(self) -> dict[str, BufferData]:
         self.channel_ids = self.reader.peek_first()
-        initial = SignalChunk(
-            np.empty([0, len(self.channel_ids)]),
-            self.sample_frequency,
-            self.next_sample_time,
-            self.channel_ids
-        )
+        initial = SignalChunk.empty(self.sample_frequency, self.next_sample_time, self.channel_ids)
         return {self.result_name: initial}
