@@ -4,10 +4,10 @@ import yaml
 import numpy as np
 
 from pyramid.model.model import Buffer
-from pyramid.model.events import NumericEventList
+from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.neutral_zone.readers.readers import ReaderRoute, ReaderRouter, ReaderSyncConfig, ReaderSyncRegistry
 from pyramid.neutral_zone.readers.delay_simulator import DelaySimulatorReader
-from pyramid.neutral_zone.readers.csv import CsvNumericEventReader
+from pyramid.neutral_zone.readers.csv import CsvNumericEventReader, CsvTextEventReader
 from pyramid.neutral_zone.transformers.standard_transformers import OffsetThenGain
 
 from pyramid.trials.trials import TrialDelimiter, TrialExtractor, TrialExpression
@@ -80,7 +80,7 @@ def test_configure_readers():
             }
         },
         "foo_reader": {
-            "class": "pyramid.neutral_zone.readers.csv.CsvNumericEventReader",
+            "class": "pyramid.neutral_zone.readers.csv.CsvTextEventReader",
             "args": {"result_name": "foo"}
         },
         "bar_reader": {
@@ -106,12 +106,10 @@ def test_configure_readers():
     allow_simulate_delay = True
     (readers, named_buffers, reader_routers, sync_registry) = configure_readers(readers_config, allow_simulate_delay)
 
-    # TODO: also include a TextEvent reader and List
-
     expected_readers = {
         "start_reader": DelaySimulatorReader(CsvNumericEventReader("default.csv", result_name="start")),
         "wrt_reader": CsvNumericEventReader(result_name="wrt"),
-        "foo_reader": CsvNumericEventReader(result_name="foo"),
+        "foo_reader": CsvTextEventReader(result_name="foo"),
         "bar_reader": CsvNumericEventReader(result_name="bar"),
     }
     assert readers == expected_readers
@@ -119,7 +117,7 @@ def test_configure_readers():
     expected_named_buffers = {
         "start": Buffer(NumericEventList(np.empty([0, 2]))),
         "wrt": Buffer(NumericEventList(np.empty([0, 2]))),
-        "foo": Buffer(NumericEventList(np.empty([0, 2]))),
+        "foo": Buffer(TextEventList(np.empty([0,]), np.empty([0,], dtype=np.str_))),
         "bar": Buffer(NumericEventList(np.empty([0, 2]))),
         "bar_2": Buffer(NumericEventList(np.empty([0, 2]))),
     }
@@ -261,14 +259,14 @@ def test_from_yaml_and_reader_overrides(fixture_path):
     expected_readers = {
         "start_reader": DelaySimulatorReader(CsvNumericEventReader(delimiter_csv, result_name="start")),
         "wrt_reader": CsvNumericEventReader(result_name="wrt"),
-        "foo_reader": CsvNumericEventReader(result_name="foo"),
+        "foo_reader": CsvTextEventReader(result_name="foo"),
         "bar_reader": CsvNumericEventReader(result_name="bar"),
     }
 
     expected_named_buffers = {
         "start": Buffer(NumericEventList(np.empty([0, 2]))),
         "wrt": Buffer(NumericEventList(np.empty([0, 2]))),
-        "foo": Buffer(NumericEventList(np.empty([0, 2]))),
+        "foo": Buffer(TextEventList(np.empty([0,]), np.empty([0,], dtype=np.str_))),
         "bar": Buffer(NumericEventList(np.empty([0, 2]))),
         "bar_2": Buffer(NumericEventList(np.empty([0, 2]))),
     }

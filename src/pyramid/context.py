@@ -9,7 +9,7 @@ import graphviz
 
 from pyramid.file_finder import FileFinder
 from pyramid.model.model import Buffer, DynamicImport
-from pyramid.model.events import NumericEventList
+from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
 from pyramid.neutral_zone.readers.readers import Reader, ReaderRoute, ReaderRouter, Transformer, ReaderSyncConfig, ReaderSyncRegistry
 from pyramid.neutral_zone.readers.delay_simulator import DelaySimulatorReader
@@ -335,8 +335,10 @@ class PyramidContext():
         start_buffer_name = None
         wrt_buffer_name = None
         with dot.subgraph(name="cluster_buffers", graph_attr={"label": "buffers", **subgraph_attr}) as buffers:
-            event_list_name = "event_list"
-            event_list_label = ""
+            numeric_event_list_name = "numeric_event_list"
+            numeric_event_list_label = ""
+            text_event_list_name = "text_event_list"
+            text_event_list_label = ""
             signal_chunk_name = "signal_chunk"
             signal_chunk_label = ""
             for name, buffer in self.named_buffers.items():
@@ -345,13 +347,16 @@ class PyramidContext():
                 if buffer is self.trial_extractor.wrt_buffer:
                     wrt_buffer_name = name
 
-                # TODO: also support TextEventList
                 if isinstance(buffer.data, NumericEventList):
-                    event_list_label += f"|<{name}>{name}"
+                    numeric_event_list_label += f"|<{name}>{name}"
+                elif isinstance(buffer.data, TextEventList):
+                    text_event_list_label += f"|<{name}>{name}"
                 elif isinstance(buffer.data, SignalChunk):
                     signal_chunk_label += f"|<{name}>{name}"
-            if event_list_label:
-                buffers.node(name=event_list_name, label="NumericEventList" + event_list_label)
+            if numeric_event_list_label:
+                buffers.node(name=numeric_event_list_name, label="NumericEventList" + numeric_event_list_label)
+            if text_event_list_label:
+                buffers.node(name=text_event_list_name, label="TextEventList" + text_event_list_label)
             if signal_chunk_label:
                 buffers.node(name=signal_chunk_name, label="SignalChunk" + signal_chunk_label)
 
@@ -359,13 +364,13 @@ class PyramidContext():
         delimiter_name = "trial_delimiter"
         delimiter_label = f"{self.trial_delimiter.__class__.__name__}|start = {self.trial_delimiter.start_value}"
         dot.node(name=delimiter_name, label=delimiter_label)
-        dot.edge(f"{event_list_name}:{start_buffer_name}:e", delimiter_name)
+        dot.edge(f"{numeric_event_list_name}:{start_buffer_name}:e", delimiter_name)
 
         # Note which buffer will be used for aligning trials in time.
         extractor_name = "trial_extractor"
         extractor_label = f"{self.trial_extractor.__class__.__name__}|wrt = {self.trial_extractor.wrt_value}"
         dot.node(name=extractor_name, label=extractor_label)
-        dot.edge(f"{event_list_name}:{wrt_buffer_name}:e", extractor_name)
+        dot.edge(f"{numeric_event_list_name}:{wrt_buffer_name}:e", extractor_name)
 
         with dot.subgraph(name="cluster_enhancers", graph_attr={"label": "enhancers", **subgraph_attr}) as enhancers:
             # Show how each trial will get enhanced after delimiting and alignment.
@@ -421,7 +426,7 @@ class PyramidContext():
                 route_name = f"{name}_route_{index}"
                 buffer = self.named_buffers[route.buffer_name]
                 if isinstance(buffer.data, NumericEventList):
-                    buffer_node_name = event_list_name
+                    buffer_node_name = numeric_event_list_name
                 elif isinstance(buffer.data, SignalChunk):
                     buffer_node_name = signal_chunk_name
 

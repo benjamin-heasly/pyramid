@@ -4,7 +4,6 @@
         "end_time": 1.0,
         "wrt_time": 0.0,
         "numeric_events": {
-            "foo": [[0.2, 0.0]],
             "bar": [[0.1, 1.0]],
             "bar_2": [[0.1, -22.0]]
         },
@@ -15,6 +14,9 @@
                 "first_sample_time": 0.0,
                 "channel_ids": ["match_trial"]
             }
+        },
+        "text_events": {
+            "foo": {"text_data": ["zero"], "timestamp_data": [0.2]}
         },
         "enhancements": {
             "duration": 1.0,
@@ -29,11 +31,6 @@
         "end_time": 2.0,
         "wrt_time": 1.5,
         "numeric_events": {
-            "foo": [
-                [-0.30000000000000004, 0.0],
-                [-0.19999999999999996, 1.0],
-                [0.0, 43.0]
-            ],
             "bar": [],
             "bar_2": []
         },
@@ -44,6 +41,9 @@
                 "first_sample_time": -0.5,
                 "channel_ids": ["match_trial"]
             }
+        },
+        "text_events": {
+            "foo": {"text_data": ["zero", "one", "forty-three"], "timestamp_data": [-0.30000000000000004, -0.19999999999999996, 0.0]}
         },
         "enhancements": {
             "duration": 1.0,
@@ -58,11 +58,6 @@
         "end_time": 3.0,
         "wrt_time": 2.5,
         "numeric_events": {
-            "foo": [
-                [-0.3099999999999996, 0.0],
-                [-0.20999999999999996, 1.0],
-                [0.0, 43.0]
-            ],
             "bar": [],
             "bar_2": []
         },
@@ -73,6 +68,9 @@
                 "first_sample_time": -0.5,
                 "channel_ids": ["match_trial"]
             }
+        },
+        "text_events": {
+            "foo": {"text_data": ["zero", "one", "forty-three"], "timestamp_data": [-0.3099999999999996, -0.20999999999999996, 0.0]}
         },
         "enhancements": {
             "duration": 1.0,
@@ -87,7 +85,6 @@
         "end_time": null,
         "wrt_time": 3.5,
         "numeric_events": {
-            "foo": [[0.0, 43.0]],
             "bar": [[-0.3999999999999999, 0.0]],
             "bar_2": [[-0.3999999999999999, -20.0]]
         },
@@ -98,6 +95,9 @@
                 "first_sample_time": -0.5,
                 "channel_ids": ["match_trial"]
             }
+        },
+        "text_events": {
+            "foo": {"text_data": ["forty-three"], "timestamp_data": [0.0]}
         },
         "enhancements": {
             "duration": null,

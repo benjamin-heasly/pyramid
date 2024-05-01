@@ -65,7 +65,7 @@ class CsvReader():
                 reader = csv.reader(f, self.dialect, **self.fmtparams)
                 return reader.__next__()
         except Exception:
-            logging.error(f"Unable to peek at CSV file {self.csv_file}", exc_info=True)
+            logging.warning(f"Unable to peek at CSV file {self.csv_file}", exc_info=True)
             return []
 
     def next(self) -> list[str]:

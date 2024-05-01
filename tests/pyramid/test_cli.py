@@ -54,11 +54,11 @@ experiment_config = {
             }
         },
         "foo_reader": {
-            "class": "pyramid.neutral_zone.readers.csv.CsvNumericEventReader",
+            "class": "pyramid.neutral_zone.readers.csv.CsvTextEventReader",
             "args": {"result_name": "foo"},
             "sync": {
                 "reader_result_name": "foo",
-                "event_value": 43
+                "event_value": "forty-three"
             }
         },
         "bar_reader": {
