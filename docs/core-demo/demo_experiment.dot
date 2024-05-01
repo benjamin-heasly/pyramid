@@ -4,19 +4,23 @@ digraph demo_experiment {
 	edge [fontname=Arial penwidth=2.0]
 	subgraph cluster_buffers {
 		graph [bgcolor=lightgray color=transparent fontname=Arial label=buffers margin=20 rank=same]
-		event_list [label="NumericEventList|<delimiter>delimiter|<foo>foo|<bar>bar|<bar_2>bar_2"]
+		numeric_event_list [label="NumericEventList|<delimiter>delimiter|<bar>bar|<bar_2>bar_2"]
+		text_event_list [label="TextEventList|<foo>foo"]
 	}
 	trial_delimiter [label="TrialDelimiter|start = 1010"]
-	event_list:delimiter:e -> trial_delimiter
+	numeric_event_list:delimiter:e -> trial_delimiter
 	trial_extractor [label="TrialExtractor|wrt = 42"]
-	event_list:delimiter:e -> trial_extractor
+	numeric_event_list:delimiter:e -> trial_extractor
 	subgraph cluster_enhancers {
 		graph [bgcolor=lightgray color=transparent fontname=Arial label=enhancers margin=20 rank=same]
+	}
+	subgraph cluster_collecters {
+		graph [bgcolor=lightgray color=transparent fontname=Arial label=collecters margin=20 rank=same]
 	}
 	subgraph cluster_readers {
 		graph [bgcolor=lightgray color=transparent fontname=Arial label=readers margin=20 rank=same]
 		delimiter_reader [label="delimiter_reader|CsvNumericEventReader|csv_file: delimiter.csv\l|result_name: delimiter\l"]
-		foo_reader [label="foo_reader|CsvNumericEventReader|result_name: foo\l|csv_file: foo.csv\l"]
+		foo_reader [label="foo_reader|CsvTextEventReader|result_name: foo\l|csv_file: foo.csv\l"]
 		bar_reader [label="bar_reader|CsvNumericEventReader|result_name: bar\l|csv_file: bar.csv\l"]
 	}
 	delimiter_reader -> delimiter_reader_results
@@ -28,10 +32,10 @@ digraph demo_experiment {
 		foo_reader_results [label="<foo>foo"]
 		bar_reader_results [label="<bar>bar"]
 	}
-	delimiter_reader_results:delimiter:e -> event_list:delimiter:w
-	foo_reader_results:foo:e -> event_list:foo:w
-	bar_reader_results:bar:e -> event_list:bar:w
+	delimiter_reader_results:delimiter:e -> numeric_event_list:delimiter:w
+	foo_reader_results:foo:e -> text_event_list:foo:w
+	bar_reader_results:bar:e -> numeric_event_list:bar:w
 	bar_reader_route_1 [label="OffsetThenGain|offset: 10\l|gain: -2\l"]
 	bar_reader_results:bar:e -> bar_reader_route_1:w
-	bar_reader_route_1:e -> event_list:bar_2:w
+	bar_reader_route_1:e -> numeric_event_list:bar_2:w
 }

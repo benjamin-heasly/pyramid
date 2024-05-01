@@ -427,6 +427,8 @@ class PyramidContext():
                 buffer = self.named_buffers[route.buffer_name]
                 if isinstance(buffer.data, NumericEventList):
                     buffer_node_name = numeric_event_list_name
+                if isinstance(buffer.data, TextEventList):
+                    buffer_node_name = text_event_list_name
                 elif isinstance(buffer.data, SignalChunk):
                     buffer_node_name = signal_chunk_name
 

@@ -18,7 +18,7 @@ readers:
       result_name: delimiter # readers can expose results under various names, but CSV just has one.
     simulate_delay: True # wait between events, gui demonstration
   foo_reader:
-    class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
+    class: pyramid.neutral_zone.readers.csv.CsvTextEventReader
     args:
       result_name: foo
   bar_reader:
