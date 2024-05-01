@@ -27,8 +27,7 @@ def test_basic_info_plotter():
     }
     plotter = BasicInfoPlotter()
     with PlotFigureController([plotter], experiment_info, subject_info) as controller:
-        # TODO: most of these trial_numbers are off by one!
-        controller.plot_next(trial, trial_number=1)
+        controller.plot_next(trial, trial_number=0)
         controller.update()
 
         assert plotter.static_table[0, 0].get_text().get_text() == "experimenter"
@@ -38,7 +37,7 @@ def test_basic_info_plotter():
 
         assert plotter.trials_table[0, 0].get_text().get_text() == "pyramid elapsed:"
         assert plotter.trials_table[1, 0].get_text().get_text() == "trial number:"
-        assert plotter.trials_table[1, 1].get_text().get_text() == "1"
+        assert plotter.trials_table[1, 1].get_text().get_text() == "0"
         assert plotter.trials_table[2, 0].get_text().get_text() == "trial start:"
         assert plotter.trials_table[2, 1].get_text().get_text() == "0.000 sec"
         assert plotter.trials_table[3, 0].get_text().get_text() == "trial wrt:"
@@ -58,14 +57,14 @@ def test_numeric_events_plotter():
     trial_1.add_buffer_data("baz", NumericEventList(np.empty([0, 2])))
     plotter = NumericEventsPlotter(match_pattern="foo|bar")
     with PlotFigureController([plotter]) as controller:
-        controller.plot_next(trial_0, trial_number=1)
+        controller.plot_next(trial_0, trial_number=0)
         controller.update()
         assert len(plotter.history) == 1
         assert plotter.history[0]["foo"] == trial_0.numeric_events["foo"]
         assert plotter.history[0]["bar"] == trial_0.numeric_events["bar"]
         assert "baz" not in plotter.history[0]
 
-        controller.plot_next(trial_1, trial_number=2)
+        controller.plot_next(trial_1, trial_number=1)
         controller.update()
         assert len(plotter.history) == 2
         assert plotter.history[0]["foo"] == trial_0.numeric_events["foo"]
@@ -202,14 +201,14 @@ def test_signal_chunks_plotter():
     )
     plotter = SignalChunksPlotter(match_pattern="foo|bar", channel_ids=[10, 11, 12])
     with PlotFigureController([plotter]) as controller:
-        controller.plot_next(trial_0, trial_number=1)
+        controller.plot_next(trial_0, trial_number=0)
         controller.update()
         assert len(plotter.history) == 1
         assert plotter.history[0]["foo"] == trial_0.signals["foo"]
         assert plotter.history[0]["bar"] == trial_0.signals["bar"]
         assert "baz" not in plotter.history[0]
 
-        controller.plot_next(trial_1, trial_number=2)
+        controller.plot_next(trial_1, trial_number=1)
         controller.update()
         assert len(plotter.history) == 2
         assert plotter.history[0]["foo"] == trial_0.signals["foo"]
@@ -233,7 +232,7 @@ def test_enhancement_times_plotter():
     trial_1.add_enhancement("quux", 6.2, "value")
     plotter = EnhancementTimesPlotter(match_pattern="foo|bar")
     with PlotFigureController([plotter]) as controller:
-        controller.plot_next(trial_0, trial_number=1)
+        controller.plot_next(trial_0, trial_number=0)
         controller.update()
         assert len(plotter.history) == 1
         assert plotter.history[0]["foo"] == trial_0.get_enhancement("foo")
@@ -241,7 +240,7 @@ def test_enhancement_times_plotter():
         assert "baz" not in plotter.history[0]
         assert "quuz" not in plotter.history[0]
 
-        controller.plot_next(trial_1, trial_number=2)
+        controller.plot_next(trial_1, trial_number=1)
         controller.update()
         assert len(plotter.history) == 2
         assert plotter.history[0]["foo"] == trial_0.get_enhancement("foo")
@@ -272,7 +271,7 @@ def test_enhancement_xy_plotter():
         xy_groups={"bar": {"x": "y"}}
     )
     with PlotFigureController([plotter]) as controller:
-        controller.plot_next(trial_0, trial_number=1)
+        controller.plot_next(trial_0, trial_number=0)
         controller.update()
         assert len(plotter.history) == 1
         assert plotter.history[0]["foox"] == (trial_0.get_enhancement("foox"), trial_0.get_enhancement("fooy"))
@@ -281,7 +280,7 @@ def test_enhancement_xy_plotter():
         assert "bazx" not in plotter.history[0]
         assert "bazy" not in plotter.history[0]
 
-        controller.plot_next(trial_1, trial_number=2)
+        controller.plot_next(trial_1, trial_number=1)
         controller.update()
         assert len(plotter.history) == 2
         assert plotter.history[0]["foox"] == (trial_0.get_enhancement("foox"), trial_0.get_enhancement("fooy"))
@@ -311,8 +310,8 @@ def test_spike_events_plotter():
         value_selection=0
     )
     with PlotFigureController([plotter]) as controller:
-        controller.plot_next(trial_0, trial_number=1)
+        controller.plot_next(trial_0, trial_number=0)
         controller.update()
 
-        controller.plot_next(trial_1, trial_number=2)
+        controller.plot_next(trial_1, trial_number=1)
         controller.update()
