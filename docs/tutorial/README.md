@@ -88,3 +88,22 @@ https://psychopy.org/builder/concepts.html
 https://psychopy.org/builder/routines.html
 https://psychopy.org/builder/flow.html
 https://psychopy.org/builder/gotchas.html
+
+## builder
+
+The Builder is painful to me, and learning from videos is so damn slow.
+This is the wrong direction for the field.
+Solve these sub-problems reasonable in code.
+Learn to code against reasonably implemented libraries.
+Not, throw tons of shit code against the wall and hide it behind a GUI.
+And teach people that coding sucks so don't bother learning.
+I hate this shit.
+
+## coding
+
+I'll try from these docs instead.
+https://workshops.psychopy.org/
+
+"Coding an experiment in Python"
+https://drive.google.com/drive/folders/17KfU3r8rVH-iiScOVl3dVZW3LGyLe8fs?usp=sharing
+
