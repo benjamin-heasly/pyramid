@@ -89,21 +89,56 @@ https://psychopy.org/builder/routines.html
 https://psychopy.org/builder/flow.html
 https://psychopy.org/builder/gotchas.html
 
-## builder
-
-The Builder is painful to me, and learning from videos is so damn slow.
-This is the wrong direction for the field.
-Solve these sub-problems reasonable in code.
-Learn to code against reasonably implemented libraries.
-Not, throw tons of shit code against the wall and hide it behind a GUI.
-And teach people that coding sucks so don't bother learning.
-I hate this shit.
-
 ## coding
 
-I'll try from these docs instead.
+I'll try from these docs.
 https://workshops.psychopy.org/
 
 "Coding an experiment in Python"
 https://drive.google.com/drive/folders/17KfU3r8rVH-iiScOVl3dVZW3LGyLe8fs?usp=sharing
 
+I strongly prefer this way of creating a task.
+But it's probably not representative of what others would want to feed into Pyramd, so kind of pointless.
+
+## builder
+
+Instead, I put together a task in the builder.
+Use the mouse to click, following instructions.
+Don't get foolded by silly miscue arrows!
+Save the mouse clicks and position trails.
+
+These tutorials were helpful for putting to gether a "click on stuff" example.
+
+Using Multiple Mouse Clicks in One Trial in PsychoPy 🖱️:
+https://www.youtube.com/watch?v=E4LcWESNu10&ab_channel=PsychoPy
+
+Accuracy Feedback From Key Presses & Mouse Clicks (Touchscreen Compatible):
+https://www.youtube.com/watch?v=o6gG1LRngmU&ab_channel=PsychoPy
+
+I changed the mouse component -> Data to:
+ - Save mouse state every frame
+ - Time relative to experiment
+
+This should give data representative of PsychoPy to deal with in Pyramid.
+
+I'm thinking we might need a custom reader for PsychoPy mouse data.
+
+We get lots of mouse samples for x, y, and button states.
+We also get lots of explicit timestamps.
+With time "relative to experiment", the timestamps look comparable to other columns like trial.started.
+
+So, pretty explicit.
+To make these into a Pyramid signal, maybe:
+ - read numeric events as [mouse.time, mouse.x, mouse.y, mouse button]
+ - make a Transformer to go from NumericEventList -> SignalChunk
+ - divide and round timestamps to sample numbers at a fixed sample rate (the psychopy frame rate)
+ - let sample number zero be experiment time zero
+ - look for gaps in each chunk read, to pad with zero? previous?
+ - keep track of last sample number chunks read
+ - pad gaps between reads with zero
+
+For numeric and text events, maybe existing CSV readers will work.
+Maybe want to allow selecting relevant columns, though.
+ - which column has the time?
+ - which column(s) have numberic event data?
+ - which column has text data?
