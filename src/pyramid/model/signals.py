@@ -50,12 +50,16 @@ class SignalChunk(BufferData):
         cls,
         sample_frequency: float = None,
         first_sample_time: float = None,
-        channel_ids: list[str | int] = [],
+        channel_ids: list[str | int] = None,
         dtype = np.float64
     ) -> Self:
         """Convenience for creating an empty signal chunk with given params and data type."""
+        if channel_ids is None:
+            num_channels = 0
+        else:
+            num_channels = len(channel_ids)
         return SignalChunk(
-            np.empty([0, len(channel_ids)], dtype=dtype),
+            np.empty([0, num_channels], dtype=dtype),
             sample_frequency,
             first_sample_time,
             channel_ids

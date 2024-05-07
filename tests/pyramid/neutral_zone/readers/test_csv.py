@@ -63,21 +63,33 @@ def test_numeric_events_empty_file(fixture_path):
 
 def test_numeric_events_with_header_line(fixture_path):
     csv_file = Path(fixture_path, 'numeric_events', 'header_line.csv').as_posix()
-    with CsvNumericEventReader(csv_file) as reader:
+
+    # Treat the first line as a header, use this to swap the order of value columns.
+    column_selector = ["time", "value 2", "value 1"]
+    with CsvNumericEventReader(csv_file, first_row_is_header=True, column_selector=column_selector) as reader:
+        # Should sort out column headers and selection by name when entering the context.
+        assert reader.reader.first_row == ["time", "value 1", "value 2"]
+        assert reader.reader.column_indices == [0, 2, 1]
+
+        # Should also sort out columns during get_initial().
+        # Try the same again, selecting numeric indices rather than string names.
+        reader.reader.first_row = None
+        reader.reader.column_indices = None
+        reader.reader.column_selector = [0, 2, 1]
         initial = reader.get_initial()
         expected_initial = {
             reader.result_name: NumericEventList.empty(2)
         }
         assert initial == expected_initial
 
-        # Consume the header line.
-        assert reader.read_next() is None
+        assert reader.reader.first_row == ["time", "value 1", "value 2"]
+        assert reader.reader.column_indices == [0, 2, 1]
 
-        # Read 32 lines...
+        # Read 32 lines with value columns swapped...
         for t in range(32):
             result = reader.read_next()
             event_list = result[reader.result_name]
-            expected_event_list = NumericEventList(np.array([[t, t + 100, t + 1000]]))
+            expected_event_list = NumericEventList(np.array([[t, t + 1000, t + 100]]))
             assert event_list == expected_event_list
 
         # ...then be done.
@@ -96,6 +108,12 @@ def test_numeric_events_with_no_header_line(fixture_path):
             reader.result_name: NumericEventList.empty(2)
         }
         assert initial == expected_initial
+
+        # With no header row, get_initial() just peeks at the first data row.
+        assert reader.reader.first_row == ["0", "100", "1000"]
+
+        # By default, don't try to select specific columns.
+        assert reader.reader.column_indices is None
 
         # Read 32 lines...
         for t in range(32):
@@ -131,6 +149,42 @@ def test_numeric_events_skip_nonnumeric_lines(fixture_path):
                 event_list = result[reader.result_name]
                 expected_event_list = NumericEventList(np.array([[t, t + 100, t + 1000]]))
                 assert event_list == expected_event_list
+
+        # ...then be done.
+        with raises(StopIteration) as exception_info:
+            reader.read_next()
+        assert exception_info.errisinstance(StopIteration)
+
+    assert reader.reader.file_stream is None
+
+
+def test_numeric_events_with_list_data(fixture_path):
+    csv_file = Path(fixture_path, 'numeric_events', 'list_data.csv').as_posix()
+    with CsvNumericEventReader(csv_file, first_row_is_header=True, unpack_lists=True) as reader:
+        initial = reader.get_initial()
+        expected_initial = {
+            reader.result_name: NumericEventList.empty(2)
+        }
+        assert initial == expected_initial
+
+        # Read 9 CSV lines, where some cells are packed with lists of data...
+        result_1 = reader.read_next()[reader.result_name]
+        assert result_1 == NumericEventList(np.array([[0, 100, 1000], [1, 101, 1001], [2, 102, 1002]]))
+        result_2 = reader.read_next()[reader.result_name]
+        assert result_2 == NumericEventList(np.array([[3, 103, 1003]]))
+        assert reader.read_next() is None
+        result_4 = reader.read_next()[reader.result_name]
+        assert result_4 == NumericEventList.empty(2)
+        result_5 = reader.read_next()[reader.result_name]
+        assert result_5 == NumericEventList(np.array([[4, 104, 1004], [5, 105, 1005], [6, 106, 1006], [7, 107, 1007]]))
+        result_6 = reader.read_next()[reader.result_name]
+        assert result_6 == NumericEventList(np.array([[8, 108, 1008], [9, 109, 1009]]))
+        result_7 = reader.read_next()[reader.result_name]
+        assert result_7 == NumericEventList(np.array([[10, 110, 1010]]))
+        result_8 = reader.read_next()[reader.result_name]
+        assert result_8 == NumericEventList(np.array([[11, 111, 1011]]))
+        result_9 = reader.read_next()[reader.result_name]
+        assert result_9 == NumericEventList(np.array([[12, 112, 1012], [13, 113, 1013]]))
 
         # ...then be done.
         with raises(StopIteration) as exception_info:
@@ -189,21 +243,33 @@ def test_text_events_empty_file(fixture_path):
 
 def test_text_events_with_header_line(fixture_path):
     csv_file = Path(fixture_path, 'text_events', 'header_line.csv').as_posix()
-    with CsvTextEventReader(csv_file) as reader:
+
+    # Treat the first line as a header, use this to select the second column for text values.
+    column_selector = ["time", "value 2"]
+    with CsvTextEventReader(csv_file, first_row_is_header=True, column_selector=column_selector) as reader:
+        # Should sort out column headers and selection by name when entering the context.
+        assert reader.reader.first_row == ["time", "value 1", "value 2"]
+        assert reader.reader.column_indices == [0, 2]
+
+        # Should also sort out columns during get_initial().
+        # Try the same again, selecting numeric indices rather than string names.
+        reader.reader.first_row = None
+        reader.reader.column_indices = None
+        reader.reader.column_selector = [0, 2]
         initial = reader.get_initial()
         expected_initial = {
             reader.result_name: TextEventList.empty()
         }
         assert initial == expected_initial
 
-        # Consume the header line.
-        assert reader.read_next() is None
+        assert reader.reader.first_row == ["time", "value 1", "value 2"]
+        assert reader.reader.column_indices == [0, 2]
 
-        # Read first and second column from 32 lines...
+        # Read first and third column from 32 lines...
         for t in range(32):
             result = reader.read_next()
             event_list = result[reader.result_name]
-            expected_event_list = TextEventList(np.array([t]), np.array([str(t+100)], dtype=np.str_))
+            expected_event_list = TextEventList(np.array([t]), np.array([str(t+1000)], dtype=np.str_))
             assert event_list == expected_event_list
 
         # ...then be done.
@@ -222,6 +288,12 @@ def test_text_events_with_no_header_line(fixture_path):
             reader.result_name: TextEventList.empty()
         }
         assert initial == expected_initial
+
+        # With no header row, get_initial() just peeks at the first data row.
+        assert reader.reader.first_row == ["0", "100", "1000"]
+
+        # By default, don't try to select specific columns.
+        assert reader.reader.column_indices is None
 
         # Read first and second column from 32 lines...
         for t in range(32):
@@ -314,7 +386,7 @@ def test_signals_empty_file(fixture_path):
         with raises(StopIteration) as exception_info:
             reader.read_next()
 
-    expected_initial = {reader.result_name: SignalChunk.empty(reader.sample_frequency, 0.0, [])}
+    expected_initial = {reader.result_name: SignalChunk.empty(reader.sample_frequency, 0.0, None)}
     assert initial == expected_initial
     assert exception_info.errisinstance(StopIteration)
     assert reader.reader.file_stream is None
@@ -433,6 +505,112 @@ def test_signals_skip_nonnumeric_lines(fixture_path):
             assert np.array_equal(signal_chunk.get_channel_values("a"), sample_times)
             assert np.array_equal(signal_chunk.get_channel_values("b"), 100 - sample_times * 0.1)
             assert np.array_equal(signal_chunk.get_channel_values("c"), sample_times * 2 - 1000)
+
+        # ...then be done.
+        with raises(StopIteration) as exception_info:
+            reader.read_next()
+        assert exception_info.errisinstance(StopIteration)
+
+    assert reader.reader.file_stream is None
+
+
+def test_signals_select_columns(fixture_path):
+    csv_file = Path(fixture_path, 'signals', 'header_line.csv').as_posix()
+
+    # Select a subset of columns, out of order, with name aliases.
+    with CsvSignalReader(csv_file, column_selector=["c", "a"], channel_ids=["cee", "aye"]) as reader:
+        # The reader should sort out columns from the CSV header, when entering context.
+        assert reader.reader.first_row == ["a", "b", "c"]
+        assert reader.reader.column_indices == [2, 0]
+        assert reader.channel_ids == ["cee", "aye"]
+
+        # The reader also should sort out columns during get_initial().
+        # So try it again, this time selecting columns by index rather than name.
+        reader.reader.first_row = None
+        reader.reader.column_indices = None
+        reader.reader.column_selector = [2, 0]
+        initial = reader.get_initial()
+        expected_initial = {
+            reader.result_name: SignalChunk.empty(
+                reader.sample_frequency,
+                first_sample_time=0.0,
+                channel_ids=["cee", "aye"]
+            )
+        }
+        assert initial == expected_initial
+
+        assert reader.reader.first_row == ["a", "b", "c"]
+        assert reader.reader.column_indices == [2, 0]
+        assert reader.channel_ids == ["cee", "aye"]
+
+        # Read 15 chunks of 10 lines each...
+        for chunk_index in range(15):
+            chunk_time = chunk_index * 10
+            assert reader.next_sample_time == chunk_time
+
+            result = reader.read_next()
+            signal_chunk = result[reader.result_name]
+            assert signal_chunk.sample_count() == 10
+
+            sample_times = signal_chunk.get_times()
+            assert np.array_equal(sample_times, np.array(range(chunk_time, chunk_time + 10)))
+            assert np.array_equal(signal_chunk.get_channel_values("cee"), sample_times * 2 - 1000)
+            assert np.array_equal(signal_chunk.get_channel_values("aye"), sample_times)
+
+        # ...then be done.
+        with raises(StopIteration) as exception_info:
+            reader.read_next()
+        assert exception_info.errisinstance(StopIteration)
+
+    assert reader.reader.file_stream is None
+
+
+def test_signals_with_list_data(fixture_path):
+    csv_file = Path(fixture_path, 'signals', 'list_data.csv').as_posix()
+    with CsvSignalReader(csv_file, lines_per_chunk=1, unpack_lists=True) as reader:
+        initial = reader.get_initial()
+        expected_initial = {
+            reader.result_name: SignalChunk.empty(
+                reader.sample_frequency,
+                first_sample_time=0.0,
+                channel_ids=["a", "b", "c"]
+            )
+        }
+        assert initial == expected_initial
+
+        # Read 6 CSV lines, where some cells are packed with lists of data...
+        result_1 = reader.read_next()[reader.result_name]
+        sample_times = result_1.get_times()
+        assert np.array_equal(sample_times, [0,1,2,3,4,5,6,7,8,9])
+        assert np.array_equal(result_1.get_channel_values("a"), sample_times)
+        assert np.array_equal(result_1.get_channel_values("b"), 100 - sample_times * 0.1)
+        assert np.array_equal(result_1.get_channel_values("c"), sample_times * 2 - 1000)
+
+        result_2 = reader.read_next()[reader.result_name]
+        sample_times = result_2.get_times()
+        assert np.array_equal(sample_times, [10])
+        assert np.array_equal(result_2.get_channel_values("a"), sample_times)
+        assert np.array_equal(result_2.get_channel_values("b"), 100 - sample_times * 0.1)
+        assert np.array_equal(result_2.get_channel_values("c"), sample_times * 2 - 1000)
+
+        # result_3 would be here, but gets automatically skipped during next read.
+
+        result_4 = reader.read_next()[reader.result_name]
+        assert result_4.sample_count() == 0
+
+        result_5 = reader.read_next()[reader.result_name]
+        sample_times = result_5.get_times()
+        assert np.array_equal(sample_times, [11,12,13,14,15,16,17,18,19])
+        assert np.array_equal(result_5.get_channel_values("a"), sample_times)
+        assert np.array_equal(result_5.get_channel_values("b"), 100 - sample_times * 0.1)
+        assert np.array_equal(result_5.get_channel_values("c"), sample_times * 2 - 1000)
+
+        result_6 = reader.read_next()[reader.result_name]
+        sample_times = result_6.get_times()
+        assert np.array_equal(sample_times, [20])
+        assert np.array_equal(result_6.get_channel_values("a"), sample_times)
+        assert np.array_equal(result_6.get_channel_values("b"), 100 - sample_times * 0.1)
+        assert np.array_equal(result_6.get_channel_values("c"), sample_times * 2 - 1000)
 
         # ...then be done.
         with raises(StopIteration) as exception_info:
