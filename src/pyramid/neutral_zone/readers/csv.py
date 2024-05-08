@@ -6,11 +6,15 @@ import csv
 import numpy as np
 
 from pyramid.file_finder import FileFinder
-from pyramid.model.model import BufferData
 from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
 from pyramid.neutral_zone.readers.readers import Reader
 
+# TODO: a "wide csv" event reader?
+#   - one csv to read from
+#   - buffer name -> tuple of columns to become numeric events (time_column, value_column, value_column, ...)
+#   - buffer name -> pair of columns to become text events (time_column, text_column)
+#   - wrap collections of existing csv readers?
 
 class CsvReader():
     """A shared util to iterate through rows of a CSV, manage context state, etc."""
@@ -49,7 +53,9 @@ class CsvReader():
 
     def __enter__(self) -> Self:
         # See https://docs.python.org/3/library/csv.html#id3 for why this has newline=''
-        self.file_stream = open(self.csv_file, mode='r', newline='')
+        # The encoding "utf-8-sig" means treat as utf-8, and ignore any (discouraged!) BOM prefix bytes.
+        # https://docs.python.org/3/library/codecs.html
+        self.file_stream = open(self.csv_file, mode='r', newline='', encoding='utf-8-sig')
         self.csv_reader = csv.reader(self.file_stream, self.dialect, **self.fmtparams)
         if (self.first_row_is_header):
             try:
@@ -97,7 +103,7 @@ class CsvReader():
         This is useful to discover header data before opening the context for reading.
         """
         try:
-            with open(self.csv_file, mode='r', newline='') as f:
+            with open(self.csv_file, mode='r', newline='', encoding='utf-8-sig') as f:
                 reader = csv.reader(f, self.dialect, **self.fmtparams)
                 self.first_row = reader.__next__()
                 self.find_columns()
