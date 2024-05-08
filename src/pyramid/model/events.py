@@ -27,7 +27,7 @@ class NumericEventList(BufferData):
             return False
 
     @classmethod
-    def empty(cls, values_per_event: int = 1, dtype = np.float64) -> Self:
+    def empty(cls, values_per_event: int = 1, dtype=np.float64) -> Self:
         """Convenience for creating an empty event list of given width and data type."""
         column_count = 1 + values_per_event
         return NumericEventList(np.empty([0, column_count], dtype=dtype))
@@ -89,9 +89,12 @@ class NumericEventList(BufferData):
         Pass in value_index>0 to use a different value per event.
         """
         rows_in_range = self.get_time_selector(start_time, end_time)
-        value_column = value_index + 1
-        matching_rows = (self.event_data[:, value_column] == value)
-        return self.event_data[rows_in_range & matching_rows, 0]
+        if value is None:
+            return self.event_data[rows_in_range, 0]
+        else:
+            value_column = value_index + 1
+            matching_rows = (self.event_data[:, value_column] == value)
+            return self.event_data[rows_in_range & matching_rows, 0]
 
     def apply_offset_then_gain(self, offset: float = 0, gain: float = 1, value_index: int = 0) -> None:
         """Transform all event data by a constant gain and offset.
@@ -203,7 +206,7 @@ class TextEventList(BufferData):
             return False
 
     @classmethod
-    def empty(cls, dtype = np.str_) -> Self:
+    def empty(cls, dtype=np.str_) -> Self:
         """Convenience for creating an empty event list with given text data type."""
         return TextEventList(np.empty([0,]), np.empty([0,], dtype=dtype))
 
@@ -266,8 +269,11 @@ class TextEventList(BufferData):
         This ignores value_index and always searches the text_data array.
         """
         rows_in_range = self.get_time_selector(start_time, end_time)
-        matching_rows = (self.text_data == value)
-        return self.timestamp_data[rows_in_range & matching_rows]
+        if value is None:
+            return self.timestamp_data[rows_in_range]
+        else:
+            matching_rows = (self.text_data == value)
+            return self.timestamp_data[rows_in_range & matching_rows]
 
     def event_count(self) -> int:
         """Get the number of events in the list -- the length of the text event data."""

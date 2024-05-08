@@ -151,7 +151,10 @@ class SignalChunk(BufferData):
         value_index should be a raw index into the data, not a string or other channel_id.
         """
         (_, rows_in_range) = self.get_time_selector(start_time, end_time)
-        matching_rows = (self.sample_data[:, value_index] == value)
+        if value is None:
+            matching_rows = np.ones((self.sample_count(),), dtype=np.bool_)
+        else:
+            matching_rows = (self.sample_data[:, value_index] == value)
         sample_indexes = np.nonzero(rows_in_range & matching_rows)[0]
         sample_offsets = sample_indexes / self.sample_frequency
         sample_times = self.first_sample_time + sample_offsets

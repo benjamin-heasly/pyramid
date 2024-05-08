@@ -194,6 +194,45 @@ def test_numeric_events_with_list_data(fixture_path):
     assert reader.reader.file_stream is None
 
 
+def test_numeric_events_timestamp_only(fixture_path):
+    csv_file = Path(fixture_path, 'numeric_events', 'header_line.csv').as_posix()
+
+    # Treat the first line as a header, use this to select just the timestamp column
+    column_selector = ["time"]
+    with CsvNumericEventReader(csv_file, first_row_is_header=True, column_selector=column_selector) as reader:
+        # Should sort out column headers and selection by name when entering the context.
+        assert reader.reader.first_row == ["time", "value 1", "value 2"]
+        assert reader.reader.column_indices == [0]
+
+        # Should also sort out columns during get_initial().
+        # Try the same again, selecting numeric indices rather than string names.
+        reader.reader.first_row = None
+        reader.reader.column_indices = None
+        reader.reader.column_selector = [0]
+        initial = reader.get_initial()
+        expected_initial = {
+            reader.result_name: NumericEventList.empty(0)
+        }
+        assert initial == expected_initial
+
+        assert reader.reader.first_row == ["time", "value 1", "value 2"]
+        assert reader.reader.column_indices == [0]
+
+        # Read 32 lines with value columns swapped...
+        for t in range(32):
+            result = reader.read_next()
+            event_list = result[reader.result_name]
+            expected_event_list = NumericEventList(np.array([[t]]))
+            assert event_list == expected_event_list
+
+        # ...then be done.
+        with raises(StopIteration) as exception_info:
+            reader.read_next()
+        assert exception_info.errisinstance(StopIteration)
+
+    assert reader.reader.file_stream is None
+
+
 def test_text_events_equality():
     foo_reader_1 = CsvTextEventReader("foo.foo")
     foo_reader_2 = CsvTextEventReader("foo.foo", result_name="different")

@@ -106,7 +106,7 @@ class TrialDelimiter():
     def __init__(
         self,
         start_buffer: Buffer,
-        start_value: float,
+        start_value: Any,
         start_value_index: int = 0,
         start_time: float = 0.0,
         trial_count: int = 0,
@@ -272,7 +272,7 @@ class TrialExtractor():
     def __init__(
         self,
         wrt_buffer: Buffer,
-        wrt_value: float,
+        wrt_value: Any,
         wrt_value_index: int = 0,
         named_buffers: dict[str, Buffer] = {},
         enhancers: dict[TrialEnhancer, TrialExpression] = {},

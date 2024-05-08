@@ -105,6 +105,8 @@ class BufferData():
     ) -> np.ndarray:
         """Find times when a given value occurred.
 
+        If the given value is None, implementations should return the times of all buffered data.
+
         Implementations that store scalar values should look for the given 
         value in their backing data and can ignore the optional value_index.
         Implementations that store non-scalar values, perhaps with multiple columns per time,

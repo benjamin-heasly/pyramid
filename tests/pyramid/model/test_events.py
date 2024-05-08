@@ -18,6 +18,7 @@ def test_numeric_list_getters():
     assert np.array_equal(event_list.get_values(end_time=60), 10*np.array(range(60)))
     assert np.array_equal(event_list.get_values(start_time=40, end_time=60), 10*np.array(range(40, 60)))
 
+    assert np.array_equal(event_list.get_times_of(None), event_list.get_times())
     assert np.array_equal(event_list.get_times_of(0.0), np.array([0.0]))
     assert np.array_equal(event_list.get_times_of(10.0), np.array([1.0]))
     assert np.array_equal(event_list.get_times_of(990.0), np.array([99.0]))
@@ -183,6 +184,7 @@ def test_text_list_getters():
     assert np.array_equal(event_list.get_values(end_time=60), [str(t) for t in range(60)])
     assert np.array_equal(event_list.get_values(start_time=40, end_time=60), [str(t) for t in range(40, 60)])
 
+    assert np.array_equal(event_list.get_times_of(None), event_list.timestamp_data)
     assert np.array_equal(event_list.get_times_of('0'), np.array([0.0]))
     assert np.array_equal(event_list.get_times_of('1'), np.array([1.0]))
     assert np.array_equal(event_list.get_times_of('99'), np.array([99.0]))
