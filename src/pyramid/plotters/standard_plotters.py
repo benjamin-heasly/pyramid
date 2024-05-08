@@ -242,16 +242,17 @@ class TextEventsPlotter(Plotter):
         self.history = self.history[-self.history_size:]
 
         # Show rolling history.
-        row_colors = [name_to_color(row[1]) for row in self.history]
-        self.text_table.remove()
-        self.text_table = self.ax.table(
-            cellText=self.history,
-            colLabels=self.column_labels,
-            colWidths=self.column_widths,
-            rowColours=row_colors,
-            cellLoc="left",
-            loc="center"
-        )
+        if self.history:
+            row_colors = [name_to_color(row[1]) for row in self.history]
+            self.text_table.remove()
+            self.text_table = self.ax.table(
+                cellText=self.history,
+                colLabels=self.column_labels,
+                colWidths=self.column_widths,
+                rowColours=row_colors,
+                cellLoc="left",
+                loc="center"
+            )
 
     def clean_up(self, fig: Figure) -> None:
         self.history = []

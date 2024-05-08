@@ -95,8 +95,6 @@ def test_text_events_plotter_no_filter():
 
 def test_text_events_plotter_with_filter():
     trial_0 = Trial(0.0, 1.0, 0.5)
-    trial_0.add_buffer_data("foo", TextEventList(np.array(range(2)), np.array(range(2), dtype=np.str_)))
-    trial_0.add_buffer_data("bar", TextEventList(np.array(range(8)), np.array(range(8), dtype=np.str_)))
     trial_0.add_buffer_data("baz", TextEventList(np.array(range(1)), np.array(range(1), dtype=np.str_)))
     trial_1 = Trial(1.0, 2.0, 1.5)
     trial_1.add_buffer_data("foo", TextEventList(np.array(range(2)), np.array(range(2), dtype=np.str_)))
@@ -104,8 +102,12 @@ def test_text_events_plotter_with_filter():
     trial_1.add_buffer_data("baz", TextEventList(np.array(range(1)), np.array(range(1), dtype=np.str_)))
     trial_2 = Trial(2.0, 3.0, 2.5)
     trial_2.add_buffer_data("foo", TextEventList(np.array(range(2)), np.array(range(2), dtype=np.str_)))
-    trial_2.add_buffer_data("bar", TextEventList(np.array(range(3)), np.array(range(3), dtype=np.str_)))
+    trial_2.add_buffer_data("bar", TextEventList(np.array(range(8)), np.array(range(8), dtype=np.str_)))
     trial_2.add_buffer_data("baz", TextEventList(np.array(range(1)), np.array(range(1), dtype=np.str_)))
+    trial_3 = Trial(3.0, 4.0, 3.5)
+    trial_3.add_buffer_data("foo", TextEventList(np.array(range(2)), np.array(range(2), dtype=np.str_)))
+    trial_3.add_buffer_data("bar", TextEventList(np.array(range(3)), np.array(range(3), dtype=np.str_)))
+    trial_3.add_buffer_data("baz", TextEventList(np.array(range(1)), np.array(range(1), dtype=np.str_)))
     plotter = TextEventsPlotter(match_pattern="foo|bar")
     with PlotFigureController([plotter]) as controller:
 
@@ -114,26 +116,30 @@ def test_text_events_plotter_with_filter():
 
         controller.plot_next(trial_0, trial_number=0)
         controller.update()
-        assert len(plotter.history) == 10
-        trials = [row[0] for row in plotter.history]
-        assert trials == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-        buffers = [row[1] for row in plotter.history]
-        assert buffers == ["foo", "foo", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "bar"]
+        assert len(plotter.history) == 0
 
         controller.plot_next(trial_1, trial_number=1)
         controller.update()
-        assert len(plotter.history) == 20
+        assert len(plotter.history) == 10
         trials = [row[0] for row in plotter.history]
-        assert trials == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        assert trials == [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
         buffers = [row[1] for row in plotter.history]
-        assert buffers == ["foo", "foo", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "bar",
-                           "foo", "foo", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "bar"]
+        assert buffers == ["foo", "foo", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "bar"]
 
         controller.plot_next(trial_2, trial_number=2)
         controller.update()
         assert len(plotter.history) == 20
         trials = [row[0] for row in plotter.history]
-        assert trials == [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2]
+        assert trials == [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
+        buffers = [row[1] for row in plotter.history]
+        assert buffers == ["foo", "foo", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "bar",
+                           "foo", "foo", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "bar"]
+
+        controller.plot_next(trial_3, trial_number=3)
+        controller.update()
+        assert len(plotter.history) == 20
+        trials = [row[0] for row in plotter.history]
+        assert trials == [1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3]
         buffers = [row[1] for row in plotter.history]
         assert buffers == ["bar", "bar", "bar", "bar", "bar",
                            "foo", "foo", "bar", "bar", "bar", "bar", "bar", "bar", "bar", "bar",
