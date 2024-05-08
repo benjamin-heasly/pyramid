@@ -68,3 +68,77 @@ class SmashCase(Transformer):
         else:  # pragma: no cover
             logging.warning(f"SmashCase doesn't know how to apply to {data.__class__.__name__}")
             return data
+
+
+class SparseSignal(Transformer):
+    """Convert incoming numeric event lists into continuous signal chunks.
+
+    Gaps between samples will be filled with the given fill_with constant,
+    or interpolated if this is None (default).
+
+    Output signal chunks will all use the given sample_frequency and channel_ids.
+    """
+
+    def __init__(
+        self,
+        fill_with: float = None,
+        sample_frequency: float = None,
+        channel_ids: list[str | int] = None,
+        **kwargs
+    ) -> None:
+        self.fill_with = fill_with
+        self.sample_frequency = sample_frequency
+        self.channel_ids = channel_ids
+
+        self.sample_interval = 1 / sample_frequency
+        self.last_sample_time = None
+        self.last_sample_value = None
+
+    def transform(self, data: BufferData):
+        if not isinstance(data, NumericEventList):
+            logging.warning(f"SparseSignal doesn't know how to apply to {data.__class__.__name__}")
+            return data
+
+        dtype = data.event_data.dtype
+        if data.event_count() < 1:
+            return SignalChunk.empty(sample_frequency=self.sample_frequency, channel_ids=self.channel_ids, dtype=dtype)
+
+        # Figure out where to start this new signal chunk.
+        # Account for any gap since the last call to transform().
+        event_times = data.get_times()
+        first_event_time = event_times.min()
+        if self.last_sample_time is None:
+            new_chunk_start_time = first_event_time
+        else:
+            new_chunk_start_time = self.last_sample_time + self.sample_interval
+
+        # Build a signal chunk at the nominal frequency and deal in new event data wherever they fit.
+        new_offsets = np.uint64((event_times - new_chunk_start_time) * self.sample_frequency)
+        new_count = new_offsets.max() + np.uint64(1)
+        if self.fill_with is None:
+            complete_times = np.arange(new_count, dtype=np.float64) * self.sample_interval + new_chunk_start_time
+            if self.last_sample_time is None:
+                known_times = event_times
+            else:
+                known_times = np.concatenate([[self.last_sample_time], event_times])
+            new_data = np.zeros([new_count, data.values_per_event()], dtype=dtype)
+            for value_index in range(data.values_per_event()):
+                event_values = data.get_values(value_index=value_index)
+                if self.last_sample_value is None:
+                    known_values = event_values
+                else:
+                    known_values = np.concatenate([[self.last_sample_value[value_index]], event_values])
+                new_data[:, value_index] = np.interp(complete_times, known_times, known_values)
+        else:
+            new_data = np.full([new_count, data.values_per_event()], self.fill_with, dtype=dtype)
+            new_data[new_offsets] = data.event_data[:, 1:]
+
+        new_chunk = SignalChunk(
+            new_data,
+            sample_frequency=self.sample_frequency,
+            first_sample_time=new_chunk_start_time,
+            channel_ids=self.channel_ids,
+        )
+        self.last_sample_time = new_chunk.get_end_time()
+        self.last_sample_value = new_chunk.sample_data[-1,:]
+        return new_chunk

@@ -19,6 +19,13 @@ readers:
       column_selector: [trial.started]
       first_row_is_header: true
     simulate_delay: True
+  pause_started_reader:
+    class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
+    args:
+      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      result_name: pause_started
+      column_selector: [pause.started]
+      first_row_is_header: true
   trial_wrt_reader:
     class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
     args:
@@ -54,6 +61,23 @@ readers:
       result_name: clicked_name
       column_selector: [trial.stopped, mouse.clicked_name]
       first_row_is_header: true
+  moise_position_reader:
+    class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
+    args:
+      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      result_name: mouse_position
+      column_selector: [mouse.time, mouse.x, mouse.y]
+      unpack_lists: true
+      first_row_is_header: true
+    extra_buffers:
+      mouse_position:
+        reader_result_name: mouse_position
+        transformers:
+          - class: pyramid.neutral_zone.transformers.standard_transformers.SparseSignal
+            args:
+              fill_with: null
+              sample_frequency: 60
+              channel_ids: [x, y]
 trials:
   # How to delimit Trials in time, and how to align data within each trial.
   start_buffer: trial_started
@@ -64,3 +88,9 @@ plotters:
   # In "gui" mode, Pyramid will set up plotters and update each plotter after each trial.
   - class: pyramid.plotters.standard_plotters.BasicInfoPlotter
   - class: pyramid.plotters.standard_plotters.TextEventsPlotter
+  - class: pyramid.plotters.standard_plotters.SignalChunksPlotter
+    args:
+      xmin: -1.0
+      xmax: 10.0
+      match_pattern: mouse_position
+      ylabel: mouse position
