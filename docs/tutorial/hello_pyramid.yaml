@@ -1,0 +1,66 @@
+experiment:
+  # Basic info suitable for inclusion in eg an NWB file.
+  experimenter:
+    - Last, First M
+    - Last, First Middle
+  experiment_description: An PsychoPy demo experiment.
+  institution: University of Fiction
+  lab: The Fiction Lab
+  keywords:
+    - PsychoPy
+    - tutorial
+readers:
+  # This is getting verbose and repetetive for the "wide" style of CSV.
+  trial_started_reader:
+    class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
+    args:
+      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      result_name: trial_started
+      column_selector: [trial.started]
+      first_row_is_header: true
+    simulate_delay: True
+  trial_wrt_reader:
+    class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
+    args:
+      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      result_name: trial_wrt
+      column_selector: [cue.started]
+      first_row_is_header: true
+  prompt_reader:
+    class: pyramid.neutral_zone.readers.csv.CsvTextEventReader
+    args:
+      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      result_name: prompt
+      column_selector: [prompt.started, prompt_text]
+      first_row_is_header: true
+  cue_reader:
+    class: pyramid.neutral_zone.readers.csv.CsvTextEventReader
+    args:
+      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      result_name: cue
+      column_selector: [cue.started, cue_text]
+      first_row_is_header: true
+  correct_target_reader:
+    class: pyramid.neutral_zone.readers.csv.CsvTextEventReader
+    args:
+      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      result_name: correct_target
+      column_selector: [trial.started, correct_target]
+      first_row_is_header: true
+  clicked_name_reader:
+    class: pyramid.neutral_zone.readers.csv.CsvTextEventReader
+    args:
+      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      result_name: clicked_name
+      column_selector: [trial.stopped, mouse.clicked_name]
+      first_row_is_header: true
+trials:
+  # How to delimit Trials in time, and how to align data within each trial.
+  start_buffer: trial_started
+  start_value: null
+  wrt_buffer: trial_wrt
+  wrt_value: null
+plotters:
+  # In "gui" mode, Pyramid will set up plotters and update each plotter after each trial.
+  - class: pyramid.plotters.standard_plotters.BasicInfoPlotter
+  - class: pyramid.plotters.standard_plotters.TextEventsPlotter
