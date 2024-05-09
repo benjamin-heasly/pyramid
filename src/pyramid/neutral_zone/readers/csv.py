@@ -165,8 +165,8 @@ class CsvNumericEventReader(Reader):
     def parse_row(self, row) -> np.ndarray:
         # The row is a list of strings, one per column.
         if self.unpack_lists:
-            # Parse each string as a *list* of floats.
             # Get multiple events from this row.
+            # Parse each string as a *list* of floats.
             unpacked_row = [literal_eval(element) for element in row]
             if isinstance(unpacked_row[0], list):
                 # Assume all columns in this row are lists of the same size.
@@ -174,12 +174,12 @@ class CsvNumericEventReader(Reader):
                 # Transpose these to event list format like [[time, value], [time, value], [time, value]]
                 return np.array(unpacked_row).T
             else:
-                # Assume all columns in this row are scalars.
                 # Get one event from this row, after all.
+                # Assume all columns in this row are scalars.
                 return np.array([unpacked_row])
         else:
-            # Parse each string as a scalar float.
             # Get one event from this row.
+            # Parse each string as a scalar float.
             numeric_row = [float(element) for element in row]
             return np.array([numeric_row])
 
@@ -218,11 +218,13 @@ class CsvTextEventReader(Reader):
         first_row_is_header: bool = False,
         column_selector: list[str | int] = None,
         result_name: str = "events",
+        unpack_lists: bool = False,
         dialect: str = 'excel',
         **fmtparams
     ) -> None:
         self.reader = CsvReader(file_finder.find(csv_file), first_row_is_header, column_selector, dialect, **fmtparams)
         self.result_name = result_name
+        self.unpack_lists = unpack_lists
 
     def __eq__(self, other: object) -> bool:
         """Compare CSV readers field-wise, to support use of this class in tests."""
@@ -230,6 +232,7 @@ class CsvTextEventReader(Reader):
             return (
                 self.reader == other.reader
                 and self.result_name == other.result_name
+                and self.unpack_lists == other.unpack_lists
             )
         else:
             return False
@@ -246,14 +249,41 @@ class CsvTextEventReader(Reader):
     ) -> bool | None:
         return self.reader.__exit__(__exc_type, __exc_value, __traceback)
 
+    def parse_row(self, row) -> tuple[np.ndarray, np.ndarray]:
+        # The row is a pair of strings, one from the timestamp column, one from the text column.
+        if self.unpack_lists:
+            # Get multiple events from this row.
+            # Parse the string from each column as a *list* of floats or text values.
+            unpacked_row = [literal_eval(element) for element in row]
+            if isinstance(unpacked_row[1], list):
+                # The text column has a list of values.
+                text_data = np.array(unpacked_row[1], dtype=np.str_)
+                if isinstance(unpacked_row[0], list):
+                    # The timestamp column has a list of (corresponding!!) timestamps.
+                    timestamp_data = np.array(unpacked_row[0])
+                    return (timestamp_data, text_data)
+                else:
+                    # The timestamp column has a scalar to reuse across all text values.
+                    timestamp = unpacked_row[0]
+                    timestamp_data = np.full_like(text_data, timestamp, dtype=np.float64)
+                    return (timestamp_data, text_data)
+            else:
+                # The text column was not a list, get one event from this row after all.
+                return (np.array([unpacked_row[0]]), np.array([unpacked_row[1]], dtype=np.str_))
+        else:
+            # Get one event from this row.
+            # Parse the first string as a scalar float, take the second string as a text value.
+            timestamp = float(row[0])
+            text = row[1]
+            return (np.array([timestamp]), np.array([text], dtype=np.str_))
+
     def read_next(self) -> dict[str, TextEventList]:
         line_num = self.reader.csv_reader.line_num
         next_row = self.reader.next()
         try:
-            timestamp = float(next_row[0])
-            value = next_row[1]
+            (timestamp_data, text_data) = self.parse_row(next_row)
             return {
-                self.result_name: TextEventList(np.array([timestamp]), np.array([value], dtype=np.str_))
+                self.result_name: TextEventList(timestamp_data, text_data)
             }
         except ValueError as error:
             logging.info(f"Skipping CSV '{self.reader.csv_file}' line {line_num} {next_row} because {error.args}")
@@ -314,8 +344,8 @@ class CsvSignalReader(Reader):
     def parse_row(self, row) -> np.ndarray:
         # The row is a list of strings, one per column.
         if self.unpack_lists:
-            # Parse each string as a *list* of floats.
             # Get multiple signal samples from this row.
+            # Parse each string as a *list* of floats.
             unpacked_row = [literal_eval(element) for element in row]
             if isinstance(unpacked_row[0], list):
                 # Assume all columns in this row are lists of the same size.
@@ -323,12 +353,12 @@ class CsvSignalReader(Reader):
                 # Transpose these to signal chunk format like [[chan_a, chan_b], [chan_a, chan_b], [chan_a, chan_b]]
                 return np.array(unpacked_row).T
             else:
-                # Assume all columns in this row are scalars.
                 # Get one sample from this row, after all.
+                # Assume all columns in this row are scalars.
                 return np.array([unpacked_row])
         else:
-            # Parse each string as a scalar float.
             # Get one sample from this row.
+            # Parse each string as a scalar float.
             numeric_row = [float(element) for element in row]
             return np.array([numeric_row])
 

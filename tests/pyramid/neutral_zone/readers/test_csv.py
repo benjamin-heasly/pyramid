@@ -377,6 +377,38 @@ def test_text_events_skip_nonnumeric_timestamps(fixture_path):
     assert reader.reader.file_stream is None
 
 
+def test_text_events_with_list_data(fixture_path):
+    csv_file = Path(fixture_path, 'text_events', 'list_data.csv').as_posix()
+    with CsvTextEventReader(csv_file, first_row_is_header=True, unpack_lists=True) as reader:
+        initial = reader.get_initial()
+        expected_initial = {
+            reader.result_name: TextEventList.empty()
+        }
+        assert initial == expected_initial
+
+        # Read 7 CSV lines, where some cells are packed with lists of data...
+        result_1 = reader.read_next()[reader.result_name]
+        assert result_1 == TextEventList(np.array([0, 1, 2]), np.array(['zero', 'one', 'two'], dtype=np.str_))
+        result_2 = reader.read_next()[reader.result_name]
+        assert result_2 == TextEventList(np.array([4]), np.array(['four'], dtype=np.str_))
+        assert reader.read_next() is None
+        result_4 = reader.read_next()[reader.result_name]
+        assert result_4 == TextEventList(np.array([5]), np.array(['five'], dtype=np.str_))
+        result_5 = reader.read_next()[reader.result_name]
+        assert result_5 == TextEventList(np.array([6, 6, 6]), np.array(['six_a', 'six_b', 'six_c'], dtype=np.str_))
+        result_6 = reader.read_next()[reader.result_name]
+        assert result_6 == TextEventList(np.array([7]), np.array(['seven'], dtype=np.str_))
+        result_7 = reader.read_next()[reader.result_name]
+        assert result_7 == TextEventList(np.array([8]), np.array(['eight'], dtype=np.str_))
+
+        # ...then be done.
+        with raises(StopIteration) as exception_info:
+            reader.read_next()
+        assert exception_info.errisinstance(StopIteration)
+
+    assert reader.reader.file_stream is None
+
+
 def test_signals_equality():
     foo_reader_1 = CsvSignalReader("foo.foo")
     foo_reader_2 = CsvSignalReader("foo.foo", result_name="different")
@@ -620,7 +652,7 @@ def test_signals_with_list_data(fixture_path):
         # Read 6 CSV lines, where some cells are packed with lists of data...
         result_1 = reader.read_next()[reader.result_name]
         sample_times = result_1.get_times()
-        assert np.array_equal(sample_times, [0,1,2,3,4,5,6,7,8,9])
+        assert np.array_equal(sample_times, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         assert np.array_equal(result_1.get_channel_values("a"), sample_times)
         assert np.array_equal(result_1.get_channel_values("b"), 100 - sample_times * 0.1)
         assert np.array_equal(result_1.get_channel_values("c"), sample_times * 2 - 1000)
@@ -639,7 +671,7 @@ def test_signals_with_list_data(fixture_path):
 
         result_5 = reader.read_next()[reader.result_name]
         sample_times = result_5.get_times()
-        assert np.array_equal(sample_times, [11,12,13,14,15,16,17,18,19])
+        assert np.array_equal(sample_times, [11, 12, 13, 14, 15, 16, 17, 18, 19])
         assert np.array_equal(result_5.get_channel_values("a"), sample_times)
         assert np.array_equal(result_5.get_channel_values("b"), 100 - sample_times * 0.1)
         assert np.array_equal(result_5.get_channel_values("c"), sample_times * 2 - 1000)

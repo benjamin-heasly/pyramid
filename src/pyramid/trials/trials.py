@@ -234,7 +234,7 @@ class TrialExpression():
 
     Args:
         expression:     A string Python expression with trial enhancements as local variables, like "foo > 41" or "foo + bar"
-        default_value: Default value to return in case of error evaluating the expression (default is None)
+        default_value:  Default value to return in case of error evaluating the expression (default is None)
     """
 
     def __init__(

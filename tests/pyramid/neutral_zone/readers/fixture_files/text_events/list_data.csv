@@ -1,0 +1,8 @@
+time,value
+"[0, 1, 2]","['zero', 'one', 'two']"
+"[4]","['four']"
+bad, junk
+5,"['five']"
+6,"['six_a', 'six_b', 'six_c']"
+7,"'seven'"
+"[8]","['eight']"
