@@ -117,6 +117,18 @@ class BufferData():
         Callers can pass in end_time restrict to data strictly before end_time.
         """
 
+# TODO: several concise utility methods for BufferData -- for handy trial expressions.
+#   Times:
+#   - times()
+#   - times(value, value_index)
+#   - start()
+#   - end()
+#   Values:
+#   - values(value_index)
+#   - first(value_index)
+#   - last(value_index)
+#   - min(value_index)
+#   - max(value_index)
 
 class Buffer():
     """Hold data in a sliding window of time, smoothing any timing mismatch between Readers and Trials.

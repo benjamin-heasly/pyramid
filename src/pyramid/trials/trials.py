@@ -234,7 +234,7 @@ class TrialExpression():
 
     Args:
         expression:     A string Python expression with trial buffers and enhancements as local variables, like:
-                            - "numeric_events['my_buffer'].get_times_of(42)"
+                            - "my_buffer.get_times_of(42)"
                             - "my_enhancement > 41"
                             - "my_enhancement + other_enhancement"
         default_value:  Default value to return in case of error evaluating the expression (default is None)
@@ -261,6 +261,7 @@ class TrialExpression():
 
     def evaluate(self, trial: Trial) -> Any:
         try:
+            # TODO: bind buffers using their own names, no as collections.
             # Evaluate the expression with free variables bound to trial buffers or enhancements.
             locals = {
                 "numeric_events": trial.numeric_events,

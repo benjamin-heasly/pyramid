@@ -234,7 +234,7 @@ class ExpressionEnhancer(TrialEnhancer):
     ) -> None:
         value = self.trial_expression.evaluate(trial)
 
-        # Many numpy types are json-serializable like standard Python float, int, etc. -- But not numpy.bool_ !
+        # Many numpy types are json-serializable like standard Python float, int, etc. -- but not numpy.bool_!
         if isinstance(value, bool_):
             value = bool(value)
 
