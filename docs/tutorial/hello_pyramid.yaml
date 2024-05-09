@@ -14,7 +14,7 @@ readers:
   trial_started_reader:
     class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
     args:
-      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
       result_name: trial_started
       column_selector: [trial.started]
       first_row_is_header: true
@@ -22,49 +22,50 @@ readers:
   pause_started_reader:
     class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
     args:
-      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
       result_name: pause_started
       column_selector: [pause.started]
       first_row_is_header: true
   trial_wrt_reader:
     class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
     args:
-      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
       result_name: trial_wrt
       column_selector: [cue.started]
       first_row_is_header: true
   prompt_reader:
     class: pyramid.neutral_zone.readers.csv.CsvTextEventReader
     args:
-      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
       result_name: prompt
       column_selector: [prompt.started, prompt_text]
       first_row_is_header: true
   cue_reader:
     class: pyramid.neutral_zone.readers.csv.CsvTextEventReader
     args:
-      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
       result_name: cue
       column_selector: [cue.started, cue_text]
       first_row_is_header: true
   correct_target_reader:
     class: pyramid.neutral_zone.readers.csv.CsvTextEventReader
     args:
-      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
       result_name: correct_target
       column_selector: [trial.started, correct_target]
       first_row_is_header: true
   clicked_name_reader:
     class: pyramid.neutral_zone.readers.csv.CsvTextEventReader
     args:
-      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
       result_name: clicked_name
       column_selector: [trial.stopped, mouse.clicked_name]
+      unpack_lists: true
       first_row_is_header: true
   moise_position_reader:
     class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
     args:
-      csv_file: data/591090_hello_pyramid_2024-05-06_13h29.48.324.csv
+      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
       result_name: mouse_position
       column_selector: [mouse.time, mouse.x, mouse.y]
       unpack_lists: true

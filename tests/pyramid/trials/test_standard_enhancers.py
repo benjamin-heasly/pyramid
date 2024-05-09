@@ -3,6 +3,7 @@ import numpy as np
 
 from pyramid.file_finder import FileFinder
 from pyramid.model.events import NumericEventList, TextEventList
+from pyramid.model.signals import SignalChunk
 from pyramid.trials.trials import Trial
 from pyramid.trials.standard_enhancers import PairedCodesEnhancer, EventTimesEnhancer, ExpressionEnhancer, TextKeyValueEnhancer
 
@@ -205,7 +206,65 @@ def test_event_times_enhancer_multiple_csvs(tmp_path):
     assert enhancer.rules == expected_rules
 
 
-def test_expression_enhancer(tmp_path):
+def test_expression_enhancer_with_buffer_data():
+    enhancer = ExpressionEnhancer(
+        expression="numeric_events['n'].event_count() == 0 and text_events['t'].event_count() == 0 and signals['s'].sample_count() == 0",
+        value_name="all_empty",
+        value_category="id",
+        default_value="No way!"
+    )
+
+    not_all_empty_trial = Trial(
+        start_time=0,
+        end_time=1.0,
+        wrt_time=0.5,
+        numeric_events={
+            'n': NumericEventList(np.array([[0, 100]]))
+        },
+        text_events={
+            't': TextEventList(np.array([0]), np.array(['zero'], dtype=np.str_))
+        },
+        signals={
+            's': SignalChunk.empty()
+        }
+    )
+    enhancer.enhance(not_all_empty_trial, 0, {}, {})
+    assert not_all_empty_trial.enhancements == {
+        "all_empty": False,
+    }
+
+    all_empty_trial = Trial(
+        start_time=0,
+        end_time=1.0,
+        wrt_time=0.5,
+        numeric_events={
+            'n': NumericEventList.empty(1)
+        },
+        text_events={
+            't': TextEventList.empty()
+        },
+        signals={
+            's': SignalChunk.empty()
+        }
+    )
+    enhancer.enhance(all_empty_trial, 0, {}, {})
+    assert all_empty_trial.enhancements == {
+        "all_empty": True,
+    }
+
+    # The expected buffers are missing, fall back to default value.
+    error_trial = Trial(
+        start_time=0,
+        end_time=1.0,
+        wrt_time=0.5,
+    )
+    enhancer.enhance(error_trial, 0, {}, {})
+    assert error_trial.enhancements == {
+        "all_empty": "No way!"
+    }
+
+
+def test_expression_enhancer_with_enhancements():
     enhancer = ExpressionEnhancer(
         expression="foo + bar > 42",
         value_name="greater",
@@ -257,7 +316,7 @@ def test_expression_enhancer(tmp_path):
     }
 
 
-def test_expression_enhancer_bool_conversion(tmp_path):
+def test_expression_enhancer_bool_conversion():
     enhancer = ExpressionEnhancer(
         expression="foo > 0",
         value_name="nonzero"
@@ -335,20 +394,20 @@ def test_text_key_value_enhancer():
 def test_text_key_value_enhancer_configure_literals():
     enhancer = TextKeyValueEnhancer(
         buffer_name="crazy_text",
-        entry_delimiter = "|",
-        key_value_delimiter = "->",
-        name_key = "N",
-        value_key = "V",
-        type_key = "T",
-        category_key = "C",
-        float_types = ["F", "D"],
-        float_default = -1e6,
-        int_types = ["I", "L"],
-        int_default= -1,
-        timestamp_category = "tim",
-        str_category = "stringo",
-        int_category = "rupert grint",
-        float_category = "floaty mcfloatface"
+        entry_delimiter="|",
+        key_value_delimiter="->",
+        name_key="N",
+        value_key="V",
+        type_key="T",
+        category_key="C",
+        float_types=["F", "D"],
+        float_default=-1e6,
+        int_types=["I", "L"],
+        int_default=-1,
+        timestamp_category="tim",
+        str_category="stringo",
+        int_category="rupert grint",
+        float_category="floaty mcfloatface"
     )
 
     text = [

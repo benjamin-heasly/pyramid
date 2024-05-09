@@ -233,7 +233,10 @@ class TrialExpression():
     can be used by name as variables in these expressions.
 
     Args:
-        expression:     A string Python expression with trial enhancements as local variables, like "foo > 41" or "foo + bar"
+        expression:     A string Python expression with trial buffers and enhancements as local variables, like:
+                            - "numeric_events['my_buffer'].get_times_of(42)"
+                            - "my_enhancement > 41"
+                            - "my_enhancement + other_enhancement"
         default_value:  Default value to return in case of error evaluating the expression (default is None)
     """
 
@@ -258,8 +261,14 @@ class TrialExpression():
 
     def evaluate(self, trial: Trial) -> Any:
         try:
-            # Evaluate the expression with free variables bound to trial enhancements.
-            return eval(self.compiled_expression, {}, trial.enhancements)
+            # Evaluate the expression with free variables bound to trial buffers or enhancements.
+            locals = {
+                "numeric_events": trial.numeric_events,
+                "text_events": trial.text_events,
+                "signals": trial.signals,
+                **trial.enhancements
+            }
+            return eval(self.compiled_expression, {}, locals)
         except:
             logging.error(f"Error evaluating TrialExpression: {self.compiled_expression}", exc_info=True)
             logging.warning(f"Returning TrialExpression default value: {self.default_value}")
