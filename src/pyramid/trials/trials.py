@@ -261,17 +261,15 @@ class TrialExpression():
 
     def evaluate(self, trial: Trial) -> Any:
         try:
-            # TODO: bind buffers using their own names, no as collections.
-            # Evaluate the expression with free variables bound to trial buffers or enhancements.
             locals = {
-                "numeric_events": trial.numeric_events,
-                "text_events": trial.text_events,
-                "signals": trial.signals,
+                **trial.numeric_events,
+                **trial.text_events,
+                **trial.signals,
                 **trial.enhancements
             }
             return eval(self.compiled_expression, {}, locals)
         except:
-            logging.error(f"Error evaluating TrialExpression: {self.compiled_expression}", exc_info=True)
+            logging.warning(f"Error evaluating TrialExpression: {self.compiled_expression}", exc_info=True)
             logging.warning(f"Returning TrialExpression default value: {self.default_value}")
             return self.default_value
 

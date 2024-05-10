@@ -208,7 +208,7 @@ def test_event_times_enhancer_multiple_csvs(tmp_path):
 
 def test_expression_enhancer_with_buffer_data():
     enhancer = ExpressionEnhancer(
-        expression="numeric_events['n'].event_count() == 0 and text_events['t'].event_count() == 0 and signals['s'].sample_count() == 0",
+        expression="numbers.event_count() == 0 and text.event_count() == 0 and signal.sample_count() == 0",
         value_name="all_empty",
         value_category="id",
         default_value="No way!"
@@ -219,13 +219,13 @@ def test_expression_enhancer_with_buffer_data():
         end_time=1.0,
         wrt_time=0.5,
         numeric_events={
-            'n': NumericEventList(np.array([[0, 100]]))
+            'numbers': NumericEventList(np.array([[0, 100]]))
         },
         text_events={
-            't': TextEventList(np.array([0]), np.array(['zero'], dtype=np.str_))
+            'text': TextEventList(np.array([0]), np.array(['zero'], dtype=np.str_))
         },
         signals={
-            's': SignalChunk.empty()
+            'signal': SignalChunk.empty()
         }
     )
     enhancer.enhance(not_all_empty_trial, 0, {}, {})
@@ -238,13 +238,13 @@ def test_expression_enhancer_with_buffer_data():
         end_time=1.0,
         wrt_time=0.5,
         numeric_events={
-            'n': NumericEventList.empty(1)
+            'numbers': NumericEventList.empty(1)
         },
         text_events={
-            't': TextEventList.empty()
+            'text': TextEventList.empty()
         },
         signals={
-            's': SignalChunk.empty()
+            'signal': SignalChunk.empty()
         }
     )
     enhancer.enhance(all_empty_trial, 0, {}, {})
