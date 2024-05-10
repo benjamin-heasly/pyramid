@@ -6,15 +6,11 @@ import csv
 import numpy as np
 
 from pyramid.file_finder import FileFinder
+from pyramid.model.model import BufferData
 from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
 from pyramid.neutral_zone.readers.readers import Reader
 
-# TODO: a "wide csv" event reader?
-#   - one csv to read from
-#   - buffer name -> tuple of columns to become numeric events (time_column, value_column, value_column, ...)
-#   - buffer name -> pair of columns to become text events (time_column, text_column)
-#   - wrap collections of existing csv readers?
 
 class CsvReader():
     """A shared util to iterate through rows of a CSV, manage context state, etc."""
@@ -398,3 +394,91 @@ class CsvSignalReader(Reader):
             self.channel_ids = self.reader.select_columns(self.reader.first_row)
         initial = SignalChunk.empty(self.sample_frequency, self.next_sample_time, self.channel_ids)
         return {self.result_name: initial}
+
+
+class WideCsvEventReader(Reader):
+    """Read various numeric and text events from columns of a "wide" CSV.
+
+    This reader creates multiple CsvNumericEventReaders and CsvTextEventReaders from a common CSV file.
+    This is intended as a convenience for working with "wide" CSVs that have many columns of data of
+    various interpretations and non-homogenious data types.
+
+    From such a CSV you might want to identify and extract several distinct buffers of data, for example:
+     - timestamps from one numeric column
+     - timestamp-number tuples from other numeric columns
+     - timestamp-text tuples from another numeric column and a string column
+     - *lists* of timestamps and values packed into the cells of two other columns
+
+    The PsychoPy "long-wide" output format is one example of a "wide" CSV with columns like these, which
+    WideCsvEventReader supports.
+    """
+
+    def __init__(
+        self,
+        csv_file: str = None,
+        file_finder: FileFinder = FileFinder(),
+        first_row_is_header: bool = True,
+        column_config: dict[str, dict[str, str]] = {},
+        dialect: str = 'excel',
+        **fmtparams
+    ) -> None:
+        self.readers = []
+        for result_name, config in column_config.items():
+            numeric = config.get("numeric", False)
+            unpack_lists = config.get("unpack_lists", False)
+            column_selector = config.get("column_selector", [])
+            if numeric:
+                reader = CsvNumericEventReader(
+                    csv_file,
+                    file_finder,
+                    first_row_is_header,
+                    column_selector,
+                    result_name,
+                    unpack_lists,
+                    dialect,
+                    **fmtparams
+                )
+                self.readers.append(reader)
+            else:
+                reader = CsvTextEventReader(
+                    csv_file,
+                    file_finder,
+                    first_row_is_header,
+                    column_selector,
+                    result_name,
+                    unpack_lists,
+                    dialect,
+                    **fmtparams
+                )
+                self.readers.append(reader)
+
+    def __enter__(self) -> Self:
+        for reader in self.readers:
+            reader.__enter__()
+        return self
+
+    def __exit__(
+        self,
+        __exc_type: type[BaseException] | None,
+        __exc_value: BaseException | None,
+        __traceback: TracebackType | None
+    ) -> bool | None:
+        results = [reader.__exit__(__exc_type, __exc_value, __traceback) for reader in self.readers]
+        return all(results)
+
+    def get_initial(self) -> dict[str, BufferData]:
+        initial = {}
+        for reader in self.readers:
+            for result_name, data in reader.get_initial().items():
+                initial[result_name] = data
+        return initial
+
+    def read_next(self) -> dict[str, BufferData]:
+        # Read until any of the nested readers throws an exception.
+        # For StopIteration this works out naturally since all readers are reading the same CSV in step.
+        # For errors this means all nested readers will appear to error as one, and get ignored as one.
+        next = {}
+        for reader in self.readers:
+            for result_name, data in reader.read_next().items():
+                next[result_name] = data
+        return next

@@ -11,65 +11,38 @@ experiment:
     - tutorial
 readers:
   # This is getting verbose and repetetive for the "wide" style of CSV.
-  trial_started_reader:
-    class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
+  wide_reader:
+    class: pyramid.neutral_zone.readers.csv.WideCsvEventReader
     args:
       csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
-      result_name: trial_started
-      column_selector: [trial.started]
       first_row_is_header: true
-    simulate_delay: True
-  pause_started_reader:
-    class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
-    args:
-      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
-      result_name: pause_started
-      column_selector: [pause.started]
-      first_row_is_header: true
-  trial_wrt_reader:
-    class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
-    args:
-      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
-      result_name: trial_wrt
-      column_selector: [cue.started]
-      first_row_is_header: true
-  prompt_reader:
-    class: pyramid.neutral_zone.readers.csv.CsvTextEventReader
-    args:
-      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
-      result_name: prompt
-      column_selector: [prompt.started, prompt_text]
-      first_row_is_header: true
-  cue_reader:
-    class: pyramid.neutral_zone.readers.csv.CsvTextEventReader
-    args:
-      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
-      result_name: cue
-      column_selector: [cue.started, cue_text]
-      first_row_is_header: true
-  correct_target_reader:
-    class: pyramid.neutral_zone.readers.csv.CsvTextEventReader
-    args:
-      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
-      result_name: correct_target
-      column_selector: [trial.started, correct_target]
-      first_row_is_header: true
-  clicked_name_reader:
-    class: pyramid.neutral_zone.readers.csv.CsvTextEventReader
-    args:
-      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
-      result_name: clicked_name
-      column_selector: [trial.stopped, mouse.clicked_name]
-      unpack_lists: true
-      first_row_is_header: true
-  moise_position_reader:
-    class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
-    args:
-      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
-      result_name: mouse_position
-      column_selector: [mouse.time, mouse.x, mouse.y]
-      unpack_lists: true
-      first_row_is_header: true
+      column_config:
+        trial_started:
+          column_selector: [trial.started]
+          numeric: true
+        pause_started:
+          column_selector: [pause.started]
+          numeric: true
+        trial_wrt:
+          column_selector: [cue.started]
+          numeric: true
+        prompt:
+          column_selector: [prompt.started, prompt_text]
+          numeric: false
+        cue:
+          column_selector: [cue.started, cue_text]
+          numeric: false
+        correct_target:
+          column_selector: [trial.started, correct_target]
+          numeric: false
+        clicked_name:
+          column_selector: [trial.stopped, mouse.clicked_name]
+          numeric: false
+          unpack_lists: true
+        mouse_position:
+          column_selector: [mouse.time, mouse.x, mouse.y]
+          numeric: true
+          unpack_lists: true
     extra_buffers:
       mouse_position:
         reader_result_name: mouse_position
@@ -79,6 +52,7 @@ readers:
               fill_with: null
               sample_frequency: 60
               channel_ids: [x, y]
+    simulate_delay: True
 trials:
   # How to delimit Trials in time, and how to align data within each trial.
   start_buffer: trial_started
