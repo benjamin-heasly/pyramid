@@ -69,16 +69,23 @@ class NumericEventList(BufferData):
         if self.event_data.size > 0:
             self.event_data[:, 0] += shift
 
-    def get_end_time(self) -> float:
+    def start(self) -> float:
+        """Get the time of the first data item still in the buffer."""
+        if self.event_count():
+            return self.event_data.min()
+        else:
+            return None
+
+    def end(self) -> float:
         """Implementing BufferData superclass."""
         if self.event_count():
             return self.event_data[:, 0].max()
         else:
             return None
 
-    def get_times_of(
+    def times(
         self,
-        value: Any,
+        value: Any = None,
         value_index: int = 0,
         start_time: float = None,
         end_time: float = None
@@ -110,10 +117,6 @@ class NumericEventList(BufferData):
         value_column = value_index + 1
         self.event_data[:, value_column] += offset
         self.event_data[:, value_column] *= gain
-
-    def get_times(self) -> np.ndarray:
-        """Get just the event times, ignoring event values."""
-        return self.event_data[:, 0]
 
     def event_count(self) -> int:
         """Get the number of events in the list.
@@ -250,16 +253,23 @@ class TextEventList(BufferData):
         if self.timestamp_data.size > 0:
             self.timestamp_data += shift
 
-    def get_end_time(self) -> float:
+    def start(self) -> float:
+        """Get the time of the first data item still in the buffer."""
+        if self.event_count():
+            return self.timestamp_data.min()
+        else:
+            return None
+
+    def end(self) -> float:
         """Implementing BufferData superclass."""
         if self.event_count():
             return self.timestamp_data.max()
         else:
             return None
 
-    def get_times_of(
+    def times(
         self,
-        value: Any,
+        value: Any = None,
         value_index: int = 0,
         start_time: float = None,
         end_time: float = None

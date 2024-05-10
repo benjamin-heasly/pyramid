@@ -105,7 +105,7 @@ class SparseSignal(Transformer):
 
         # Figure out where to start this new signal chunk.
         # Account for any gap since the last call to transform().
-        event_times = data.get_times()
+        event_times = data.times()
         first_event_time = event_times.min()
         if self.last_sample_time is None:
             new_chunk_start_time = first_event_time
@@ -139,6 +139,6 @@ class SparseSignal(Transformer):
             first_sample_time=new_chunk_start_time,
             channel_ids=self.channel_ids,
         )
-        self.last_sample_time = new_chunk.get_end_time()
+        self.last_sample_time = new_chunk.end()
         self.last_sample_value = new_chunk.sample_data[-1,:]
         return new_chunk

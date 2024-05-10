@@ -206,7 +206,7 @@ class SaccadesEnhancer(TrialEnhancer):
         # Use trial.signals for gaze signal chunks.
         x_signal = trial.signals[self.horiz_buffer_name]
         y_signal = trial.signals[self.vert_buffer_name]
-        if x_signal.get_end_time() < fp_off_time or y_signal.get_end_time() < fp_off_time:
+        if x_signal.end() < fp_off_time or y_signal.end() < fp_off_time:
             return
 
         # Placeholder: start a bogus "saccade" at fp_off_time, and end it 1 second later.

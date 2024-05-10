@@ -74,8 +74,14 @@ class SignalChunk(BufferData):
             self.channel_ids
         )
 
+    def compute_sample_times(self) -> np.ndarray:
+        sample_indexes = np.array(range(self.sample_count()))
+        sample_offsets = sample_indexes / self.sample_frequency
+        sample_times = self.first_sample_time + sample_offsets
+        return sample_times
+
     def get_time_selector(self, start_time: float = None, end_time: float = None):
-        sample_times = self.get_times()
+        sample_times = self.compute_sample_times()
         if start_time is None:
             tail_selector = True
         else:
@@ -116,7 +122,7 @@ class SignalChunk(BufferData):
 
     def discard_before(self, start_time: float) -> None:
         """Implementing BufferData superclass."""
-        sample_times = self.get_times()
+        sample_times = self.compute_sample_times()
         rows_to_keep = sample_times >= start_time
         self.sample_data = self.sample_data[rows_to_keep, :]
         if self.sample_data.size > 0:
@@ -129,7 +135,14 @@ class SignalChunk(BufferData):
         if self.first_sample_time is not None:
             self.first_sample_time += shift
 
-    def get_end_time(self) -> float:
+    def start(self) -> float:
+        """Get the time of the first data item still in the buffer."""
+        if self.sample_count() > 0:
+            return self.first_sample_time
+        else:
+            return None
+
+    def end(self) -> float:
         """Implementing BufferData superclass."""
         sample_count = self.sample_count()
         if sample_count > 0:
@@ -138,9 +151,9 @@ class SignalChunk(BufferData):
         else:
             return None
 
-    def get_times_of(
+    def times(
         self,
-        value: Any,
+        value: Any = None,
         value_index: int = 0,
         start_time: float = None,
         end_time: float = None
@@ -185,13 +198,6 @@ class SignalChunk(BufferData):
     def channel_count(self) -> int:
         """Get the number of channels in the chunk."""
         return self.sample_data.shape[1]
-
-    def get_times(self) -> np.ndarray:
-        """Get all the sample times, ignoring channel values."""
-        sample_indexes = np.array(range(self.sample_count()))
-        sample_offsets = sample_indexes / self.sample_frequency
-        sample_times = self.first_sample_time + sample_offsets
-        return sample_times
 
     def get_channel_values(self, channel_id: str | int = None) -> np.ndarray:
         """Get sample values from one channel, by id."""

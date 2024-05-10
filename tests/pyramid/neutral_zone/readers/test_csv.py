@@ -485,7 +485,7 @@ def test_signals_only_complete_chunks(fixture_path):
             signal_chunk = result[reader.result_name]
             assert signal_chunk.sample_count() == 10
 
-            sample_times = signal_chunk.get_times()
+            sample_times = signal_chunk.times()
             assert np.array_equal(sample_times, np.array(range(chunk_time, chunk_time + 10)))
             assert np.array_equal(signal_chunk.get_channel_values("a"), sample_times)
             assert np.array_equal(signal_chunk.get_channel_values("b"), 100 - sample_times * 0.1)
@@ -521,7 +521,7 @@ def test_signals_last_partial_chunk(fixture_path):
             signal_chunk = result[reader.result_name]
             assert signal_chunk.sample_count() == 11
 
-            sample_times = signal_chunk.get_times()
+            sample_times = signal_chunk.times()
             assert np.array_equal(sample_times, np.array(range(chunk_time, chunk_time + 11)))
             assert np.array_equal(signal_chunk.get_channel_values("a"), sample_times)
             assert np.array_equal(signal_chunk.get_channel_values("b"), 100 - sample_times * 0.1)
@@ -535,7 +535,7 @@ def test_signals_last_partial_chunk(fixture_path):
         signal_chunk = result[reader.result_name]
         assert signal_chunk.sample_count() == 7
 
-        sample_times = signal_chunk.get_times()
+        sample_times = signal_chunk.times()
         assert np.array_equal(sample_times, np.array(range(chunk_time, chunk_time + 7)))
         assert np.array_equal(signal_chunk.get_channel_values("a"), sample_times)
         assert np.array_equal(signal_chunk.get_channel_values("b"), 100 - sample_times * 0.1)
@@ -571,7 +571,7 @@ def test_signals_skip_nonnumeric_lines(fixture_path):
             signal_chunk = result[reader.result_name]
             assert signal_chunk.sample_count() == 10
 
-            sample_times = signal_chunk.get_times()
+            sample_times = signal_chunk.times()
             assert np.array_equal(sample_times, np.array(range(chunk_time, chunk_time + 10)))
             assert np.array_equal(signal_chunk.get_channel_values("a"), sample_times)
             assert np.array_equal(signal_chunk.get_channel_values("b"), 100 - sample_times * 0.1)
@@ -623,7 +623,7 @@ def test_signals_select_columns(fixture_path):
             signal_chunk = result[reader.result_name]
             assert signal_chunk.sample_count() == 10
 
-            sample_times = signal_chunk.get_times()
+            sample_times = signal_chunk.times()
             assert np.array_equal(sample_times, np.array(range(chunk_time, chunk_time + 10)))
             assert np.array_equal(signal_chunk.get_channel_values("cee"), sample_times * 2 - 1000)
             assert np.array_equal(signal_chunk.get_channel_values("aye"), sample_times)
@@ -651,14 +651,14 @@ def test_signals_with_list_data(fixture_path):
 
         # Read 6 CSV lines, where some cells are packed with lists of data...
         result_1 = reader.read_next()[reader.result_name]
-        sample_times = result_1.get_times()
+        sample_times = result_1.times()
         assert np.array_equal(sample_times, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
         assert np.array_equal(result_1.get_channel_values("a"), sample_times)
         assert np.array_equal(result_1.get_channel_values("b"), 100 - sample_times * 0.1)
         assert np.array_equal(result_1.get_channel_values("c"), sample_times * 2 - 1000)
 
         result_2 = reader.read_next()[reader.result_name]
-        sample_times = result_2.get_times()
+        sample_times = result_2.times()
         assert np.array_equal(sample_times, [10])
         assert np.array_equal(result_2.get_channel_values("a"), sample_times)
         assert np.array_equal(result_2.get_channel_values("b"), 100 - sample_times * 0.1)
@@ -670,14 +670,14 @@ def test_signals_with_list_data(fixture_path):
         assert result_4.sample_count() == 0
 
         result_5 = reader.read_next()[reader.result_name]
-        sample_times = result_5.get_times()
+        sample_times = result_5.times()
         assert np.array_equal(sample_times, [11, 12, 13, 14, 15, 16, 17, 18, 19])
         assert np.array_equal(result_5.get_channel_values("a"), sample_times)
         assert np.array_equal(result_5.get_channel_values("b"), 100 - sample_times * 0.1)
         assert np.array_equal(result_5.get_channel_values("c"), sample_times * 2 - 1000)
 
         result_6 = reader.read_next()[reader.result_name]
-        sample_times = result_6.get_times()
+        sample_times = result_6.times()
         assert np.array_equal(sample_times, [20])
         assert np.array_equal(result_6.get_channel_values("a"), sample_times)
         assert np.array_equal(result_6.get_channel_values("b"), 100 - sample_times * 0.1)

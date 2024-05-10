@@ -138,7 +138,7 @@ class TrialDelimiter():
         This has the side-effects of incrementing trial_start_time and trial_count.
         """
         trials = {}
-        next_start_times = self.start_buffer.data.get_times_of(self.start_value, self.start_value_index)
+        next_start_times = self.start_buffer.data.times(self.start_value, self.start_value_index)
         for next_start_time in next_start_times:
             if next_start_time > self.start_time:
                 trial = Trial(
@@ -234,7 +234,7 @@ class TrialExpression():
 
     Args:
         expression:     A string Python expression with trial buffers and enhancements as local variables, like:
-                            - "my_buffer.get_times_of(42)"
+                            - "my_buffer.times(42)"
                             - "my_enhancement > 41"
                             - "my_enhancement + other_enhancement"
         default_value:  Default value to return in case of error evaluating the expression (default is None)
@@ -317,7 +317,7 @@ class TrialExtractor():
         subject_info: dict[str: Any]
     ):
         """Fill in the given trial with data from configured buffers, in the trial's time range."""
-        trial_wrt_times = self.wrt_buffer.data.get_times_of(
+        trial_wrt_times = self.wrt_buffer.data.times(
             self.wrt_value,
             self.wrt_value_index,
             self.wrt_buffer.reference_time_to_raw(trial.start_time),

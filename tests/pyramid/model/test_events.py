@@ -11,28 +11,30 @@ def test_numeric_list_getters():
 
     assert event_list.event_count() == event_count
     assert event_list.values_per_event() == 1
-    assert np.array_equal(event_list.get_times(), np.array(range(event_count)))
+    assert np.array_equal(event_list.times(), np.array(range(event_count)))
     assert np.array_equal(event_list.get_values(), 10*np.array(range(event_count)))
 
     assert np.array_equal(event_list.get_values(start_time=40), 10*np.array(range(40, 100)))
     assert np.array_equal(event_list.get_values(end_time=60), 10*np.array(range(60)))
     assert np.array_equal(event_list.get_values(start_time=40, end_time=60), 10*np.array(range(40, 60)))
 
-    assert np.array_equal(event_list.get_times_of(None), event_list.get_times())
-    assert np.array_equal(event_list.get_times_of(0.0), np.array([0.0]))
-    assert np.array_equal(event_list.get_times_of(10.0), np.array([1.0]))
-    assert np.array_equal(event_list.get_times_of(990.0), np.array([99.0]))
-    assert event_list.get_times_of(-1.0).size == 0
-    assert event_list.get_times_of(10.42).size == 0
-    assert event_list.get_times_of(1000).size == 0
+    assert event_list.start() == 0
+    assert event_list.end() == 99
+    assert np.array_equal(event_list.times(), event_list.times())
+    assert np.array_equal(event_list.times(0.0), np.array([0.0]))
+    assert np.array_equal(event_list.times(10.0), np.array([1.0]))
+    assert np.array_equal(event_list.times(990.0), np.array([99.0]))
+    assert event_list.times(-1.0).size == 0
+    assert event_list.times(10.42).size == 0
+    assert event_list.times(1000).size == 0
 
-    assert np.array_equal(event_list.get_times_of(50.0, start_time=4.0), np.array([5.0]))
-    assert np.array_equal(event_list.get_times_of(50.0, start_time=5.0), np.array([5.0]))
-    assert event_list.get_times_of(50.0, start_time=6.0).size == 0
-    assert event_list.get_times_of(50.0, end_time=4.0).size == 0
-    assert event_list.get_times_of(50.0, end_time=5.0).size == 0
-    assert np.array_equal(event_list.get_times_of(50.0, end_time=6.0), np.array([5.0]))
-    assert np.array_equal(event_list.get_times_of(50.0, start_time=4.0, end_time=6.0), np.array([5.0]))
+    assert np.array_equal(event_list.times(50.0, start_time=4.0), np.array([5.0]))
+    assert np.array_equal(event_list.times(50.0, start_time=5.0), np.array([5.0]))
+    assert event_list.times(50.0, start_time=6.0).size == 0
+    assert event_list.times(50.0, end_time=4.0).size == 0
+    assert event_list.times(50.0, end_time=5.0).size == 0
+    assert np.array_equal(event_list.times(50.0, end_time=6.0), np.array([5.0]))
+    assert np.array_equal(event_list.times(50.0, start_time=4.0, end_time=6.0), np.array([5.0]))
 
 
 def test_numeric_list_append():
@@ -44,7 +46,7 @@ def test_numeric_list_append():
 
     assert event_list_a.event_count() == event_count
     assert event_list_a.values_per_event() == 1
-    assert np.array_equal(event_list_a.get_times(), np.array(range(event_count)))
+    assert np.array_equal(event_list_a.times(), np.array(range(event_count)))
     assert np.array_equal(event_list_a.get_values(), 10*np.array(range(event_count)))
 
 
@@ -56,7 +58,7 @@ def test_numeric_list_discard_before():
     event_list = NumericEventList(event_data)
 
     event_list.discard_before(half_count)
-    assert np.array_equal(event_list.get_times(), np.array(range(half_count, event_count)))
+    assert np.array_equal(event_list.times(), np.array(range(half_count, event_count)))
     assert np.array_equal(event_list.get_values(), 10*np.array(range(half_count, event_count)))
 
 
@@ -67,13 +69,15 @@ def test_numeric_list_shift_times():
     event_list = NumericEventList(event_data)
 
     event_list.shift_times(5)
-    assert np.array_equal(event_list.get_times(), 5 + np.array(range(100)))
+    assert np.array_equal(event_list.times(), 5 + np.array(range(100)))
 
 
 def test_numeric_list_shift_times_empty():
     event_list = NumericEventList.empty(1)
     event_list.shift_times(5)
-    assert event_list.get_times().size == 0
+    assert event_list.times().size == 0
+    assert event_list.start() == None
+    assert event_list.end() == None
 
 
 def test_numeric_list_transform_values():
@@ -83,7 +87,7 @@ def test_numeric_list_transform_values():
     event_list = NumericEventList(event_data)
 
     event_list.apply_offset_then_gain(offset=-500, gain=2)
-    assert np.array_equal(event_list.get_times(), np.array(range(100)))
+    assert np.array_equal(event_list.times(), np.array(range(100)))
     assert np.array_equal(event_list.get_values(), 2*10*np.array(range(-50, 50)))
 
 
@@ -94,11 +98,11 @@ def test_numeric_list_copy_value_range():
     event_list = NumericEventList(event_data)
 
     range_event_list = event_list.copy_value_range(min=400, max=600)
-    assert np.array_equal(range_event_list.get_times(), np.array(range(40, 60)))
+    assert np.array_equal(range_event_list.times(), np.array(range(40, 60)))
     assert np.array_equal(range_event_list.get_values(), 10*np.array(range(40, 60)))
 
     # original list should be unchanged
-    assert np.array_equal(event_list.get_times(), np.array(range(100)))
+    assert np.array_equal(event_list.times(), np.array(range(100)))
     assert np.array_equal(event_list.get_values(), 10*np.array(range(100)))
 
 
@@ -109,7 +113,7 @@ def test_numeric_list_copy_value_range_no_min():
     event_list = NumericEventList(event_data)
 
     range_event_list = event_list.copy_value_range(max=600)
-    assert np.array_equal(range_event_list.get_times(), np.array(range(60)))
+    assert np.array_equal(range_event_list.times(), np.array(range(60)))
     assert np.array_equal(range_event_list.get_values(), 10*np.array(range(60)))
 
 
@@ -120,7 +124,7 @@ def test_numeric_list_copy_value_range_no_max():
     event_list = NumericEventList(event_data)
 
     range_event_list = event_list.copy_value_range(min=400)
-    assert np.array_equal(range_event_list.get_times(), np.array(range(40, 100)))
+    assert np.array_equal(range_event_list.times(), np.array(range(40, 100)))
     assert np.array_equal(range_event_list.get_values(), 10*np.array(range(40, 100)))
 
 
@@ -131,19 +135,19 @@ def test_numeric_list_copy_time_range():
     event_list = NumericEventList(event_data)
 
     range_event_list = event_list.copy_time_range(40, 60)
-    assert np.array_equal(range_event_list.get_times(), np.array(range(40, 60)))
+    assert np.array_equal(range_event_list.times(), np.array(range(40, 60)))
     assert np.array_equal(range_event_list.get_values(), 10*np.array(range(40, 60)))
 
     tail_event_list = event_list.copy_time_range(start_time=40)
-    assert np.array_equal(tail_event_list.get_times(), np.array(range(40, event_count)))
+    assert np.array_equal(tail_event_list.times(), np.array(range(40, event_count)))
     assert np.array_equal(tail_event_list.get_values(), 10*np.array(range(40, event_count)))
 
     head_event_list = event_list.copy_time_range(end_time=60)
-    assert np.array_equal(head_event_list.get_times(), np.array(range(0, 60)))
+    assert np.array_equal(head_event_list.times(), np.array(range(0, 60)))
     assert np.array_equal(head_event_list.get_values(), 10*np.array(range(0, 60)))
 
     # original list should be unchanged
-    assert np.array_equal(event_list.get_times(), np.array(range(100)))
+    assert np.array_equal(event_list.times(), np.array(range(100)))
     assert np.array_equal(event_list.get_values(), 10*np.array(range(100)))
 
 
@@ -175,7 +179,6 @@ def test_text_list_getters():
     text_data = np.array(raw_data, dtype=np.str_)
     event_list = TextEventList(timestamp_data, text_data)
 
-    assert event_list.get_end_time() == 99
     assert event_list.event_count() == event_count
     assert np.array_equal(event_list.timestamp_data, range(event_count))
     assert np.array_equal(event_list.text_data, [str(t) for t in range(event_count)])
@@ -184,21 +187,23 @@ def test_text_list_getters():
     assert np.array_equal(event_list.get_values(end_time=60), [str(t) for t in range(60)])
     assert np.array_equal(event_list.get_values(start_time=40, end_time=60), [str(t) for t in range(40, 60)])
 
-    assert np.array_equal(event_list.get_times_of(None), event_list.timestamp_data)
-    assert np.array_equal(event_list.get_times_of('0'), np.array([0.0]))
-    assert np.array_equal(event_list.get_times_of('1'), np.array([1.0]))
-    assert np.array_equal(event_list.get_times_of('99'), np.array([99.0]))
-    assert event_list.get_times_of('-1').size == 0
-    assert event_list.get_times_of('no way').size == 0
-    assert event_list.get_times_of('1000').size == 0
+    assert event_list.start() == 0
+    assert event_list.end() == 99
+    assert np.array_equal(event_list.times(), event_list.timestamp_data)
+    assert np.array_equal(event_list.times('0'), np.array([0.0]))
+    assert np.array_equal(event_list.times('1'), np.array([1.0]))
+    assert np.array_equal(event_list.times('99'), np.array([99.0]))
+    assert event_list.times('-1').size == 0
+    assert event_list.times('no way').size == 0
+    assert event_list.times('1000').size == 0
 
-    assert np.array_equal(event_list.get_times_of('5', start_time=4.0), np.array([5.0]))
-    assert np.array_equal(event_list.get_times_of('5', start_time=5.0), np.array([5.0]))
-    assert event_list.get_times_of('5', start_time=6.0).size == 0
-    assert event_list.get_times_of('5', end_time=4.0).size == 0
-    assert event_list.get_times_of('5', end_time=5.0).size == 0
-    assert np.array_equal(event_list.get_times_of('5', end_time=6.0), np.array([5.0]))
-    assert np.array_equal(event_list.get_times_of('5', start_time=4.0, end_time=6.0), np.array([5.0]))
+    assert np.array_equal(event_list.times('5', start_time=4.0), np.array([5.0]))
+    assert np.array_equal(event_list.times('5', start_time=5.0), np.array([5.0]))
+    assert event_list.times('5', start_time=6.0).size == 0
+    assert event_list.times('5', end_time=4.0).size == 0
+    assert event_list.times('5', end_time=5.0).size == 0
+    assert np.array_equal(event_list.times('5', end_time=6.0), np.array([5.0]))
+    assert np.array_equal(event_list.times('5', start_time=4.0, end_time=6.0), np.array([5.0]))
 
 
 def test_text_list_append():
@@ -236,7 +241,8 @@ def test_text_list_shift_times_empty():
     event_list = TextEventList.empty()
     event_list.shift_times(5)
     assert event_list.timestamp_data.size == 0
-    assert event_list.get_end_time() == None
+    assert event_list.start() == None
+    assert event_list.end() == None
 
 
 def test_text_list_copy_time_range():

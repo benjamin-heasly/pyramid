@@ -153,7 +153,7 @@ class NumericEventsPlotter(Plotter):
         for old in self.history:
             for name, data in old.items():
                 self.ax.scatter(
-                    data.get_times(),
+                    data.times(),
                     data.get_values(value_index=self.value_index),
                     color=name_to_color(name, 0.125),
                     marker=self.old_marker,
@@ -171,7 +171,7 @@ class NumericEventsPlotter(Plotter):
         # Show new events on top in full color.
         for name, data in new.items():
             self.ax.scatter(
-                data.get_times(),
+                data.times(),
                 data.get_values(value_index=self.value_index),
                 color=name_to_color(name),
                 marker=self.marker,
@@ -315,7 +315,7 @@ class SignalChunksPlotter(Plotter):
                     ids = data.channel_ids
                 for channel_id in ids:
                     full_name = f"{name} {channel_id}"
-                    self.ax.plot(data.get_times(), data.get_channel_values(
+                    self.ax.plot(data.times(), data.get_channel_values(
                         channel_id), color=name_to_color(full_name, 0.125))
 
         # Update finite, rolling history.
@@ -336,7 +336,7 @@ class SignalChunksPlotter(Plotter):
             for channel_id in ids:
                 full_name = f"{name} {channel_id}"
                 self.ax.plot(
-                    data.get_times(),
+                    data.times(),
                     data.get_channel_values(channel_id),
                     color=name_to_color(full_name),
                     label=full_name)
@@ -607,7 +607,7 @@ class SpikeEventsPlotter(Plotter):
         # Add a row for this trial.
         for name, event_list in current_trial.numeric_events.items():
             if (self.match_pattern is None or re.fullmatch(self.match_pattern, name)) and event_list.event_count() > 0:
-                times = event_list.get_times()
+                times = event_list.times()
                 trials = trial_number * np.ones(times.shape)
                 if self.value_selection is not None:
                     values = event_list.get_values(value_index=self.value_index)

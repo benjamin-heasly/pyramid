@@ -269,7 +269,7 @@ class ReaderRouter():
             # Add any new sync events to the sync registry.
             event_data = read_result.get(self.sync_config.reader_result_name, None)
             if event_data is not None:
-                sync_event_times = event_data.get_times_of(
+                sync_event_times = event_data.times(
                     value=self.sync_config.event_value,
                     value_index=self.sync_config.event_value_index
                 )
@@ -308,7 +308,7 @@ class ReaderRouter():
 
         # Update the high water mark for the reader -- the latest timestamp seen so far.
         for buffer in self.named_buffers.values():
-            buffer_end_time = buffer.data.get_end_time()
+            buffer_end_time = buffer.data.end()
             if buffer_end_time and buffer_end_time > self.max_buffer_time:
                 self.max_buffer_time = buffer_end_time
 

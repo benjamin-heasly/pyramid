@@ -47,7 +47,7 @@ class DelaySimulatorReader(Reader):
 
         next_result = self.reader.read_next()
         if next_result:
-            latest_result_time = max([result.get_end_time() for result in next_result.values()])
+            latest_result_time = max([result.end() for result in next_result.values()])
             self.stash_until = self.start_time + latest_result_time
             self.stashed_result = next_result
 

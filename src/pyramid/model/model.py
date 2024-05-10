@@ -92,29 +92,33 @@ class BufferData():
         """Shift data times, in place -- allows Trial "wrt" alignment and Reader clock adjustments."""
         raise NotImplementedError  # pragma: no cover
 
-    def get_end_time(self) -> float:
-        """Report the time of the latest data item still in the buffer."""
+    def start(self) -> float:
+        """Get the time of the first data item still in the buffer."""
         raise NotImplementedError  # pragma: no cover
 
-    def get_times_of(
+    def end(self) -> float:
+        """Get the time of the latest data item still in the buffer."""
+        raise NotImplementedError  # pragma: no cover
+
+    def times(
         self,
-        value: Any,
+        value: Any = None,
         value_index: int = 0,
         start_time: float = None,
         end_time: float = None
     ) -> np.ndarray:
-        """Find times when a given value occurred.
+        """Get times of buffered values.
 
-        If the given value is None, implementations should return the times of all buffered data.
+        Return an array of times for buffered values.
 
-        Implementations that store scalar values should look for the given 
-        value in their backing data and can ignore the optional value_index.
-        Implementations that store non-scalar values, perhaps with multiple columns per time,
-        can use value_index to look within a given column.
+        By default returns times for all buffered values.
+        If value is provided, returns the times when value occurred, if any.
+        Implementations that store non-scalar values can also use a value_index to
+        narrow the search for value.
 
-        By default implementations should search all events in the buffered data.
-        Callers can pass in start_time restrict to data at or after start_time.
-        Callers can pass in end_time restrict to data strictly before end_time.
+        By default returns the full range of buffered times.
+        If start_time is provided, returns only times at or after start_time.
+        If end_time is provided, returns only times strictly before end_time.
         """
 
 # TODO: several concise utility methods for BufferData -- for handy trial expressions.

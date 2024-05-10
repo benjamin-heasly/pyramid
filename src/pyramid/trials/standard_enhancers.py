@@ -117,7 +117,7 @@ class PairedCodesEnhancer(TrialEnhancer):
         event_list = trial.numeric_events[self.buffer_name]
         for value, rule in self.rules.items():
             # Did / when did this trial contain events indicating this rule/property?
-            property_times = event_list.get_times_of(value, self.value_index)
+            property_times = event_list.times(value, self.value_index)
             if property_times is not None and property_times.size > 0:
                 # Get potential events that hold values for the indicated rule/property.
                 value_list = event_list.copy_value_range(min=rule['min'], max=rule['max'], value_index=self.value_index)
@@ -200,7 +200,7 @@ class EventTimesEnhancer(TrialEnhancer):
         event_list = trial.numeric_events[self.buffer_name]
         for value, rule in self.rules.items():
             # Did / when did this trial contain events of interest with the requested value?
-            event_times = event_list.get_times_of(value, self.value_index)
+            event_times = event_list.times(value, self.value_index)
             trial.add_enhancement(rule['name'], event_times.tolist(), rule['type'])
 
 
