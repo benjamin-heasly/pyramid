@@ -211,10 +211,10 @@ class SaccadesEnhancer(TrialEnhancer):
 
         # Placeholder: start a bogus "saccade" at fp_off_time, and end it 1 second later.
         arbitrary_duration = 1.0
-        x_values = x_signal.copy_time_range(fp_off_time, fp_off_time + arbitrary_duration).get_channel_values()
+        x_values = x_signal.copy_time_range(fp_off_time, fp_off_time + arbitrary_duration).values()
         x_start = x_values[0]
         x_end = x_values[-1]
-        y_values = y_signal.copy_time_range(fp_off_time, fp_off_time + arbitrary_duration).get_channel_values()
+        y_values = y_signal.copy_time_range(fp_off_time, fp_off_time + arbitrary_duration).values()
         y_start = y_values[0]
         y_end = y_values[-1]
 

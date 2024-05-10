@@ -123,7 +123,7 @@ class SparseSignal(Transformer):
                 known_times = np.concatenate([[self.last_sample_time], event_times])
             new_data = np.zeros([new_count, data.values_per_event()], dtype=dtype)
             for value_index in range(data.values_per_event()):
-                event_values = data.get_values(value_index=value_index)
+                event_values = data.values(value_index=value_index)
                 if self.last_sample_value is None:
                     known_values = event_values
                 else:

@@ -124,7 +124,7 @@ class PairedCodesEnhancer(TrialEnhancer):
                 value_list.apply_offset_then_gain(-rule['base'], rule['scale'])
                 for property_time in property_times:
                     # For each property event, pick the soonest value event that follows.
-                    values = value_list.get_values(start_time=property_time, value_index=self.value_index)
+                    values = value_list.values(start_time=property_time, value_index=self.value_index)
                     if values.size > 0:
                         trial.add_enhancement(rule['name'], values[0], rule['type'])
 

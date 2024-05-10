@@ -154,7 +154,7 @@ class NumericEventsPlotter(Plotter):
             for name, data in old.items():
                 self.ax.scatter(
                     data.times(),
-                    data.get_values(value_index=self.value_index),
+                    data.values(value_index=self.value_index),
                     color=name_to_color(name, 0.125),
                     marker=self.old_marker,
                 )
@@ -172,7 +172,7 @@ class NumericEventsPlotter(Plotter):
         for name, data in new.items():
             self.ax.scatter(
                 data.times(),
-                data.get_values(value_index=self.value_index),
+                data.values(value_index=self.value_index),
                 color=name_to_color(name),
                 marker=self.marker,
                 label=name
@@ -315,8 +315,8 @@ class SignalChunksPlotter(Plotter):
                     ids = data.channel_ids
                 for channel_id in ids:
                     full_name = f"{name} {channel_id}"
-                    self.ax.plot(data.times(), data.get_channel_values(
-                        channel_id), color=name_to_color(full_name, 0.125))
+                    value_index = data.channel_index(channel_id)
+                    self.ax.plot(data.times(), data.values(value_index), color=name_to_color(full_name, 0.125))
 
         # Update finite, rolling history.
         new = {
@@ -335,9 +335,10 @@ class SignalChunksPlotter(Plotter):
                 ids = data.channel_ids
             for channel_id in ids:
                 full_name = f"{name} {channel_id}"
+                channel_index = data.channel_index(channel_id)
                 self.ax.plot(
                     data.times(),
-                    data.get_channel_values(channel_id),
+                    data.values(channel_index),
                     color=name_to_color(full_name),
                     label=full_name)
 
@@ -610,7 +611,7 @@ class SpikeEventsPlotter(Plotter):
                 times = event_list.times()
                 trials = trial_number * np.ones(times.shape)
                 if self.value_selection is not None:
-                    values = event_list.get_values(value_index=self.value_index)
+                    values = event_list.values(value_index=self.value_index)
                     selector = values == self.value_selection
                     times = times[selector]
                     trials = trials[selector]

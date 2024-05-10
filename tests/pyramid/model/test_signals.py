@@ -16,10 +16,27 @@ def test_signal_chunk_getters():
     assert signal_chunk.sample_count() == sample_count
     assert signal_chunk.channel_count() == 3
 
-    assert np.array_equal(signal_chunk.get_channel_values(), np.array(range(sample_count)))
-    assert np.array_equal(signal_chunk.get_channel_values("a"), np.array(range(sample_count)))
-    assert np.array_equal(signal_chunk.get_channel_values("b"), np.array(range(sample_count)) + 10)
-    assert np.array_equal(signal_chunk.get_channel_values("c"), np.array(range(sample_count)) * 10)
+    assert signal_chunk.channel_index("a") == 0
+    assert signal_chunk.channel_index("b") == 1
+    assert signal_chunk.channel_index("c") == 2
+
+
+    assert signal_chunk.first() == 0
+    assert signal_chunk.first(0) == 0
+    assert signal_chunk.first(1) == 10
+    assert signal_chunk.first(2) == 0
+    assert signal_chunk.last() == 99
+    assert signal_chunk.last(0) == 99
+    assert signal_chunk.last(1) == 109
+    assert signal_chunk.last(2) == 990
+    assert np.array_equal(signal_chunk.values(), np.array(range(sample_count)))
+    assert np.array_equal(signal_chunk.values(0), np.array(range(sample_count)))
+    assert np.array_equal(signal_chunk.values(1), np.array(range(sample_count)) + 10)
+    assert np.array_equal(signal_chunk.values(2), np.array(range(sample_count)) * 10)
+    assert np.array_equal(signal_chunk.values(start_time=4), np.array(range(40, 100)))
+    assert np.array_equal(signal_chunk.values(end_time=6), np.array(range(0, 60)))
+    assert np.array_equal(signal_chunk.values(start_time=4, end_time=6), np.array(range(40, 60)))
+    assert np.array_equal(signal_chunk.values(start_time=6, end_time=4), np.empty([0,]))
 
     assert np.array_equal(signal_chunk.times(), np.array(range(sample_count)) / 10)
     assert signal_chunk.start() == 0
@@ -72,9 +89,9 @@ def test_signal_chunk_append():
     signal_chunk_a.append(signal_chunk_b)
     assert np.array_equal(signal_chunk_a.times(), np.array(range(sample_count)) / 10)
     assert signal_chunk_a.end() == 9.9
-    assert np.array_equal(signal_chunk_a.get_channel_values("a"), np.array(range(sample_count)))
-    assert np.array_equal(signal_chunk_a.get_channel_values("b"), np.array(range(sample_count)) + 10)
-    assert np.array_equal(signal_chunk_a.get_channel_values("c"), np.array(range(sample_count)) * 10)
+    assert np.array_equal(signal_chunk_a.values(0), np.array(range(sample_count)))
+    assert np.array_equal(signal_chunk_a.values(1), np.array(range(sample_count)) + 10)
+    assert np.array_equal(signal_chunk_a.values(2), np.array(range(sample_count)) * 10)
 
 
 def test_signal_chunk_append_fill_in_missing_fields():
@@ -114,9 +131,9 @@ def test_signal_chunk_discard_before():
     signal_chunk.discard_before(half_count / 10)
     assert np.array_equal(signal_chunk.times(), np.array(range(half_count, sample_count)) / 10)
     assert signal_chunk.end() == 9.9
-    assert np.array_equal(signal_chunk.get_channel_values("a"), np.array(range(half_count, sample_count)))
-    assert np.array_equal(signal_chunk.get_channel_values("b"), np.array(range(half_count, sample_count)) + 10)
-    assert np.array_equal(signal_chunk.get_channel_values("c"), np.array(range(half_count, sample_count)) * 10)
+    assert np.array_equal(signal_chunk.values(0), np.array(range(half_count, sample_count)))
+    assert np.array_equal(signal_chunk.values(1), np.array(range(half_count, sample_count)) + 10)
+    assert np.array_equal(signal_chunk.values(2), np.array(range(half_count, sample_count)) * 10)
 
     signal_chunk.discard_before(1000)
     assert signal_chunk.times().size == 0
@@ -148,6 +165,8 @@ def test_signal_chunk_shift_times_empty():
     assert signal_chunk.times().size == 0
     assert signal_chunk.start() == None
     assert signal_chunk.end() == None
+    assert signal_chunk.first() == None
+    assert signal_chunk.last() == None
 
 
 def test_signal_chunk_transform_all_values():
@@ -164,9 +183,9 @@ def test_signal_chunk_transform_all_values():
 
     assert np.array_equal(signal_chunk.times(), np.array(range(sample_count)) / 10)
     assert signal_chunk.end() == 9.9
-    assert np.array_equal(signal_chunk.get_channel_values("a"), (np.array(range(sample_count)) - 500) * 2)
-    assert np.array_equal(signal_chunk.get_channel_values("b"), ((np.array(range(sample_count)) + 10) - 500) * 2)
-    assert np.array_equal(signal_chunk.get_channel_values("c"), ((np.array(range(sample_count)) * 10) - 500) * 2)
+    assert np.array_equal(signal_chunk.values(0), (np.array(range(sample_count)) - 500) * 2)
+    assert np.array_equal(signal_chunk.values(1), ((np.array(range(sample_count)) + 10) - 500) * 2)
+    assert np.array_equal(signal_chunk.values(2), ((np.array(range(sample_count)) * 10) - 500) * 2)
 
 
 def test_signal_chunk_transform_channel_values():
@@ -183,9 +202,9 @@ def test_signal_chunk_transform_channel_values():
 
     assert np.array_equal(signal_chunk.times(), np.array(range(sample_count)) / 10)
     assert signal_chunk.end() == 9.9
-    assert np.array_equal(signal_chunk.get_channel_values("a"), np.array(range(sample_count)))
-    assert np.array_equal(signal_chunk.get_channel_values("b"), ((np.array(range(sample_count)) + 10) - 500) * 2)
-    assert np.array_equal(signal_chunk.get_channel_values("c"), np.array(range(sample_count)) * 10)
+    assert np.array_equal(signal_chunk.values(0), np.array(range(sample_count)))
+    assert np.array_equal(signal_chunk.values(1), ((np.array(range(sample_count)) + 10) - 500) * 2)
+    assert np.array_equal(signal_chunk.values(2), np.array(range(sample_count)) * 10)
 
 
 def test_signal_chunk_copy_time_range():
@@ -201,27 +220,27 @@ def test_signal_chunk_copy_time_range():
     range_chunk = signal_chunk.copy_time_range(4, 6)
     assert np.array_equal(range_chunk.times(), np.array(range(40, 60)) / 10)
     assert range_chunk.end() == 5.9
-    assert np.array_equal(range_chunk.get_channel_values("a"), np.array(range(40, 60)))
+    assert np.array_equal(range_chunk.values(0), np.array(range(40, 60)))
 
     tail_chunk = signal_chunk.copy_time_range(start_time=4)
     assert np.array_equal(tail_chunk.times(), np.array(range(40, sample_count)) / 10)
     assert tail_chunk.end() == 9.9
-    assert np.array_equal(tail_chunk.get_channel_values("a"), np.array(range(40, sample_count)))
+    assert np.array_equal(tail_chunk.values(0), np.array(range(40, sample_count)))
 
     head_chunk = signal_chunk.copy_time_range(end_time=6)
     assert np.array_equal(head_chunk.times(), np.array(range(0, 60)) / 10)
     assert head_chunk.end() == 5.9
-    assert np.array_equal(head_chunk.get_channel_values("a"), np.array(range(0, 60)))
+    assert np.array_equal(head_chunk.values(0), np.array(range(0, 60)))
 
     empty_chunk = signal_chunk.copy_time_range(start_time=1000)
     assert empty_chunk.times().size == 0
     assert empty_chunk.end() == None
-    assert empty_chunk.get_channel_values("a").size == 0
+    assert empty_chunk.values(0).size == 0
 
     # original list should be unchanged
     assert np.array_equal(signal_chunk.times(), np.array(range(100)) / 10)
     assert signal_chunk.end() == 9.9
-    assert np.array_equal(signal_chunk.get_channel_values("a"), np.array(range(100)))
+    assert np.array_equal(signal_chunk.values(0), np.array(range(100)))
 
 
 def test_signal_chunk_equality():

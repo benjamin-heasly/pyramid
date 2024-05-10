@@ -122,8 +122,7 @@ class SignalChunk(BufferData):
 
     def discard_before(self, start_time: float) -> None:
         """Implementing BufferData superclass."""
-        sample_times = self.compute_sample_times()
-        rows_to_keep = sample_times >= start_time
+        (sample_times, rows_to_keep) = self.get_time_selector(start_time=start_time)
         self.sample_data = self.sample_data[rows_to_keep, :]
         if self.sample_data.size > 0:
             self.first_sample_time = sample_times[rows_to_keep][0]
@@ -186,7 +185,7 @@ class SignalChunk(BufferData):
         if channel_id is None:
             channel_index = True
         else:
-            channel_index = self.channel_ids.index(channel_id)
+            channel_index = self.channel_index(channel_id)
 
         self.sample_data[:, channel_index] += offset
         self.sample_data[:, channel_index] *= gain
@@ -199,9 +198,42 @@ class SignalChunk(BufferData):
         """Get the number of channels in the chunk."""
         return self.sample_data.shape[1]
 
-    def get_channel_values(self, channel_id: str | int = None) -> np.ndarray:
-        """Get sample values from one channel, by id."""
-        if channel_id is None:
-            channel_id = self.channel_ids[0]
-        channel_index = self.channel_ids.index(channel_id)
-        return self.sample_data[:, channel_index]
+    def channel_index(self, channel_id: str | int = None) -> np.ndarray:
+        """Get the raw index of a channel from its string or number id."""
+        return self.channel_ids.index(channel_id)
+
+    def first(self, value_index: int = 0):
+        """Implementing BufferData superclass.
+
+        value_index should be a raw index into the data, not a string or other channel_id.
+        """
+        if self.sample_count() > 0:
+            return self.sample_data[0, value_index]
+        else:
+            return None
+
+    def last(self, value_index: int = 0):
+        """Implementing BufferData superclass.
+
+        value_index should be a raw index into the data, not a string or other channel_id.
+        """
+        if self.sample_count() > 0:
+            return self.sample_data[-1, value_index]
+        else:
+            return None
+
+    def values(
+        self,
+        value_index: int = 0,
+        start_time: float = None,
+        end_time: float = None
+    ) -> np.ndarray:
+        """Implementing BufferData superclass.
+
+        value_index should be a raw index into the data, not a string or other channel_id.
+        """
+        if start_time is None and end_time is None:
+            return self.sample_data[:, value_index]
+        else:
+            (_, rows_in_range) = self.get_time_selector(start_time, end_time)
+            return self.sample_data[rows_in_range, value_index]

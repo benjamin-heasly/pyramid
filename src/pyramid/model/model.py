@@ -107,32 +107,43 @@ class BufferData():
         start_time: float = None,
         end_time: float = None
     ) -> np.ndarray:
-        """Get times of buffered values.
-
-        Return an array of times for buffered values.
+        """Get an array of times for buffered values.
 
         By default returns times for all buffered values.
         If value is provided, returns the times when value occurred, if any.
-        Implementations that store non-scalar values can also use a value_index to
-        narrow the search for value.
+        Implementations that store non-scalar values can use value_index to pick from one column/channel/etc.
 
         By default returns the full range of buffered times.
         If start_time is provided, returns only times at or after start_time.
         If end_time is provided, returns only times strictly before end_time.
         """
 
-# TODO: several concise utility methods for BufferData -- for handy trial expressions.
-#   Times:
-#   - times()
-#   - times(value, value_index)
-#   - start()
-#   - end()
-#   Values:
-#   - values(value_index)
-#   - first(value_index)
-#   - last(value_index)
-#   - min(value_index)
-#   - max(value_index)
+    def first(self, value_index: int = 0):
+        """Get the first buffered value.
+
+        Implementations that store non-scalar values can use value_index to pick from one column/channel/etc.
+        """
+
+    def last(self, value_index: int = 0):
+        """Get the last buffered value.
+
+        Implementations that store non-scalar values can use value_index to pick from one column/channel/etc.
+        """
+
+    def values(
+        self,
+        value_index: int = 0,
+        start_time: float = None,
+        end_time: float = None
+    ) -> np.ndarray:
+        """Get an array of buffered values.
+
+        Implementations that store non-scalar values can use value_index to pick from one column/channel/etc.
+
+        By default returns the full range of buffered values.
+        If start_time is provided, returns only values at or after start_time.
+        If end_time is provided, returns only values from strictly before end_time.
+        """
 
 class Buffer():
     """Hold data in a sliding window of time, smoothing any timing mismatch between Readers and Trials.

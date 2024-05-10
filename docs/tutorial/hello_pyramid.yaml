@@ -88,15 +88,15 @@ trials:
   enhancers:
     - class: pyramid.trials.standard_enhancers.ExpressionEnhancer
       args:
-        expression: text_events['clicked_name'].get_values()[0] == text_events['correct_target'].get_values()[0]
+        expression: text_events['clicked_name'].first() == text_events['correct_target'].first()
         value_name: correct
     - class: pyramid.trials.standard_enhancers.ExpressionEnhancer
       args:
-        expression: text_events['clicked_name'].timestamp_data[0] - text_events['cue'].timestamp_data[0]
+        expression: text_events['clicked_name'].start() - text_events['cue'].start()
         value_name: reaction_time
     - class: pyramid.trials.standard_enhancers.ExpressionEnhancer
       args:
-        expression: (text_events['cue'].get_values()[0] == '<---' and text_events['correct_target'].get_values()[0] == 'right') or (text_events['cue'].get_values()[0] == '--->' and text_events['correct_target'].get_values()[0] == 'left')
+        expression: (text_events['cue'].first() == '<---' and text_events['correct_target'].first() == 'right') or (text_events['cue'].first() == '--->' and text_events['correct_target'].first() == 'left')
         value_name: miscue
 plotters:
   # In "gui" mode, Pyramid will set up plotters and update each plotter after each trial.

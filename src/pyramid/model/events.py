@@ -135,16 +135,6 @@ class NumericEventList(BufferData):
         """
         return self.event_data.shape[1] - 1
 
-    def get_values(self, start_time: float = None, end_time: float = None, value_index: int = 0) -> np.ndarray:
-        """Get just the event values, ignoring event times.
-
-        By default this gets only the first value per event.
-        Pass in value_index>0 to get a different value.
-        """
-        rows_in_range = self.get_time_selector(start_time, end_time)
-        value_column = value_index + 1
-        return self.event_data[rows_in_range, value_column]
-
     def copy_value_range(self, min: float = None, max: float = None, value_index: int = 0) -> Self:
         """Make a new list containing only events with values in half open interval [min, max).
 
@@ -170,6 +160,31 @@ class NumericEventList(BufferData):
         rows_in_range = top_selector & bottom_selector
         range_event_data = self.event_data[rows_in_range, :]
         return NumericEventList(range_event_data)
+
+    def first(self, value_index: int = 0):
+        """Implementing BufferData superclass."""
+        if self.event_count():
+            return self.event_data[0, value_index]
+        else:
+            return None
+
+    def last(self, value_index: int = 0):
+        """Implementing BufferData superclass."""
+        if self.event_count():
+            return self.event_data[-1, value_index]
+        else:
+            return None
+
+    def values(
+        self,
+        value_index: int = 0,
+        start_time: float = None,
+        end_time: float = None
+    ) -> np.ndarray:
+        """Implementing BufferData superclass."""
+        rows_in_range = self.get_time_selector(start_time, end_time)
+        value_column = value_index + 1
+        return self.event_data[rows_in_range, value_column]
 
 
 @dataclass
@@ -216,6 +231,10 @@ class TextEventList(BufferData):
     def copy(self) -> Self:
         """Implementing BufferData superclass."""
         return TextEventList(self.timestamp_data.copy(), self.text_data.copy())
+
+    def event_count(self) -> int:
+        """Get the number of events in the list -- the length of the text event data."""
+        return self.text_data.size
 
     def get_time_selector(self, start_time: float, end_time: float) -> np.ndarray:
         if start_time is None:
@@ -285,11 +304,35 @@ class TextEventList(BufferData):
             matching_rows = (self.text_data == value)
             return self.timestamp_data[rows_in_range & matching_rows]
 
-    def event_count(self) -> int:
-        """Get the number of events in the list -- the length of the text event data."""
-        return self.text_data.size
+    def first(self, value_index: int = 0):
+        """Implementing BufferData superclass.
 
-    def get_values(self, start_time: float = None, end_time: float = None) -> np.ndarray:
-        """Get just the event text values, ignoring event times."""
-        rows_in_range = self.get_time_selector(start_time, end_time)
-        return self.text_data[rows_in_range]
+        value_index is not used for text events.
+        """
+        if self.event_count():
+            return self.text_data[0]
+        else:
+            return None
+
+    def last(self, value_index: int = 0):
+        """Implementing BufferData superclass.
+
+        value_index is not used for text events.
+        """
+        if self.event_count():
+            return self.text_data[-1]
+        else:
+            return None
+
+    def values(
+        self,
+        value_index: int = 0,
+        start_time: float = None,
+        end_time: float = None
+    ) -> np.ndarray:
+        """Implementing BufferData superclass.
+
+        value_index is not used for text events.
+        """
+        row_selector = self.get_time_selector(start_time, end_time)
+        return self.text_data[row_selector]
