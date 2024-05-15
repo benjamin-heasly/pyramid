@@ -21,7 +21,8 @@ def test_signal_smoother_in_place():
     # Set up a signal smoother to smoosh down the delta spike.
     signal_smoother = SignalSmoother(
         buffer_name="test_signal",
-        kernel_size=3
+        filter_type="boxcar",
+        window_size=3
     )
 
     # The delta spike should get smooshed down, into three neighboring samples.
@@ -61,7 +62,8 @@ def test_signal_smoother_multiple_channels():
     signal_smoother = SignalSmoother(
         buffer_name="test_signal",
         channel_id="chan_b",
-        kernel_size=3
+        filter_type="boxcar",
+        window_size=3
     )
 
     expected_samples = np.zeros([100, 3])

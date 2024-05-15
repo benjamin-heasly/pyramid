@@ -4,13 +4,13 @@ digraph demo_experiment {
 	edge [fontname=Arial penwidth=2.0]
 	subgraph cluster_buffers {
 		graph [bgcolor=lightgray color=transparent fontname=Arial label=buffers margin=20 rank=same]
-		event_list [label="NumericEventList|<delimiter>delimiter"]
+		numeric_event_list [label="NumericEventList|<delimiter>delimiter"]
 		signal_chunk [label="SignalChunk|<original>original|<smoothed>smoothed"]
 	}
 	trial_delimiter [label="TrialDelimiter|start = 1010"]
-	event_list:delimiter:e -> trial_delimiter
+	numeric_event_list:delimiter:e -> trial_delimiter
 	trial_extractor [label="TrialExtractor|wrt = 42"]
-	event_list:delimiter:e -> trial_extractor
+	numeric_event_list:delimiter:e -> trial_extractor
 	trial_extractor:e -> enhancer_0:w
 	subgraph cluster_enhancers {
 		graph [bgcolor=lightgray color=transparent fontname=Arial label=enhancers margin=20 rank=same]
@@ -33,7 +33,7 @@ digraph demo_experiment {
 		delimiter_reader_results [label="<delimiter>delimiter"]
 		signal_reader_results [label="<original>original"]
 	}
-	delimiter_reader_results:delimiter:e -> event_list:delimiter:w
+	delimiter_reader_results:delimiter:e -> numeric_event_list:delimiter:w
 	signal_reader_results:original:e -> signal_chunk:original:w
 	signal_reader_results:original:e -> signal_chunk:smoothed:w
 }
