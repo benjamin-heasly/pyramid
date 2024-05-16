@@ -16,15 +16,21 @@ def test_numeric_list_getters():
 
     assert event_list.first() == 0
     assert event_list.first(0) == 0
-    assert event_list.first(1) == 0
-    assert event_list.last() == 99
-    assert event_list.last(0) == 99
-    assert event_list.last(1) == 990
+    assert event_list.last() == 990
+    assert event_list.last(0) == 990
     assert np.array_equal(event_list.values(), 10*np.array(range(100)))
     assert np.array_equal(event_list.values(start_time=40), 10*np.array(range(40, 100)))
     assert np.array_equal(event_list.values(end_time=60), 10*np.array(range(60)))
     assert np.array_equal(event_list.values(start_time=40, end_time=60), 10*np.array(range(40, 60)))
     assert np.array_equal(event_list.values(start_time=60, end_time=40), [])
+
+    assert event_list.at(-1) == 0
+    assert event_list.at(0) == 0
+    assert event_list.at(50) == 500
+    assert event_list.at(50, 0) == 500
+    assert event_list.at(50.001) == 510
+    assert event_list.at(99) == 990
+    assert event_list.at(100) == None
 
     assert event_list.start() == 0
     assert event_list.end() == 99
@@ -196,6 +202,14 @@ def test_text_list_getters():
     assert np.array_equal(event_list.values(end_time=60), [str(t) for t in range(60)])
     assert np.array_equal(event_list.values(start_time=40, end_time=60), [str(t) for t in range(40, 60)])
     assert np.array_equal(event_list.values(start_time=60, end_time=40), [])
+
+    assert event_list.at(-1) == '0'
+    assert event_list.at(0) == '0'
+    assert event_list.at(50) == '50'
+    assert event_list.at(50, 0) == '50'
+    assert event_list.at(50.001) == '51'
+    assert event_list.at(99) == '99'
+    assert event_list.at(100) == None
 
     assert event_list.start() == 0
     assert event_list.end() == 99

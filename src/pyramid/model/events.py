@@ -164,14 +164,16 @@ class NumericEventList(BufferData):
     def first(self, value_index: int = 0):
         """Implementing BufferData superclass."""
         if self.event_count():
-            return self.event_data[0, value_index]
+            value_column = value_index + 1
+            return self.event_data[0, value_column]
         else:
             return None
 
     def last(self, value_index: int = 0):
         """Implementing BufferData superclass."""
         if self.event_count():
-            return self.event_data[-1, value_index]
+            value_column = value_index + 1
+            return self.event_data[-1, value_column]
         else:
             return None
 
@@ -185,6 +187,18 @@ class NumericEventList(BufferData):
         rows_in_range = self.get_time_selector(start_time, end_time)
         value_column = value_index + 1
         return self.event_data[rows_in_range, value_column]
+
+    def at(
+        self,
+        time: float = 0.0,
+        value_index: int = 0,
+    ) -> Any:
+        """Implementing BufferData superclass."""
+        at_or_after = np.nonzero(self.event_data[:,0] >= time)[0]
+        if at_or_after.size == 0:
+            return None
+        value_column = value_index + 1
+        return self.event_data[at_or_after[0], value_column]
 
 
 @dataclass
@@ -336,3 +350,17 @@ class TextEventList(BufferData):
         """
         row_selector = self.get_time_selector(start_time, end_time)
         return self.text_data[row_selector]
+
+    def at(
+        self,
+        time: float = 0.0,
+        value_index: int = 0,
+    ) -> str:
+        """Implementing BufferData superclass.
+
+        value_index is not used for text events.
+        """
+        at_or_after = np.nonzero(self.timestamp_data >= time)[0]
+        if at_or_after.size == 0:
+            return None
+        return self.text_data[at_or_after[0]]

@@ -51,7 +51,7 @@ class SignalChunk(BufferData):
         sample_frequency: float = None,
         first_sample_time: float = None,
         channel_ids: list[str | int] = None,
-        dtype = np.float64
+        dtype=np.float64
     ) -> Self:
         """Convenience for creating an empty signal chunk with given params and data type."""
         if channel_ids is None:
@@ -237,3 +237,19 @@ class SignalChunk(BufferData):
         else:
             (_, rows_in_range) = self.get_time_selector(start_time, end_time)
             return self.sample_data[rows_in_range, value_index]
+
+    def at(
+        self,
+        time: float = 0.0,
+        value_index: int = 0,
+    ) -> Any:
+        """Implementing BufferData superclass.
+
+        value_index should be a raw index into the data, not a string or other channel_id.
+        """
+        sample_index = int((time - self.first_sample_time) * self.sample_frequency)
+        if sample_index < 0:
+            return self.sample_data[0, value_index]
+        elif sample_index < self.sample_count():
+            return self.sample_data[sample_index, value_index]
+        return None

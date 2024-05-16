@@ -20,7 +20,6 @@ def test_signal_chunk_getters():
     assert signal_chunk.channel_index("b") == 1
     assert signal_chunk.channel_index("c") == 2
 
-
     assert signal_chunk.first() == 0
     assert signal_chunk.first(0) == 0
     assert signal_chunk.first(1) == 10
@@ -37,6 +36,20 @@ def test_signal_chunk_getters():
     assert np.array_equal(signal_chunk.values(end_time=6), np.array(range(0, 60)))
     assert np.array_equal(signal_chunk.values(start_time=4, end_time=6), np.array(range(40, 60)))
     assert np.array_equal(signal_chunk.values(start_time=6, end_time=4), np.empty([0,]))
+
+    assert signal_chunk.at(-1) == 0
+    assert signal_chunk.at(0) == 0
+    assert signal_chunk.at(0, 0) == 0
+    assert signal_chunk.at(0, 1) == 10
+    assert signal_chunk.at(0, 2) == 0
+    assert signal_chunk.at(5) == 50
+    assert signal_chunk.at(5, 0) == 50
+    assert signal_chunk.at(5, 1) == 60
+    assert signal_chunk.at(5, 2) == 500
+    assert signal_chunk.at(5.001) == 50
+    assert signal_chunk.at(5.1) == 51
+    assert signal_chunk.at(9.9) == 99
+    assert signal_chunk.at(10) == None
 
     assert np.array_equal(signal_chunk.times(), np.array(range(sample_count)) / 10)
     assert signal_chunk.start() == 0

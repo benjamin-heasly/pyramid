@@ -117,18 +117,21 @@ class BufferData():
         If start_time is provided, returns only times at or after start_time.
         If end_time is provided, returns only times strictly before end_time.
         """
+        raise NotImplementedError  # pragma: no cover
 
     def first(self, value_index: int = 0):
         """Get the first buffered value.
 
         Implementations that store non-scalar values can use value_index to pick from one column/channel/etc.
         """
+        raise NotImplementedError  # pragma: no cover
 
     def last(self, value_index: int = 0):
         """Get the last buffered value.
 
         Implementations that store non-scalar values can use value_index to pick from one column/channel/etc.
         """
+        raise NotImplementedError  # pragma: no cover
 
     def values(
         self,
@@ -144,6 +147,19 @@ class BufferData():
         If start_time is provided, returns only values at or after start_time.
         If end_time is provided, returns only values from strictly before end_time.
         """
+        raise NotImplementedError  # pragma: no cover
+
+    def at(
+        self,
+        time: float = 0.0,
+        value_index: int = 0,
+    ) -> Any:
+        """Get the first value at or after the given time.
+
+        Implementations that store non-scalar values can use value_index to pick from one column/channel/etc.
+        """
+        raise NotImplementedError  # pragma: no cover
+
 
 class Buffer():
     """Hold data in a sliding window of time, smoothing any timing mismatch between Readers and Trials.
