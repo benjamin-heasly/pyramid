@@ -64,23 +64,23 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     """
 
     try:
-        window_size = np.abs(np.int(window_size))
-        order = np.abs(np.int(order))
-    except ValueError as msg:
+        window_size = np.abs(np.int_(window_size))
+        order = np.abs(np.int_(order))
+    except ValueError as msg:  # pragma: no cover
         raise ValueError("window_size and order have to be of type int")
 
-    if window_size % 2 != 1 or window_size < 1:
+    if window_size % 2 != 1 or window_size < 1:  # pragma: no cover
         raise TypeError("window_size size must be a positive odd number")
 
-    if window_size < order + 2:
+    if window_size < order + 2:  # pragma: no cover
         raise TypeError("window_size is too small for the polynomials order")
 
     order_range = range(order+1)
     half_window = (window_size - 1) // 2
 
     # precompute coefficients
-    b = np.mat([[k**i for i in order_range] for k in range(-half_window, half_window+1)])
-    m = np.linalg.pinv(b).A[deriv] * rate**deriv * factorial(deriv)
+    b = np.array([[k**i for i in order_range] for k in range(-half_window, half_window+1)])
+    m = np.linalg.pinv(b)[deriv] * rate**deriv * factorial(deriv)
 
     # pad the signal at the extremes with
     # values taken from the signal itself
@@ -94,14 +94,15 @@ class SignalSmoother(TrialEnhancer):
     """Adjust a signal in place for each trial, to smooth it out.
 
     Args:
-        buffer_name:    The Name of a Trial buffer with Signal data to smooth.
-        channel_id:     The id of a channel to work on within the named buffer (default is first channel).
-        filter_type:    Style of smoothing, default is "gaussian".  Can be any of of:
+        buffer_name:    The name of a Trial buffer with signal data to smooth.
+        channel_id:     The id of a channel to work on, within the named buffer (default is the first channel).
+        filter_type:    Style of smoothing, one of of:
                             "gaussian"
                             "boxcar"
                             "golay"
+                        (default is "gaussian")
         gaussian_std:   standard deviation to use for filter_type "gaussian" (default is 5).
-        window_size:    width in sample of filter window to use with filter_type "boxcar" or "golay" (default is 5).
+        window_size:    width in samples of filter window to use with filter_type "boxcar" or "golay" (default is 5).
         poly_order:     polynomial order to use with filter_type "golay", default is 1.
     """
 

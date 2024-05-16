@@ -72,3 +72,74 @@ def test_signal_smoother_multiple_channels():
     expected_samples[50, 2] = 1
     signal_smoother.enhance(trial, trial_number=0, experiment_info={}, subject_info={})
     assert np.array_equal(signal.sample_data, expected_samples)
+
+
+def test_signal_smoother_gaussian():
+    # Set up a trial with a signal that looks like a simple delta function.
+    raw_samples = np.zeros([20, 1])
+    raw_samples[10, 0] = 1
+    signal = SignalChunk(
+        sample_data=raw_samples,
+        sample_frequency=10,
+        first_sample_time=0.0,
+        channel_ids=["chan_a"]
+    )
+    trial = Trial(start_time=0.0, end_time=10.0)
+    trial.add_buffer_data("test_signal", signal)
+
+    # Set up a signal smoother to smoosh down the delta spike.
+    signal_smoother = SignalSmoother(
+        buffer_name="test_signal",
+        filter_type="gaussian",
+        gaussian_std=1
+    )
+
+    # The delta spike should get smooshed down, into several neighboring samples.
+    expected_samples = np.zeros([20, 1])
+    expected_samples[6, 0] = 0.00013383062461474175
+    expected_samples[7, 0] = 0.0044318616200312655
+    expected_samples[8, 0] = 0.05399112742070441
+    expected_samples[9, 0] = 0.24197144565660073
+    expected_samples[10, 0] = 0.39894346935609776
+    expected_samples[11, 0] = 0.24197144565660073
+    expected_samples[12, 0] = 0.05399112742070441
+    expected_samples[13, 0] = 0.0044318616200312655
+    expected_samples[14, 0] = 0.00013383062461474175
+
+    # The signal smoother should modify the signal sample data in place.
+    signal_smoother.enhance(trial, trial_number=0, experiment_info={}, subject_info={})
+    assert np.array_equal(signal.sample_data, expected_samples)
+
+
+def test_signal_smoother_golay():
+    # Set up a trial with a signal that looks like a simple delta function.
+    raw_samples = np.zeros([20, 1])
+    raw_samples[10, 0] = 1
+    signal = SignalChunk(
+        sample_data=raw_samples,
+        sample_frequency=10,
+        first_sample_time=0.0,
+        channel_ids=["chan_a"]
+    )
+    trial = Trial(start_time=0.0, end_time=10.0)
+    trial.add_buffer_data("test_signal", signal)
+
+    # Set up a signal smoother to smoosh down the delta spike.
+    signal_smoother = SignalSmoother(
+        buffer_name="test_signal",
+        filter_type="golay",
+        window_size=5,
+        poly_order=2
+    )
+
+    # The delta spike should get smooshed down, into 5 neighboring samples.
+    expected_samples = np.zeros([20, 1])
+    expected_samples[8, 0] = -0.08571428571428594
+    expected_samples[9, 0] = 0.34285714285714297
+    expected_samples[10, 0] = 0.4857142857142857
+    expected_samples[11, 0] = 0.3428571428571429
+    expected_samples[12, 0] = -0.08571428571428562
+
+    # The signal smoother should modify the signal sample data in place.
+    signal_smoother.enhance(trial, trial_number=0, experiment_info={}, subject_info={})
+    assert np.array_equal(signal.sample_data, expected_samples)
