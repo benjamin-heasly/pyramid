@@ -3,6 +3,9 @@ from numpy import bool_
 import logging
 import csv
 
+import numpy as np
+from scipy.ndimage import gaussian_filter1d
+
 from pyramid.file_finder import FileFinder
 from pyramid.trials.trials import Trial, TrialEnhancer, TrialExpression
 
@@ -388,3 +391,211 @@ class TextKeyValueEnhancer(TrialEnhancer):
         category = info.get(self.category_key, category)
 
         return (value, category)
+
+
+class SaccadesEnhancer(TrialEnhancer):
+    """Parse saccades from the x,y eye position traces in a trial using velocity and acceleration thresholds.
+
+    Args:
+        max_saccades:                           Parse this number of saccades, at most (default 1).
+        center_at_fp:                           Whether to re-zero gaze position at fp off time (default True).
+        x_buffer_name:                          Name of a Trial buffer with gaze signal data (default "gaze").
+        x_channel_id:                           Channel id to use within x_buffer_name (default "x").
+        y_buffer_name:                          Name of a Trial buffer with gaze signal data (default "gaze").
+        y_channel_id:                           Channel id to use within y_buffer_name (default "y").
+        fp_off_name:                            Name of a trial enhancement with time to start saccade parsing (default "fp_off").
+        all_off_name:                           Name of a trial enhancement with time to end saccade parsing (default "all_off").
+        fp_x_name:                              Name of a trial enhancement with fixation x position (default "fp_x").
+        fp_y_name:                              Name of a trial enhancement with fixation y position (default "fp_y").
+        position_smoothing_kernel_size_ms:      Width of kernel to smooth gaze position samples (default 0 -- ie no smoothing).
+        velocity_smoothing_kernel_size_ms:      Width of kernel to smooth gaze velocity samples (default 10 -- ie smoothing).
+        acceleration_smoothing_kernel_size_ms:  Width of kernel to smooth gaze acceleration samples (default 0 -- no ie smoothing).
+        velocity_threshold_deg_per_s:           Threshold for detecting saccades by velocity in gaze deg/s (default 300).
+        acceleration_threshold_deg_per_s2:      Threshold for detecting saccades by acceleration in gaze deg/s^2 (default 8).
+        min_length_deg:                         Minimum length for a saccade to count in gaze deg (default 3.0).
+        min_latency_ms: float = 10,             Minimum latency in ms that must elapse before a saccade for it to count (default 10).
+        min_duration_ms: float = 5.0,           Minimum duration in ms of a saccade for it to count (default 5.0).
+        max_duration_ms: float = 90.0,          Maximum duration in ms of a saccade for it to count (default 90.0).
+        saccades_name:                          Trial enhancement name to use when adding detected saccades (default "saccades").
+        saccades_category:                      Trial enhancement category to use when adding detected saccades (default "saccades").
+    """
+
+    def __init__(
+        self,
+        max_saccades: int = 1,
+        center_at_fp: bool = True,
+        x_buffer_name: str = "gaze",
+        x_channel_id: str | int = "x",
+        y_buffer_name: str = "gaze",
+        y_channel_id: str | int = "y",
+        fp_off_name: str = "fp_off",
+        all_off_name: str = "all_off",
+        fp_x_name: str = "fp_x",
+        fp_y_name: str = "fp_y",
+        position_smoothing_kernel_size_ms: int = 0,
+        velocity_smoothing_kernel_size_ms: int = 10,
+        acceleration_smoothing_kernel_size_ms: int = 0,
+        velocity_threshold_deg_per_s: float = 300,
+        acceleration_threshold_deg_per_s2: float = 8,
+        min_length_deg: float = 3.0,
+        min_latency_ms: float = 10,
+        min_duration_ms: float = 5.0,
+        max_duration_ms: float = 90.0,
+        saccades_name: str = "saccades",
+        saccades_category: str = "saccades"
+    ) -> None:
+        self.max_saccades = max_saccades
+        self.center_at_fp = center_at_fp
+        self.x_buffer_name = x_buffer_name
+        self.x_channel_id = x_channel_id
+        self.y_buffer_name = y_buffer_name
+        self.y_channel_id = y_channel_id
+        self.fp_off_name = fp_off_name
+        self.all_off_name = all_off_name
+        self.fp_x_name = fp_x_name
+        self.fp_y_name = fp_y_name
+        self.position_smoothing_kernel_size_ms = position_smoothing_kernel_size_ms
+        self.velocity_smoothing_kernel_size_ms = velocity_smoothing_kernel_size_ms
+        self.acceleration_smoothing_kernel_size_ms = acceleration_smoothing_kernel_size_ms
+        self.velocity_threshold_deg_per_s = velocity_threshold_deg_per_s
+        self.acceleration_threshold_deg_per_s2 = acceleration_threshold_deg_per_s2
+        self.min_length_deg = min_length_deg
+        self.min_latency_ms = min_latency_ms
+        self.min_duration_ms = min_duration_ms
+        self.max_duration_ms = max_duration_ms
+        self.saccades_name = saccades_name
+        self.saccades_category = saccades_category
+
+    def enhance(self, trial: Trial, trial_number: int, experiment_info: dict, subject_info: dict) -> None:
+
+        # Get event times from trial enhancements to delimit saccade parsing.
+        fp_off_time = trial.get_one(self.fp_off_name)
+        all_off_time = trial.get_one(self.all_off_name)
+
+        # Use trial.signals for gaze signal chunks.
+        if self.x_buffer_name not in trial.signals and self.y_buffer_name not in trial.signals:
+            return
+        x_signal = trial.signals[self.x_buffer_name]
+        y_signal = trial.signals[self.y_buffer_name]
+        if x_signal.end() < fp_off_time or y_signal.end() < fp_off_time:
+            return
+
+        # Possibly center at fp.
+        x_channel_index = x_signal.channel_index(self.x_channel_id)
+        y_channel_index = y_signal.channel_index(self.y_channel_id)
+        if self.center_at_fp is True:
+            x_signal.apply_offset_then_gain(-x_signal.at(fp_off_time, x_channel_index), 1)
+            y_signal.apply_offset_then_gain(-y_signal.at(fp_off_time, y_channel_index), 1)
+
+        # Get x,y data from the relevant time range, fp_off to all_off.
+        x_position = x_signal.values(x_channel_index, fp_off_time, all_off_time)
+        y_position = y_signal.values(y_channel_index, fp_off_time, all_off_time)
+
+        # Possibly smooth position.
+        if self.position_smoothing_kernel_size_ms > 0:
+            # Convert kernel width in ms to a number of samples.
+            kernel_width = self.position_smoothing_kernel_size_ms * x_signal.sample_frequency / 1000.0
+            x_position = gaussian_filter1d(x_position, kernel_width)
+            y_position = gaussian_filter1d(y_position, kernel_width)
+
+        # Compute instantaneous velocity.
+        dx = np.diff(x_position)
+        dy = np.diff(y_position)
+        distance = np.sqrt(dx**2 + dy**2)
+        velocity = distance * x_signal.sample_frequency
+
+        # Possibly smooth velocity.
+        if self.velocity_smoothing_kernel_size_ms > 0:
+            # Convert kernel width in ms to a number of samples.
+            kernel_width = self.velocity_smoothing_kernel_size_ms * x_signal.sample_frequency / 1000.0
+            velocity = gaussian_filter1d(velocity, kernel_width)
+
+        # Compute instantaneous acceleration.
+        acceleration = np.concatenate([[0], np.diff(velocity)])
+
+        # Possibly smooth acceleration.
+        if self.acceleration_smoothing_kernel_size_ms > 0:
+            # Convert kernel width in ms to a number of samples.
+            kernel_width = self.acceleration_smoothing_kernel_size_ms * x_signal.sample_frequency / 1000.0
+            acceleration = gaussian_filter1d(acceleration, kernel_width)
+
+        # Look for saccades!
+        num_samples = len(distance)
+        sample_index = 0
+        saccades = []
+        while (sample_index < num_samples) and (len(saccades) < self.max_saccades):
+
+            # Reset indices.
+            start_index = -1
+            end_index = -1
+
+            # Check for saccade, first try acceleration, then velocity treshold.
+            if acceleration[sample_index] >= self.acceleration_threshold_deg_per_s2:
+
+                # Crossed acceleration threshold.
+                start_index = sample_index
+
+                # Look for deceleration.
+                while (sample_index < num_samples and
+                       acceleration[sample_index] > -self.acceleration_threshold_deg_per_s2):
+                    sample_index += 1
+
+                # Look for end of deceleration.
+                if (sample_index < num_samples and
+                        (acceleration[sample_index] <= -self.acceleration_threshold_deg_per_s2 or
+                         velocity[sample_index] <= self.velocity_threshold_deg_per_s)):
+                    end_index = sample_index
+
+            elif velocity[sample_index] >= self.velocity_threshold_deg_per_s:
+
+                # Crossed velocity threshold.
+                start_index = sample_index
+
+                # Look for slowing.
+                while (sample_index < num_samples and
+                       velocity[sample_index] >= self.velocity_threshold_deg_per_s):
+                    sample_index += 1
+
+                # Look for end of super-threshold velocity.
+                if (sample_index < num_samples and
+                        velocity[sample_index] <= self.velocity_threshold_deg_per_s):
+                    end_index = sample_index
+
+            # Check if we found something.
+            if (start_index != -1) and (end_index != 1):
+
+                # Get start/end times wrt fixation onset.
+                sac_start_time = fp_off_time + (start_index + 1) / x_signal.sample_frequency
+                sac_end_time = fp_off_time + (end_index + 1) / x_signal.sample_frequency
+                sac_duration = sac_end_time - sac_start_time
+
+                # Saccade distance.
+                sac_length = np.sqrt(
+                    (x_position[end_index+1] - x_position[start_index+1])**2 +
+                    (y_position[end_index+1] - y_position[start_index+1])**2)
+
+                if (
+                    (sac_length >= self.min_length_deg)
+                    and (sac_duration <= self.max_duration_ms / 1000)
+                    and (sac_duration >= self.min_duration_ms / 1000)
+                    and (sac_start_time >= self.min_latency_ms / 1000)
+                ):
+                    # Save the saccade as a dictionary in the list of saccades.
+                    saccades.append({
+                        "t_start": sac_start_time,
+                        "t_end": sac_end_time,
+                        "v_max": np.max(velocity[start_index:end_index]),
+                        "v_avg": sac_length / sac_duration,
+                        "x_start": x_position[start_index + 1],
+                        "y_start": y_position[start_index + 1],
+                        "x_end": x_position[end_index + 1],
+                        "y_end": y_position[end_index + 1],
+                        "raw_distance": np.sum(velocity[start_index:end_index])/x_signal.sample_frequency,
+                        "vector_distance": sac_length,
+                    })
+
+            # Update index to continue looking.
+            sample_index += 1
+
+        # Add the list of saccade dictionaries to trial enhancements.
+        trial.add_enhancement(self.saccades_name, saccades, self.saccades_category)

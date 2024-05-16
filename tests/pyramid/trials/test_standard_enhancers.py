@@ -5,7 +5,13 @@ from pyramid.file_finder import FileFinder
 from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
 from pyramid.trials.trials import Trial
-from pyramid.trials.standard_enhancers import PairedCodesEnhancer, EventTimesEnhancer, ExpressionEnhancer, TextKeyValueEnhancer
+from pyramid.trials.standard_enhancers import (
+    PairedCodesEnhancer,
+    EventTimesEnhancer,
+    ExpressionEnhancer,
+    TextKeyValueEnhancer,
+    SaccadesEnhancer
+)
 
 
 def test_paired_codes_enhancer(tmp_path):
@@ -453,3 +459,107 @@ def test_text_key_value_enhancer_configure_literals():
         "floaty mcfloatface": ["name_8", "name_9"],
         "special": ["name_10"]
     }
+
+
+def test_saccades_enhancer_empty_trial():
+    enhancer = SaccadesEnhancer()
+    trial = Trial(
+        start_time=0,
+        end_time=1,
+        wrt_time=0.5
+    )
+    # Don't error out if the trial is incomplete (like the 0th trial, often), just no-op.
+    enhancer.enhance(trial, 0, {}, {})
+    assert not trial.enhancements
+
+
+def test_saccades_enhancer_short_data():
+    enhancer = SaccadesEnhancer()
+    trial = Trial(
+        start_time=0,
+        end_time=1,
+        wrt_time=0.5
+    )
+    gaze = SignalChunk(
+        sample_data=np.zeros([10, 2]),
+        sample_frequency=1000,
+        first_sample_time=0.0,
+        channel_ids=["x", "y"]
+    )
+    trial.add_buffer_data("gaze", gaze)
+    trial.add_enhancement("fp_off", 4.5)
+
+    # Don't error out if the gaze signal is too short, just no-op.
+    enhancer.enhance(trial, 0, {}, {})
+    assert not trial.get_enhancement('saccades')
+
+
+def test_saccades_enhancer_step_saccade():
+    enhancer = SaccadesEnhancer(
+        min_duration_ms=0.0,
+        position_smoothing_kernel_size_ms=1.0,
+        acceleration_smoothing_kernel_size_ms=1.0
+    )
+    trial = Trial(
+        start_time=0,
+        end_time=10,
+        wrt_time=5
+    )
+
+    # Fake up gaze positions that start off at (0,0) for 5 seconds,
+    # then abruptly step to (5,5) for 5 seconds.
+    step_size = 5
+    step_samples = np.concatenate([np.zeros([5000,]), np.ones([5000,])]) * step_size
+    gaze_samples = np.stack([step_samples, step_samples], axis=1)
+    gaze = SignalChunk(
+        sample_data=gaze_samples,
+        sample_frequency=1000,
+        first_sample_time=0.0,
+        channel_ids=["x", "y"]
+    )
+    trial.add_buffer_data("gaze", gaze)
+
+    # Fake trial config roughly consistent with the fake gaze positions.
+    trial.add_enhancement("fp_off", 4.5)
+    trial.add_enhancement("all_off", 5.5)
+    trial.add_enhancement("fp_x", 0.0)
+    trial.add_enhancement("fp_y", 0.0)
+
+    # Find the a saccade at the step in gaze position.
+    # The code will end up detecting this by gaze acceleration.
+    enhancer.enhance(trial, 0, {}, {})
+    saccades = trial.get_enhancement('saccades')
+    assert saccades == [
+        {
+            't_start': 4.981,
+            't_end': 5.004,
+            'v_max': 280.70917823751074,
+            'v_avg': 307.437730950677,
+            'x_start': 0.0,
+            'y_start': 0.0,
+            'x_end': 5.0,
+            'y_end': 5.0,
+            'raw_distance': 4.31435627109525,
+            'vector_distance': 7.0710678118654755
+        }
+    ]
+
+    # Find the same saccade again, but force the code to use saccade velocity.
+    enhancer.acceleration_threshold_deg_per_s2 = 1000
+    enhancer.velocity_threshold_deg_per_s = 200
+    enhancer.enhance(trial, 0, {}, {})
+    saccades = trial.get_enhancement('saccades')
+    assert saccades == [
+        {
+            't_start': 4.992,
+            't_end': 5.009,
+            'v_max': 280.70917823751074,
+            'v_avg': 415.94516540384296,
+            'x_start': 0.0,
+            'y_start': 0.0,
+            'x_end': 5.0,
+            'y_end': 5.0,
+            'raw_distance': 4.260679185446772,
+            'vector_distance': 7.0710678118654755
+        }
+    ]
