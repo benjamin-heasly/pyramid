@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 import logging
 
 from pyramid.model.model import DynamicImport, BufferData, Buffer
-from pyramid.model.events import NumericEventList
 from pyramid.neutral_zone.transformers.transformers import Transformer
 
 

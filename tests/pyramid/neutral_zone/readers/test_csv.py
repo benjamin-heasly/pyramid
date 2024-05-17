@@ -1,6 +1,6 @@
-import numpy as np
-
 from pathlib import Path
+
+import numpy as np
 from pytest import fixture, raises
 
 from pyramid.model.events import NumericEventList, TextEventList

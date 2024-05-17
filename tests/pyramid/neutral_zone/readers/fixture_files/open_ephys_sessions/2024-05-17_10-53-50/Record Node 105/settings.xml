@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<SETTINGS>
+  <INFO>
+    <VERSION>0.6.7</VERSION>
+    <PLUGIN_API_VERSION>8</PLUGIN_API_VERSION>
+    <DATE>17 May 2024 10:53:50</DATE>
+    <OS>Linux</OS>
+    <MACHINE name="ninjaben-ThinkPad-T450s" cpu_model="Intel(R) Core(TM) i5-5200U CPU @ 2.20GHz"
+             cpu_num_cores="4"/>
+  </INFO>
+  <SIGNALCHAIN>
+    <PROCESSOR name="File Reader" insertionPoint="0" pluginName="File Reader"
+               type="0" index="2" libraryName="" libraryVersion="" processorType="2"
+               nodeId="100">
+      <GLOBAL_PARAMETERS/>
+      <STREAM name="example_data" description="A description of the File Reader Stream"
+              sample_rate="40000.0" channel_count="16">
+        <PARAMETERS/>
+      </STREAM>
+      <CUSTOM_PARAMETERS/>
+      <EDITOR isCollapsed="0" isDrawerOpen="0" displayName="File Reader" activeStream="0"
+              Type="FileReader">
+        <FILENAME path="default" recording="1"/>
+        <TIME_LIMITS start_time="0.0" stop_time="4999.0"/>
+      </EDITOR>
+    </PROCESSOR>
+    <PROCESSOR name="Network Events" insertionPoint="1" pluginName="Network Events"
+               type="1" index="11" libraryName="Network Events" libraryVersion="0.2.1"
+               processorType="1" nodeId="101">
+      <GLOBAL_PARAMETERS/>
+      <STREAM name="example_data" description="A description of the File Reader Stream"
+              sample_rate="40000.0" channel_count="16">
+        <PARAMETERS enable_stream="1"/>
+      </STREAM>
+      <CUSTOM_PARAMETERS>
+        <NETWORKEVENTS port="5556"/>
+      </CUSTOM_PARAMETERS>
+      <EDITOR isCollapsed="0" isDrawerOpen="0" displayName="Network Events"
+              activeStream="0"/>
+    </PROCESSOR>
+    <PROCESSOR name="UDP Events" insertionPoint="1" pluginName="UDP Events"
+               type="1" index="9" libraryName="UDP Events" libraryVersion="0.1.0"
+               processorType="1" nodeId="102">
+      <GLOBAL_PARAMETERS host="127.0.0.1" line="3" port="12345" stream="10001"/>
+      <STREAM name="example_data" description="A description of the File Reader Stream"
+              sample_rate="40000.0" channel_count="16">
+        <PARAMETERS enable_stream="1"/>
+      </STREAM>
+      <CUSTOM_PARAMETERS/>
+      <EDITOR isCollapsed="0" isDrawerOpen="0" displayName="UDP Events" activeStream="0"/>
+    </PROCESSOR>
+    <PROCESSOR name="TTL Display Panel" insertionPoint="1" pluginName="TTL Display Panel"
+               type="1" index="13" libraryName="TTL Panels" libraryVersion="0.1.0"
+               processorType="3" nodeId="103">
+      <GLOBAL_PARAMETERS/>
+      <STREAM name="example_data" description="A description of the File Reader Stream"
+              sample_rate="40000.0" channel_count="16">
+        <PARAMETERS enable_stream="1" ttl_word="0"/>
+      </STREAM>
+      <CUSTOM_PARAMETERS/>
+      <EDITOR isCollapsed="0" isDrawerOpen="0" displayName="TTL Display Panel"
+              activeStream="0"/>
+    </PROCESSOR>
+    <PROCESSOR name="LFP Viewer" insertionPoint="1" pluginName="LFP Viewer"
+               type="1" index="0" libraryName="LFP viewer" libraryVersion="0.6.7"
+               processorType="3" nodeId="104">
+      <GLOBAL_PARAMETERS/>
+      <STREAM name="example_data" description="A description of the File Reader Stream"
+              sample_rate="40000.0" channel_count="16">
+        <PARAMETERS enable_stream="1"/>
+      </STREAM>
+      <CUSTOM_PARAMETERS/>
+      <EDITOR isCollapsed="0" isDrawerOpen="0" displayName="LFP Viewer" activeStream="0"
+              Type="LfpDisplayEditor">
+        <TAB Active="1" Index="3"/>
+        <WINDOW Active="0"/>
+        <VALUES SelectedLayout="1"/>
+        <LFPDISPLAY0 SubprocessorID="10001" Range="250,2000,10.0" Timebase="2.0" Spread="40"
+                     colourScheme="1" colorGrouping="1" spikeRaster="OFF" clipWarning="1"
+                     satWarning="1" reverseOrder="0" sortByDepth="0" channelSkip="1"
+                     showChannelNum="0" subtractOffset="0" isInverted="0" triggerSource="1"
+                     trialAvg="0" singleChannelView="-1" EventButtonState="255" ChannelDisplayState="1111111111111111"
+                     ScrollX="0" ScrollY="0"/>
+        <LFPDISPLAY1 SubprocessorID="10001" Range="250,2000,10.0" Timebase="2.0" Spread="40"
+                     colourScheme="1" colorGrouping="1" spikeRaster="OFF" clipWarning="1"
+                     satWarning="1" reverseOrder="0" sortByDepth="0" channelSkip="1"
+                     showChannelNum="0" subtractOffset="0" isInverted="0" triggerSource="1"
+                     trialAvg="0" singleChannelView="-1" EventButtonState="255" ChannelDisplayState="1111111111111111"
+                     ScrollX="0" ScrollY="0"/>
+        <LFPDISPLAY2 SubprocessorID="10001" Range="250,2000,10.0" Timebase="2.0" Spread="40"
+                     colourScheme="1" colorGrouping="1" spikeRaster="OFF" clipWarning="1"
+                     satWarning="1" reverseOrder="0" sortByDepth="0" channelSkip="1"
+                     showChannelNum="0" subtractOffset="0" isInverted="0" triggerSource="1"
+                     trialAvg="0" singleChannelView="-1" EventButtonState="255" ChannelDisplayState="1111111111111111"
+                     ScrollX="0" ScrollY="0"/>
+        <CANVAS doubleVerticalSplitRatio="0.5" doubleHorizontalSplitRatio="0.5"
+                tripleHorizontalSplitRatio="0.33,0.66" tripleVerticalSplitRatio="0.33,0.66"
+                showAllOptions="0"/>
+      </EDITOR>
+    </PROCESSOR>
+    <PROCESSOR name="Record Node" insertionPoint="1" pluginName="Record Node"
+               type="0" index="3" libraryName="" libraryVersion="" processorType="8"
+               nodeId="105">
+      <GLOBAL_PARAMETERS/>
+      <STREAM name="example_data" description="A description of the File Reader Stream"
+              sample_rate="40000.0" channel_count="16">
+        <PARAMETERS enable_stream="1"/>
+      </STREAM>
+      <CUSTOM_PARAMETERS path="/home/ninjaben/open-ephys" engine="BINARY" recordEvents="1"
+                         recordSpikes="1" fifoMonitorsVisible="1">
+        <STREAM isMainStream="1" sync_line="0" name="example_data" source_node_id="100"
+                sample_rate="40000.0" channel_count="16" recording_state="ALL"/>
+      </CUSTOM_PARAMETERS>
+      <EDITOR isCollapsed="0" isDrawerOpen="0" displayName="Record Node" activeStream="0"/>
+    </PROCESSOR>
+  </SIGNALCHAIN>
+  <EDITORVIEWPORT scroll="0">
+    <FILE_READER ID="100"/>
+    <NETWORK_EVENTS ID="101"/>
+    <UDP_EVENTS ID="102"/>
+    <TTL_DISPLAY_PANEL ID="103"/>
+    <LFP_VIEWER ID="104"/>
+    <RECORD_NODE ID="105"/>
+  </EDITORVIEWPORT>
+  <DATAVIEWPORT selectedTab="3"/>
+  <AUDIO sampleRate="44100.0" bufferSize="1024" deviceType="ALSA"/>
+  <CONTROLPANEL isOpen="0" recordPath="/home/ninjaben/open-ephys" recordEngine="BINARY"
+                clockMode="0"/>
+  <AUDIOEDITOR isMuted="0" volume="50.0" noiseGate="0.0"/>
+  <FILENAMECONFIG>
+    <PREPEND state="0" value=""/>
+    <MAIN state="1" value="2024-05-17_10-53-50"/>
+    <APPEND state="0" value=""/>
+  </FILENAMECONFIG>
+  <PROCESSORLIST>
+    <COLOR ID="801" R="59" G="59" B="59"/>
+    <COLOR ID="804" R="241" G="90" B="41"/>
+    <COLOR ID="802" R="0" G="174" B="239"/>
+    <COLOR ID="803" R="0" G="166" B="81"/>
+    <COLOR ID="805" R="147" G="149" B="152"/>
+    <COLOR ID="806" R="255" G="0" B="0"/>
+    <COLOR ID="807" R="0" G="0" B="0"/>
+  </PROCESSORLIST>
+  <UICOMPONENT isProcessorListOpen="1" isEditorViewportOpen="1"/>
+</SETTINGS>
