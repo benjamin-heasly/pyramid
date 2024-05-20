@@ -1,6 +1,5 @@
 from types import TracebackType
 from typing import Self
-import logging
 
 import numpy as np
 from open_ephys.analysis import Session
@@ -10,6 +9,25 @@ from pyramid.model.model import BufferData
 from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
 from pyramid.neutral_zone.readers.readers import Reader
+
+
+class OpenEphysSession():
+    """A shared util for accessing an Open Ephys session and recording."""
+
+    def __init__(
+        self,
+        session_dir: str,
+        record_node_index: int = -1,
+        recording_index: int = -1,
+    ) -> None:
+        # Construct the top-level session reader, but don't try to access data yet.
+        self.session = Session(session_dir)
+        if record_node_index is None:
+            self.record_node = None
+            self.recording = self.session.recordings[recording_index]
+        else:
+            self.record_node = self.session.recordnodes[record_node_index]
+            self.recording = self.record_node.recordings[recording_index]
 
 
 class OpenEphysSessionSignalReader(Reader):
@@ -41,51 +59,17 @@ class OpenEphysSessionSignalReader(Reader):
         result_name: str = None,
         samples_per_chunk: int = 10000
     ) -> None:
-        self.session_dir = file_finder.find(session_dir)
+        self.session = OpenEphysSession(file_finder.find(session_dir), record_node_index, recording_index)
         self.stream_name = stream_name
         self.channel_names = channel_names
-        self.record_node_index = record_node_index
-        self.recording_index = recording_index
         self.result_name = result_name
         self.samples_per_chunk = samples_per_chunk
 
-        self.session = None
-        self.record_node = None
-        self.recording = None
-        self.continuous = None
-        self.channel_ids = None
-        self.channel_indexes = None
-        self.next_sample = 0
-        self.total_samples = None
-
-    def __enter__(self) -> Self:
-        self.session = Session(self.session_dir)
-        if self.record_node_index is None:
-            self.recording = self.session.recordings[self.recording_index]
-        else:
-            self.record_node = self.session.recordnodes[self.record_node_index]
-            self.recording = self.record_node.recordings[self.recording_index]
-        self.pick_stream()
-        return self
-
-    def __exit__(
-        self,
-        __exc_type: type[BaseException] | None,
-        __exc_value: BaseException | None,
-        __traceback: TracebackType | None
-    ) -> bool | None:
-        self.session = None
-        self.record_node = None
-        self.recording = None
-        self.continuous = None
-        return None
-
-    def pick_stream(self) -> None:
         # Pick a continuous data object by name.
         if self.stream_name is None:
-            self.continuous = self.recording.continuous[0]
+            self.continuous = self.session.recording.continuous[0]
         else:
-            for continuous in self.recording.continuous:
+            for continuous in self.session.recording.continuous:
                 if continuous.metadata["stream_name"] == self.stream_name:
                     self.continuous = continuous
 
@@ -109,10 +93,22 @@ class OpenEphysSessionSignalReader(Reader):
 
         # Look ahead to know when to stop reading.
         self.total_samples = self.continuous.sample_numbers.size
+        self.next_sample = None
+
+    def __enter__(self) -> Self:
+        self.next_sample = 0
+        return self
+
+    def __exit__(
+        self,
+        __exc_type: type[BaseException] | None,
+        __exc_value: BaseException | None,
+        __traceback: TracebackType | None
+    ) -> bool | None:
+        self.next_sample = None
+        return None
 
     def get_initial(self) -> dict[str, BufferData]:
-        # TODO: Oops, this secretly relies on __enter__().
-        self.pick_stream()
         return {
             self.result_name: SignalChunk.empty(
                 sample_frequency=self.continuous.metadata['sample_rate'],
@@ -168,10 +164,8 @@ class OpenEphysSessionNumericEventReader(Reader):
         recording_index: int = -1,
         result_name: str = None
     ) -> None:
-        self.session_dir = file_finder.find(session_dir)
+        self.session = OpenEphysSession(file_finder.find(session_dir), record_node_index, recording_index)
         self.stream_name = stream_name
-        self.record_node_index = record_node_index
-        self.recording_index = recording_index
 
         if result_name is None:
             if stream_name is None:
@@ -181,27 +175,16 @@ class OpenEphysSessionNumericEventReader(Reader):
         else:
             self.result_name = result_name
 
-        self.session = None
-        self.record_node = None
-        self.recording = None
         self.events_iterator = None
 
     def __enter__(self) -> Self:
-        # Pick one recording from the session dir.
-        self.session = Session(self.session_dir)
-        if self.record_node_index is None:
-            self.recording = self.session.recordings[self.recording_index]
-        else:
-            self.record_node = self.session.recordnodes[self.record_node_index]
-            self.recording = self.record_node.recordings[self.recording_index]
-
-        # Set up an iterator over the recording's events.
+        # Set up an iterator over the session recording's events.
         if self.stream_name:
             # Filter the events by matching on stream_name.
-            self.events_iterator = (e for e in self.recording.events.itertuples() if e.stream_name == self.stream_name)
+            self.events_iterator = (e for e in self.session.recording.events.itertuples() if e.stream_name == self.stream_name)
         else:
             # Take all events.
-            self.events_iterator = self.recording.events.itertuples()
+            self.events_iterator = self.session.recording.events.itertuples()
 
         return self
 
@@ -211,9 +194,6 @@ class OpenEphysSessionNumericEventReader(Reader):
         __exc_value: BaseException | None,
         __traceback: TracebackType | None
     ) -> bool | None:
-        self.session = None
-        self.record_node = None
-        self.recording = None
         self.events_iterator = None
         return None
 

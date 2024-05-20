@@ -65,37 +65,34 @@ expected_signal_channel_ids = [
 
 def test_signal_locate_binary_format(binary_session_path):
     # Load the whole session folder with potentially multiple record nodes.
-    with OpenEphysSessionSignalReader(binary_session_path) as reader:
-        assert reader.recording.format == 'binary'
-        assert reader.result_name == "example_data"
-        assert reader.total_samples == 296032
-        assert reader.get_initial() == {
-            reader.result_name: SignalChunk.empty(
-                sample_frequency=expected_signal_sample_frequency,
-                channel_ids=expected_signal_channel_ids
-            )
-        }
-
-    assert reader.recording is None
+    reader = OpenEphysSessionSignalReader(binary_session_path)
+    assert reader.session.recording.format == 'binary'
+    assert reader.result_name == "example_data"
+    assert reader.total_samples == 296032
+    assert reader.get_initial() == {
+        reader.result_name: SignalChunk.empty(
+            sample_frequency=expected_signal_sample_frequency,
+            channel_ids=expected_signal_channel_ids
+        )
+    }
 
     # Load the folder for one specific record node.
     record_node_path = Path(binary_session_path, 'Record Node 105')
-    with OpenEphysSessionSignalReader(record_node_path, record_node_index=None) as reader:
-        assert reader.result_name == "example_data"
-        assert reader.total_samples == 296032
-        assert reader.get_initial() == {
-            reader.result_name: SignalChunk.empty(
-                sample_frequency=expected_signal_sample_frequency,
-                channel_ids=expected_signal_channel_ids
-            )
-        }
-
-    assert reader.recording is None
+    reader = OpenEphysSessionSignalReader(record_node_path, record_node_index=None)
+    assert reader.session.recording.format == 'binary'
+    assert reader.result_name == "example_data"
+    assert reader.total_samples == 296032
+    assert reader.get_initial() == {
+        reader.result_name: SignalChunk.empty(
+            sample_frequency=expected_signal_sample_frequency,
+            channel_ids=expected_signal_channel_ids
+        )
+    }
 
 
 def test_signal_default_read_binary_format(binary_session_path):
     with OpenEphysSessionSignalReader(binary_session_path) as reader:
-        assert reader.recording.format == 'binary'
+        assert reader.session.recording.format == 'binary'
         assert reader.result_name == "example_data"
         assert reader.total_samples == 296032
         assert reader.get_initial() == {
@@ -146,7 +143,7 @@ def test_signal_default_read_binary_format(binary_session_path):
             reader.read_next()
         assert exception_info.errisinstance(StopIteration)
 
-    assert reader.recording is None
+    assert reader.next_sample is None
 
 
 def test_signal_custom_read_binary_format(binary_session_path):
@@ -173,7 +170,7 @@ def test_signal_custom_read_binary_format(binary_session_path):
         result_name=result_name,
         samples_per_chunk=samples_per_chunk
     ) as reader:
-        assert reader.recording.format == 'binary'
+        assert reader.session.recording.format == 'binary'
         assert reader.result_name == result_name
         assert reader.total_samples == 296032
         assert reader.get_initial() == {
@@ -216,43 +213,39 @@ def test_signal_custom_read_binary_format(binary_session_path):
             reader.read_next()
         assert exception_info.errisinstance(StopIteration)
 
-    assert reader.recording is None
+    assert reader.next_sample is None
 
 
 def test_signal_locate_nwb_format(nwb_session_path):
     # Load the whole session folder with potentially multiple record nodes.
-    with OpenEphysSessionSignalReader(nwb_session_path) as reader:
-        assert reader.recording.format == 'nwb'
-        assert reader.result_name == "example_data"
-        assert reader.total_samples == 296960
-        assert reader.get_initial() == {
-            reader.result_name: SignalChunk.empty(
-                sample_frequency=expected_signal_sample_frequency,
-                channel_ids=expected_signal_channel_ids
-            )
-        }
-
-    assert reader.recording is None
+    reader = OpenEphysSessionSignalReader(nwb_session_path)
+    assert reader.session.recording.format == 'nwb'
+    assert reader.result_name == "example_data"
+    assert reader.total_samples == 296960
+    assert reader.get_initial() == {
+        reader.result_name: SignalChunk.empty(
+            sample_frequency=expected_signal_sample_frequency,
+            channel_ids=expected_signal_channel_ids
+        )
+    }
 
     # Load the folder for one specific record node.
     record_node_path = Path(nwb_session_path, 'Record Node 106')
-    with OpenEphysSessionSignalReader(record_node_path, record_node_index=None) as reader:
-        assert reader.recording.format == 'nwb'
-        assert reader.result_name == "example_data"
-        assert reader.total_samples == 296960
-        assert reader.get_initial() == {
-            reader.result_name: SignalChunk.empty(
-                sample_frequency=expected_signal_sample_frequency,
-                channel_ids=expected_signal_channel_ids
-            )
-        }
-
-    assert reader.recording is None
+    reader = OpenEphysSessionSignalReader(record_node_path, record_node_index=None)
+    assert reader.session.recording.format == 'nwb'
+    assert reader.result_name == "example_data"
+    assert reader.total_samples == 296960
+    assert reader.get_initial() == {
+        reader.result_name: SignalChunk.empty(
+            sample_frequency=expected_signal_sample_frequency,
+            channel_ids=expected_signal_channel_ids
+        )
+    }
 
 
 def test_signal_default_read_nwb_format(nwb_session_path):
     with OpenEphysSessionSignalReader(nwb_session_path) as reader:
-        assert reader.recording.format == 'nwb'
+        assert reader.session.recording.format == 'nwb'
         assert reader.result_name == "example_data"
         assert reader.total_samples == 296960
         assert reader.get_initial() == {
@@ -303,7 +296,7 @@ def test_signal_default_read_nwb_format(nwb_session_path):
             reader.read_next()
         assert exception_info.errisinstance(StopIteration)
 
-    assert reader.recording is None
+    assert reader.next_sample is None
 
 
 def test_signal_custom_read_nwb_format(nwb_session_path):
@@ -330,7 +323,7 @@ def test_signal_custom_read_nwb_format(nwb_session_path):
         result_name=result_name,
         samples_per_chunk=samples_per_chunk
     ) as reader:
-        assert reader.recording.format == 'nwb'
+        assert reader.session.recording.format == 'nwb'
         assert reader.result_name == result_name
         assert reader.total_samples == 296960
         assert reader.get_initial() == {
@@ -373,35 +366,31 @@ def test_signal_custom_read_nwb_format(nwb_session_path):
             reader.read_next()
         assert exception_info.errisinstance(StopIteration)
 
-    assert reader.recording is None
+    assert reader.next_sample is None
 
 
 def test_numeric_events_locate_binary_format(binary_session_path):
     # Load the whole session folder with potentially multiple record nodes.
-    with OpenEphysSessionNumericEventReader(binary_session_path) as reader:
-        assert reader.recording.format == 'binary'
-        assert reader.result_name == "ttl"
-        assert reader.get_initial() == {
-            reader.result_name: NumericEventList.empty(3)
-        }
-
-    assert reader.recording is None
+    reader = OpenEphysSessionNumericEventReader(binary_session_path)
+    assert reader.session.recording.format == 'binary'
+    assert reader.result_name == "ttl"
+    assert reader.get_initial() == {
+        reader.result_name: NumericEventList.empty(3)
+    }
 
     # Load the folder for one specific record node.
     record_node_path = Path(binary_session_path, 'Record Node 105')
-    with OpenEphysSessionNumericEventReader(record_node_path, record_node_index=None) as reader:
-        assert reader.recording.format == 'binary'
-        assert reader.result_name == "ttl"
-        assert reader.get_initial() == {
-            reader.result_name: NumericEventList.empty(3)
-        }
-
-    assert reader.recording is None
+    reader = OpenEphysSessionNumericEventReader(record_node_path, record_node_index=None)
+    assert reader.session.recording.format == 'binary'
+    assert reader.result_name == "ttl"
+    assert reader.get_initial() == {
+        reader.result_name: NumericEventList.empty(3)
+    }
 
 
 def test_numeric_events_default_read_binary_format(binary_session_path):
     with OpenEphysSessionNumericEventReader(binary_session_path) as reader:
-        assert reader.recording.format == 'binary'
+        assert reader.session.recording.format == 'binary'
         assert reader.result_name == "ttl"
         assert reader.get_initial() == {
             reader.result_name: NumericEventList.empty(3)
@@ -437,7 +426,7 @@ def test_numeric_events_default_read_binary_format(binary_session_path):
             reader.read_next()
         assert exception_info.errisinstance(StopIteration)
 
-    assert reader.recording is None
+    assert reader.events_iterator is None
 
 
 def test_numeric_events_custom_read_binary_format(binary_session_path):
@@ -451,7 +440,7 @@ def test_numeric_events_custom_read_binary_format(binary_session_path):
         stream_name=stream_name,
         result_name=result_name
     ) as reader:
-        assert reader.recording.format == 'binary'
+        assert reader.session.recording.format == 'binary'
         assert reader.result_name == result_name
         assert reader.get_initial() == {
             reader.result_name: NumericEventList.empty(3)
@@ -487,35 +476,31 @@ def test_numeric_events_custom_read_binary_format(binary_session_path):
             reader.read_next()
         assert exception_info.errisinstance(StopIteration)
 
-    assert reader.recording is None
+    assert reader.events_iterator is None
 
 
 def test_numeric_events_locate_nwb_format(nwb_session_path):
     # Load the whole session folder with potentially multiple record nodes.
-    with OpenEphysSessionNumericEventReader(nwb_session_path) as reader:
-        assert reader.recording.format == 'nwb'
-        assert reader.result_name == "ttl"
-        assert reader.get_initial() == {
-            reader.result_name: NumericEventList.empty(3)
-        }
-
-    assert reader.recording is None
+    reader = OpenEphysSessionNumericEventReader(nwb_session_path)
+    assert reader.session.recording.format == 'nwb'
+    assert reader.result_name == "ttl"
+    assert reader.get_initial() == {
+        reader.result_name: NumericEventList.empty(3)
+    }
 
     # Load the folder for one specific record node.
     record_node_path = Path(nwb_session_path, 'Record Node 106')
-    with OpenEphysSessionNumericEventReader(record_node_path, record_node_index=None) as reader:
-        assert reader.recording.format == 'nwb'
-        assert reader.result_name == "ttl"
-        assert reader.get_initial() == {
-            reader.result_name: NumericEventList.empty(3)
-        }
-
-    assert reader.recording is None
+    reader = OpenEphysSessionNumericEventReader(record_node_path, record_node_index=None)
+    assert reader.session.recording.format == 'nwb'
+    assert reader.result_name == "ttl"
+    assert reader.get_initial() == {
+        reader.result_name: NumericEventList.empty(3)
+    }
 
 
 def test_numeric_events_default_read_nwb_format(nwb_session_path):
     with OpenEphysSessionNumericEventReader(nwb_session_path) as reader:
-        assert reader.recording.format == 'nwb'
+        assert reader.session.recording.format == 'nwb'
         assert reader.result_name == "ttl"
         assert reader.get_initial() == {
             reader.result_name: NumericEventList.empty(3)
@@ -551,7 +536,7 @@ def test_numeric_events_default_read_nwb_format(nwb_session_path):
             reader.read_next()
         assert exception_info.errisinstance(StopIteration)
 
-    assert reader.recording is None
+    assert reader.events_iterator is None
 
 
 def test_numeric_events_custom_read_nwb_format(nwb_session_path):
@@ -565,7 +550,7 @@ def test_numeric_events_custom_read_nwb_format(nwb_session_path):
         stream_name=stream_name,
         result_name=result_name
     ) as reader:
-        assert reader.recording.format == 'nwb'
+        assert reader.session.recording.format == 'nwb'
         assert reader.result_name == stream_name
         assert reader.get_initial() == {
             reader.result_name: NumericEventList.empty(3)
@@ -601,4 +586,4 @@ def test_numeric_events_custom_read_nwb_format(nwb_session_path):
             reader.read_next()
         assert exception_info.errisinstance(StopIteration)
 
-    assert reader.recording is None
+    assert reader.events_iterator is None
