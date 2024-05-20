@@ -5,9 +5,11 @@ from pytest import fixture, raises
 
 from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
-from pyramid.neutral_zone.readers.open_ephys_session import OpenEphysSessionSignalReader, OpenEphysSessionNumericEventReader
-
-# TODO: test calling get_initial() before entering context!
+from pyramid.neutral_zone.readers.open_ephys_session import (
+    OpenEphysSessionSignalReader,
+    OpenEphysSessionNumericEventReader,
+    OpenEphysSessionTextEventReader
+)
 
 
 @fixture
@@ -580,6 +582,118 @@ def test_numeric_events_custom_read_nwb_format(nwb_session_path):
         assert last_event.values(0) == [1]
         assert last_event.values(1) == [0]
         assert last_event.values(2) == [100]
+
+        # Then be done.
+        with raises(StopIteration) as exception_info:
+            reader.read_next()
+        assert exception_info.errisinstance(StopIteration)
+
+    assert reader.events_iterator is None
+
+
+def test_text_events_locate_binary_format(binary_session_path):
+    # Load the whole session folder with potentially multiple record nodes.
+    reader = OpenEphysSessionTextEventReader(binary_session_path)
+    assert reader.session.recording.format == 'binary'
+    assert reader.result_name == "messages"
+    assert reader.get_initial() == {
+        reader.result_name: TextEventList.empty()
+    }
+
+    # Load the folder for one specific record node.
+    record_node_path = Path(binary_session_path, 'Record Node 105')
+    reader = OpenEphysSessionTextEventReader(record_node_path, record_node_index=None)
+    assert reader.session.recording.format == 'binary'
+    assert reader.result_name == "messages"
+    assert reader.get_initial() == {
+        reader.result_name: TextEventList.empty()
+    }
+
+
+def test_text_events_default_read_binary_format(binary_session_path):
+    with OpenEphysSessionTextEventReader(binary_session_path) as reader:
+        assert reader.session.recording.format == 'binary'
+        assert reader.result_name == "messages"
+        assert reader.get_initial() == {
+            reader.result_name: TextEventList.empty()
+        }
+
+        # Spot check the first event.
+        first = reader.read_next()
+        assert first.keys() == {reader.result_name}
+        first_event = first[reader.result_name]
+        assert first_event.times() == [1.9952]
+        assert first_event.values()[0] == 'UDP Events sync on line 4@0.251607=79808'
+
+        # Read 28 more events in the middle.
+        for _ in range(28):
+            next = reader.read_next()
+            assert next.keys() == {reader.result_name}
+            next_event = next[reader.result_name]
+            assert next_event.event_count() == 1
+
+        # Spot check the last event.
+        last = reader.read_next()
+        assert last.keys() == {reader.result_name}
+        last_event = last[reader.result_name]
+        assert last_event.times() == [6.7976]
+        assert last_event.values()[0] == "He who laughs last laughs ... you can't laugh again.@5.05543=271714"
+
+        # Then be done.
+        with raises(StopIteration) as exception_info:
+            reader.read_next()
+        assert exception_info.errisinstance(StopIteration)
+
+    assert reader.events_iterator is None
+
+
+def test_text_events_locate_nwb_format(nwb_session_path):
+    # Load the whole session folder with potentially multiple record nodes.
+    reader = OpenEphysSessionTextEventReader(nwb_session_path)
+    assert reader.session.recording.format == 'nwb'
+    assert reader.result_name == "messages"
+    assert reader.get_initial() == {
+        reader.result_name: TextEventList.empty()
+    }
+
+    # Load the folder for one specific record node.
+    record_node_path = Path(nwb_session_path, 'Record Node 106')
+    reader = OpenEphysSessionTextEventReader(record_node_path, record_node_index=None)
+    assert reader.session.recording.format == 'nwb'
+    assert reader.result_name == "messages"
+    assert reader.get_initial() == {
+        reader.result_name: TextEventList.empty()
+    }
+
+
+def test_text_events_default_read_nwb_format(nwb_session_path):
+    with OpenEphysSessionTextEventReader(nwb_session_path) as reader:
+        assert reader.session.recording.format == 'nwb'
+        assert reader.result_name == "messages"
+        assert reader.get_initial() == {
+            reader.result_name: TextEventList.empty()
+        }
+
+        # Spot check the first event.
+        first = reader.read_next()
+        assert first.keys() == {reader.result_name}
+        first_event = first[reader.result_name]
+        assert first_event.times() == [1.693600]
+        assert first_event.values()[0] == 'UDP Events sync on line 4@0.25194=67744'
+
+        # Read 28 more events in the middle.
+        for _ in range(28):
+            next = reader.read_next()
+            assert next.keys() == {reader.result_name}
+            next_event = next[reader.result_name]
+            assert next_event.event_count() == 1
+
+        # Spot check the last event.
+        last = reader.read_next()
+        assert last.keys() == {reader.result_name}
+        last_event = last[reader.result_name]
+        assert last_event.times() == [6.496]
+        assert last_event.values()[0] == "He who laughs last laughs ... you can't laugh again.@5.05769=258715"
 
         # Then be done.
         with raises(StopIteration) as exception_info:

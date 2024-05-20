@@ -1,5 +1,6 @@
 from types import TracebackType
 from typing import Self
+from collections import namedtuple
 
 import numpy as np
 from open_ephys.analysis import Session
@@ -140,7 +141,7 @@ class OpenEphysSessionSignalReader(Reader):
 
 
 class OpenEphysSessionNumericEventReader(Reader):
-    """Read numeric event data from an Open Ephys session.
+    """Read numeric aka "ttl" event data from an Open Ephys session.
 
     This is based on the Open Ephys Python Tools Analysis module:
     https://github.com/open-ephys/open-ephys-python-tools/blob/main/src/open_ephys/analysis/README.md
@@ -178,10 +179,11 @@ class OpenEphysSessionNumericEventReader(Reader):
         self.events_iterator = None
 
     def __enter__(self) -> Self:
-        # Set up an iterator over the session recording's events.
+        # Set up an iterator over the recording's ttl events.
         if self.stream_name:
             # Filter the events by matching on stream_name.
-            self.events_iterator = (e for e in self.session.recording.events.itertuples() if e.stream_name == self.stream_name)
+            self.events_iterator = (e for e in self.session.recording.events.itertuples()
+                                    if e.stream_name == self.stream_name)
         else:
             # Take all events.
             self.events_iterator = self.session.recording.events.itertuples()
@@ -209,4 +211,70 @@ class OpenEphysSessionNumericEventReader(Reader):
         event_data = np.array([[next.timestamp, next.line, next.state, next.processor_id]])
         return {
             self.result_name: NumericEventList(event_data)
+        }
+
+
+class OpenEphysSessionTextEventReader(Reader):
+    """Read text aka "messge center" data from an Open Ephys session.
+
+    This is based on the Open Ephys Python Tools Analysis module:
+    https://github.com/open-ephys/open-ephys-python-tools/blob/main/src/open_ephys/analysis/README.md
+
+    Args:
+        session_dir:        Directory for Open Ephys Python Tools to seach for saved data (Open Ephys Binary or NWB2 format)
+        file_finder:        Utility to find() files in the conigured Pyramid configured search path.
+                            Pyramid will automatically create and pass in the file_finder for you.
+        record_node_index:  When session_dir contains record node subdirs, which node/dir to pick (default -1, the last one).
+        recording_index:    When which recording to pick within a record node (default -1, the last one).
+        result_name:        Name to use for the Pyramid TextEventList results (default "messages").
+    """
+
+    def __init__(
+        self,
+        session_dir: str,
+        file_finder: FileFinder = FileFinder(),
+        record_node_index: int = -1,
+        recording_index: int = -1,
+        result_name: str = "messages"
+    ) -> None:
+        self.session = OpenEphysSession(file_finder.find(session_dir), record_node_index, recording_index)
+        self.result_name = result_name
+
+        self.events_iterator = None
+
+    def __enter__(self) -> Self:
+        # Set up an iterator over the recording's text messages.
+        if self.session.recording.format == "nwb":
+            # As of May 2024 Open Ephys Tools NWB format doesn't parse message center events.
+            # We can still access them in the underlying NWB data.
+            Message = namedtuple("Message", ["timestamp", "message"])
+            timestamps = self.session.recording.nwb['acquisition']['messages']['timestamps']
+            text = self.session.recording.nwb['acquisition']['messages']['data']
+            message_count = timestamps.size
+            self.events_iterator = (Message(timestamps[index], text[index]) for index in range(message_count))
+        else:
+            self.events_iterator = self.session.recording.messages.itertuples()
+        return self
+
+    def __exit__(
+        self,
+        __exc_type: type[BaseException] | None,
+        __exc_value: BaseException | None,
+        __traceback: TracebackType | None
+    ) -> bool | None:
+        self.events_iterator = None
+        return None
+
+    def get_initial(self) -> dict[str, BufferData]:
+        return {
+            self.result_name: TextEventList.empty()
+        }
+
+    def read_next(self) -> dict[str, BufferData]:
+        """Read the next event, or throw StopIteration."""
+        next = self.events_iterator.__next__()
+        timestamp_data = np.array([next.timestamp])
+        text_data = np.array([next.message], dtype=np.str_)
+        return {
+            self.result_name: TextEventList(timestamp_data, text_data)
         }
