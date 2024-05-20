@@ -1,5 +1,4 @@
 from types import TracebackType
-from ast import literal_eval
 from typing import Self
 import logging
 
@@ -14,7 +13,7 @@ from pyramid.neutral_zone.readers.readers import Reader
 
 
 class OpenEphysSessionSignalReader(Reader):
-    """Read continuous data from an Open Ephys session.
+    """Read continuous signal data from an Open Ephys session.
 
     This is based on the Open Ephys Python Tools Analysis module:
     https://github.com/open-ephys/open-ephys-python-tools/blob/main/src/open_ephys/analysis/README.md
@@ -23,7 +22,7 @@ class OpenEphysSessionSignalReader(Reader):
         session_dir:        Directory for Open Ephys Python Tools to seach for saved data (Open Ephys Binary or NWB2 format)
         file_finder:        Utility to find() files in the conigured Pyramid configured search path.
                             Pyramid will automatically create and pass in the file_finder for you.
-        stream_name:        Which Open Ephys data stream to select for reading.
+        stream_name:        Which Open Ephys data stream to select for reading (default None, take the first stream).
         channel_names:      List of channel names to keep within the selected data stream (default None, take all channels).
         record_node_index:  When session_dir contains record node subdirs, which node/dir to pick (default -1, the last one).
         recording_index:    When which recording to pick within a record node (default -1, the last one).
@@ -112,6 +111,7 @@ class OpenEphysSessionSignalReader(Reader):
         self.total_samples = self.continuous.sample_numbers.size
 
     def get_initial(self) -> dict[str, BufferData]:
+        # TODO: Oops, this secretly relies on __enter__().
         self.pick_stream()
         return {
             self.result_name: SignalChunk.empty(
@@ -140,4 +140,93 @@ class OpenEphysSessionSignalReader(Reader):
                 first_sample_time=first_sample_time,
                 channel_ids=self.channel_ids
             )
+        }
+
+
+class OpenEphysSessionNumericEventReader(Reader):
+    """Read numeric event data from an Open Ephys session.
+
+    This is based on the Open Ephys Python Tools Analysis module:
+    https://github.com/open-ephys/open-ephys-python-tools/blob/main/src/open_ephys/analysis/README.md
+
+    Args:
+        session_dir:        Directory for Open Ephys Python Tools to seach for saved data (Open Ephys Binary or NWB2 format)
+        file_finder:        Utility to find() files in the conigured Pyramid configured search path.
+                            Pyramid will automatically create and pass in the file_finder for you.
+        stream_name:        Which Open Ephys data stream to select for reading (default None, take all streams).
+        record_node_index:  When session_dir contains record node subdirs, which node/dir to pick (default -1, the last one).
+        recording_index:    When which recording to pick within a record node (default -1, the last one).
+        result_name:        Name to use for the Pyramid NumericEventList results (default None, use stream_name if provided or else "ttl").
+    """
+
+    def __init__(
+        self,
+        session_dir: str,
+        file_finder: FileFinder = FileFinder(),
+        stream_name: str = None,
+        record_node_index: int = -1,
+        recording_index: int = -1,
+        result_name: str = None
+    ) -> None:
+        self.session_dir = file_finder.find(session_dir)
+        self.stream_name = stream_name
+        self.record_node_index = record_node_index
+        self.recording_index = recording_index
+
+        if result_name is None:
+            if stream_name is None:
+                self.result_name = "ttl"
+            else:
+                self.result_name = stream_name
+        else:
+            self.result_name = result_name
+
+        self.session = None
+        self.record_node = None
+        self.recording = None
+        self.events_iterator = None
+
+    def __enter__(self) -> Self:
+        # Pick one recording from the session dir.
+        self.session = Session(self.session_dir)
+        if self.record_node_index is None:
+            self.recording = self.session.recordings[self.recording_index]
+        else:
+            self.record_node = self.session.recordnodes[self.record_node_index]
+            self.recording = self.record_node.recordings[self.recording_index]
+
+        # Set up an iterator over the recording's events.
+        if self.stream_name:
+            # Filter the events by matching on stream_name.
+            self.events_iterator = (e for e in self.recording.events.itertuples() if e.stream_name == self.stream_name)
+        else:
+            # Take all events.
+            self.events_iterator = self.recording.events.itertuples()
+
+        return self
+
+    def __exit__(
+        self,
+        __exc_type: type[BaseException] | None,
+        __exc_value: BaseException | None,
+        __traceback: TracebackType | None
+    ) -> bool | None:
+        self.session = None
+        self.record_node = None
+        self.recording = None
+        self.events_iterator = None
+        return None
+
+    def get_initial(self) -> dict[str, BufferData]:
+        return {
+            # Events will be like [timestamp, line_number, line_state, processor_id]
+            self.result_name: NumericEventList.empty(3)
+        }
+
+    def read_next(self) -> dict[str, BufferData]:
+        """Read the next event, or throw StopIteration."""
+        next = self.events_iterator.__next__()
+        event_data = np.array([[next.timestamp, next.line, next.state, next.processor_id]])
+        return {
+            self.result_name: NumericEventList(event_data)
         }
