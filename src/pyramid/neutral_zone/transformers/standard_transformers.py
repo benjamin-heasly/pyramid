@@ -65,7 +65,7 @@ class SmashCase(Transformer):
                 return TextEventList(data.timestamp_data, np.char.upper(data.text_data))
             else:
                 return TextEventList(data.timestamp_data, np.char.lower(data.text_data))
-        else:  # pragma: no cover
+        else:
             logging.warning(f"SmashCase doesn't know how to apply to {data.__class__.__name__}")
             return data
 

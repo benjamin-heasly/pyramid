@@ -107,6 +107,14 @@ def test_smash_case():
     assert no_caps.text_data.tolist() == ["abc", "abc", "qwerty123456!@#$%^", ""]
 
 
+def test_smash_case_no_ops():
+    # Don't crash when the buffer data type is unexpected, just return it.
+    wrong_type = NumericEventList.empty()
+    transformer = SmashCase()
+    result = transformer.transform(wrong_type)
+    assert result == wrong_type
+
+
 def test_sparse_signal_fill_gaps_with_constant():
     # Events with timestamps roughly but not quite 1 second apart.
     event_data_a = [

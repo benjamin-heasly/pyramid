@@ -154,6 +154,8 @@ class OpenEphysSessionNumericEventReader(Reader):
         record_node_index:  When session_dir contains record node subdirs, which node/dir to pick (default -1, the last one).
         recording_index:    When which recording to pick within a record node (default -1, the last one).
         result_name:        Name to use for the Pyramid NumericEventList results (default None, use stream_name if provided or else "ttl").
+
+        The numeric events produced will have event data like: [timestamp, line_number, line_state, processor_id]
     """
 
     def __init__(
