@@ -70,6 +70,12 @@ def test_numeric_list_discard_before():
     raw_data = [[t, 10*t] for t in range(event_count)]
     event_data = np.array(raw_data)
     event_list = NumericEventList(event_data)
+    assert np.array_equal(event_list.times(), np.array(range(event_count)))
+    assert np.array_equal(event_list.values(), 10*np.array(range(event_count)))
+
+    event_list.discard_before(None)
+    assert np.array_equal(event_list.times(), np.array(range(event_count)))
+    assert np.array_equal(event_list.values(), 10*np.array(range(event_count)))
 
     event_list.discard_before(half_count)
     assert np.array_equal(event_list.times(), np.array(range(half_count, event_count)))
@@ -247,6 +253,12 @@ def test_text_list_discard_before():
     event_count = 100
     half_count = int(event_count / 2)
     event_list = TextEventList(np.array(range(event_count)), np.array(range(event_count), dtype="U"))
+    assert np.array_equal(event_list.timestamp_data, np.array(range(event_count)))
+    assert np.array_equal(event_list.text_data, np.array(range(event_count), dtype="U"))
+
+    event_list.discard_before(None)
+    assert np.array_equal(event_list.timestamp_data, np.array(range(event_count)))
+    assert np.array_equal(event_list.text_data, np.array(range(event_count), dtype="U"))
 
     event_list.discard_before(half_count)
     assert np.array_equal(event_list.timestamp_data, np.array(range(half_count, event_count)))

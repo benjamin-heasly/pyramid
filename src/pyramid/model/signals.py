@@ -122,6 +122,9 @@ class SignalChunk(BufferData):
 
     def discard_before(self, start_time: float) -> None:
         """Implementing BufferData superclass."""
+        if start_time is None:
+            return
+
         (sample_times, rows_to_keep) = self.get_time_selector(start_time=start_time)
         self.sample_data = self.sample_data[rows_to_keep, :]
         if self.sample_data.size > 0:

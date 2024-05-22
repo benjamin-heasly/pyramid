@@ -182,8 +182,6 @@ def test_router_routes_until_target_time():
         named_buffers=buffers_for_reader_and_routes(reader, routes)
     )
 
-    # TODO: route for a duration, not an end time.
-
     # Router should read until an event arrives past the target time.
     # But not keep reading indefinitely after that.
     assert router.route_until(1.5) == 2
@@ -298,16 +296,14 @@ def test_router_skip_transformer_errors():
 def test_reader_sync_registry_latest():
     sync_registry = ReaderSyncRegistry("ref")
 
-    # With no data yet, drift should default to 0.
-    assert sync_registry.get_drift("ref", pairing_strategy="latest") == 0
-    assert sync_registry.get_drift("foo", pairing_strategy="latest") == 0
+    # With no data yet, drift is undefined.
+    assert sync_registry.get_drift("ref", pairing_strategy="latest") is None
+    assert sync_registry.get_drift("foo", pairing_strategy="latest") is None
 
-    # With only a reference event, drift should still evaluate to 0.
-    #  - ref vs ref drift is zero by definition.
-    #  - ref vs foo drift is still undefined and defaults to 0.
+    # With only a reference event, only reference drift is defined -- trivially, by identity.
     sync_registry.record_event("ref", 100.0)
     assert sync_registry.get_drift("ref", pairing_strategy="latest") == 0
-    assert sync_registry.get_drift("foo", pairing_strategy="latest") == 0
+    assert sync_registry.get_drift("foo", pairing_strategy="latest") is None
 
     # With both reference and other events, drift is now meaningful.
     # The reference times are offset by a lot, to begin with!
@@ -380,16 +376,14 @@ def test_reader_sync_registry_latest():
 def test_reader_sync_registry_closest():
     sync_registry = ReaderSyncRegistry("ref")
 
-    # With no data yet, drift should default to 0.
-    assert sync_registry.get_drift("ref", pairing_strategy="closest") == 0
-    assert sync_registry.get_drift("foo", pairing_strategy="closest") == 0
+    # With no data yet, drift is undefined.
+    assert sync_registry.get_drift("ref", pairing_strategy="closest") is None
+    assert sync_registry.get_drift("foo", pairing_strategy="closest") is None
 
-    # With only a reference event, drift should still evaluate to 0.
-    #  - ref vs ref drift is zero by definition.
-    #  - ref vs foo drift is still undefined and defaults to 0.
+    # With only a reference event, only reference drift is defined -- trivially, by identity.
     sync_registry.record_event("ref", 1.0)
     assert sync_registry.get_drift("ref", pairing_strategy="closest") == 0
-    assert sync_registry.get_drift("foo", pairing_strategy="closest") == 0
+    assert sync_registry.get_drift("foo", pairing_strategy="closest") is None
 
     # With both reference and other events, drift is now meaningful.
     #   ref:    |
@@ -451,24 +445,9 @@ def test_reader_sync_registry_closest():
     # Accept end times to keep the drift estimate contemporary to a time range of interest (eg a trial).
     # This is like going back in time to a prevous example, above.
     end_time = 3.5
-    assert sync_registry.get_drift(
-        "ref",
-        reference_end_time=end_time,
-        reader_end_time=end_time,
-        pairing_strategy="closest"
-    ) == 0
-    assert sync_registry.get_drift(
-        "foo",
-        reference_end_time=end_time,
-        reader_end_time=end_time,
-        pairing_strategy="closest"
-    ) == 3.13 - 3.0
-    assert sync_registry.get_drift(
-        "bar",
-        reference_end_time=end_time,
-        reader_end_time=end_time,
-        pairing_strategy="closest"
-    ) == 2.93 - 3.0
+    assert sync_registry.get_drift("ref", end_time, end_time, "closest") == 0
+    assert sync_registry.get_drift("foo", end_time, end_time, "closest") == 3.13 - 3.0
+    assert sync_registry.get_drift("bar", end_time, end_time, "closest") == 2.93 - 3.0
 
 
 def test_router_records_sync_events_in_registry():
@@ -521,11 +500,11 @@ def test_router_propagates_drift_estimate_to_buffers():
         sync_registry=sync_registry
     )
 
-    # With no data yet, drift should default to 0.
-    assert router.update_drift_estimate() == 0
-    assert router.clock_drift == 0
-    assert router.named_buffers["foo"].clock_drift == 0
-    assert router.named_buffers["bar"].clock_drift == 0
+    # With no data yet, drift is undefined.
+    assert router.update_drift_estimate() == None
+    assert router.clock_drift == None
+    assert router.named_buffers["foo"].clock_drift == None
+    assert router.named_buffers["bar"].clock_drift == None
 
     # With reference and other events, drift is now meaningful.
     sync_registry.record_event("ref", 1.0)

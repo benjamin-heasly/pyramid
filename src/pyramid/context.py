@@ -183,8 +183,7 @@ class PyramidContext():
                     for trial_number, new_trial in new_trials.items():
                         # Let all readers catch up to the trial end time.
                         for router in self.routers.values():
-                            # TODO: route for duration of trial, rather than until end time?
-                            router.route_until(new_trial.end_time)
+                            router.route_until(new_trial.end_time, new_trial.start_time)
 
                         # Re-estimate clock drift for all readers using latest events from reference and other readers.
                         for router in self.routers.values():
@@ -237,8 +236,7 @@ class PyramidContext():
                     for trial_number, new_trial in new_trials.items():
                         # Let all readers catch up to the trial end time.
                         for router in self.routers.values():
-                            # TODO: route for duration of trial, rather than until end time?
-                            router.route_until(new_trial.end_time)
+                            router.route_until(new_trial.end_time, new_trial.start_time)
 
                         # Re-estimate clock drift for all readers using latest events from reference and other readers.
                         for router in self.routers.values():

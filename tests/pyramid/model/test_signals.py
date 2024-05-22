@@ -140,6 +140,10 @@ def test_signal_chunk_discard_before():
     assert np.array_equal(signal_chunk.times(), np.array(range(sample_count)) / 10)
     assert signal_chunk.end() == 9.9
 
+    signal_chunk.discard_before(None)
+    assert np.array_equal(signal_chunk.times(), np.array(range(sample_count)) / 10)
+    assert signal_chunk.end() == 9.9
+
     half_count = int(sample_count / 2)
     signal_chunk.discard_before(half_count / 10)
     assert np.array_equal(signal_chunk.times(), np.array(range(half_count, sample_count)) / 10)

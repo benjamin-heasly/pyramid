@@ -61,6 +61,9 @@ class NumericEventList(BufferData):
 
     def discard_before(self, start_time: float) -> None:
         """Implementing BufferData superclass."""
+        if start_time is None:
+            return
+
         rows_to_keep = self.event_data[:, 0] >= start_time
         self.event_data = self.event_data[rows_to_keep, :]
 
@@ -277,6 +280,9 @@ class TextEventList(BufferData):
 
     def discard_before(self, start_time: float) -> None:
         """Implementing BufferData superclass."""
+        if start_time is None:
+            return
+
         rows_to_keep = self.timestamp_data >= start_time
         self.timestamp_data = self.timestamp_data[rows_to_keep]
         self.text_data = self.text_data[rows_to_keep]

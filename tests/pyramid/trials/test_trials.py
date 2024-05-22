@@ -230,8 +230,6 @@ def test_populate_trials_from_private_buffers():
     assert len(trial_zero) == 1
     assert trial_zero[0] == Trial(0.0, 1.0)
 
-    # TODO: route for a duration, not an end time.
-
     # Now that we know a trial end time, ask each reader to read until just past that time.
     assert wrt_router.route_until(1.0) == 1.5
     assert foo_router.route_until(1.0) == 1.3
@@ -364,8 +362,6 @@ def test_populate_trials_from_shared_buffers():
     trial_zero = delimiter.next()
     assert len(trial_zero) == 1
     assert trial_zero[0] == Trial(0.0, 1.0)
-
-    # TODO: route for a duration, not an end time.
 
     # Now that we know a trial end time, ask each reader to read until just past that time.
     assert start_router.route_until(1.0) == 1.0
@@ -529,8 +525,6 @@ def test_enhance_trials():
     trial_zero = delimiter.next()
     assert len(trial_zero) == 1
     assert trial_zero[0] == Trial(0.0, 1.0)
-
-    # TODO: route for a duration, not an end time.
 
     assert wrt_router.route_until(1.0) == 1.5
     extractor.populate_trial(trial_zero[0], 0, {}, {})
@@ -815,8 +809,6 @@ def test_collect_and_revise_trials():
         assert len(trials) == 1
         trial = trials[index]
         assert trial.start_time == start
-
-        # TODO: route for a duration, not an end time.
 
         wrt_router.route_until(trial.end_time)
         extractor.populate_trial(trial, index, {}, {})

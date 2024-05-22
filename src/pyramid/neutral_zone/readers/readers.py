@@ -229,19 +229,21 @@ class ReaderSyncRegistry():
         Attempts to pick relevant sync events that are at or before the given reference_end_time and reader_end_time.
         That is, tries not to use sync events from the future, even though those might be known in a data file.
         """
-        reference_event_times = self.event_times.get(self.reference_reader_name, None)
-        if not reference_event_times:
-            return 0.0
-
+        reference_event_times = self.event_times.get(self.reference_reader_name, [])
         if reference_end_time is not None:
             reference_event_times = [time for time in reference_event_times if time <= reference_end_time]
 
-        reader_event_times = self.event_times.get(reader_name, None)
-        if not reader_event_times:
-            return 0.0
+        if not reference_event_times:
+            # We don't have any reference times to compare to, so drift is undefined.
+            return None
 
+        reader_event_times = self.event_times.get(reader_name, [])
         if reader_end_time is not None:
             reader_event_times = [time for time in reader_event_times if time <= reader_end_time]
+
+        if not reader_event_times:
+            # We don't have any reader times to compare to, so drift is undefined.
+            return None
 
         if pairing_strategy == "closest":
             return self.closest_pair(reader_event_times, reference_event_times)
@@ -275,7 +277,7 @@ class ReaderRouter():
         self.reader_exception = None
         self.max_buffer_time = 0.0
 
-        self.clock_drift = 0.0
+        self.clock_drift = None
 
     def __eq__(self, other: object) -> bool:
         """Compare routers field-wise, to support use of this class in tests."""
@@ -364,15 +366,31 @@ class ReaderRouter():
 
         return True
 
-    # TODO: route for a duration, rather than until an end time?
-    def route_until(self, target_reference_time: float) -> float:
+    def route_until(
+        self,
+        reference_target_time: float,
+        reference_start_time: float = 0.0
+    ) -> float:
         """Ask the reader to read data 0 or more times until catching up to a target time.
 
-        Return the latest timestamp seen, so far.
+        This tries to convert the given reference_target_time into the reader's raw time frame, then read
+        data until an event or sample arrives at or after that raw target time.
+
+        In case needed sync events have not been read in yet (perhaps on the first trial), and conversion
+        to reader raw time is not yet possible, this will try to increment data read by the duration
+        (reference_target_time - reference_start_time).
+
+        Return the latest, raw timestamp seen so far.
         """
         empty_reads = 0
-        # TODO: pick target_reader_time as self.max_buffer_time plus a duration
-        target_reader_time = target_reference_time + self.clock_drift
+        drift_estimate = self.check_drift_estimate(reference_target_time)
+        if drift_estimate is None:
+            # We don't have a drift estimate yet, so increment read data by the given duration.
+            read_duration = reference_target_time - reference_start_time
+            target_reader_time = self.max_buffer_time + read_duration
+        else:
+            # We do have a drift estimate, so read up to an absolute time.
+            target_reader_time = reference_target_time + drift_estimate
         while self.max_buffer_time < target_reader_time and empty_reads <= self.empty_reads_allowed:
             got_data = self.route_next()
             if got_data:
@@ -382,25 +400,33 @@ class ReaderRouter():
 
         return self.max_buffer_time
 
-    def update_drift_estimate(self, reference_end_time: float = None) -> float:
-        """Get a reader clock drift estimate from the sync registry and propagate it to all buffers.
-
-        Return the current drift estimate.
-        """
+    def check_drift_estimate(self, reference_end_time: float = None) -> float:
         if self.sync_config is None or self.sync_registry is None:
-            return None
+            # No sync configuration, so assume drift is zero (which is better than missing/None).
+            return 0.0
 
-        if reference_end_time is None:
+        # What is the best drift estimate up to the given end time?
+        # This can be None, if sync events have not been recorded yet.
+        if reference_end_time is None or self.clock_drift is None:
             reader_end_time = None
         else:
             reader_end_time = reference_end_time + self.clock_drift
-        self.clock_drift = self.sync_registry.get_drift(
+        return self.sync_registry.get_drift(
             self.sync_config.reader_name,
             reference_end_time,
             reader_end_time,
             self.sync_config.pairing_strategy
         )
-        for buffer in self.named_buffers.values():
-            buffer.clock_drift = self.clock_drift
+
+    def update_drift_estimate(self, reference_end_time: float = None) -> float:
+        """Get a reader clock drift estimate from the sync registry and propagate it to all buffers.
+
+        Return the current drift estimate.
+        """
+        drift_estimate = self.check_drift_estimate(reference_end_time)
+        if drift_estimate is not None:
+            self.clock_drift = drift_estimate
+            for buffer in self.named_buffers.values():
+                buffer.clock_drift = self.clock_drift
 
         return self.clock_drift
