@@ -111,38 +111,22 @@ class ReaderSyncConfig():
     For example, a Phy spike reader might want to use sync info from an upstream data source like Plexon or OpenEphys.
     """
 
+    pairing_strategy: str = "latest"
+    """Strategy name indicating how to pick pairs of timestamps when aligning times for this reader.
+
+    The supported strategies are:
+
+        "closest":  Pair up sync events that are close in time to one another.  This assumes the initial offset between
+                    clocks and the drift rate are small compared to the interval between sync events.  This strategy
+                    can work even when a reader (this one or the reference) occasionally drops a sync event.
+        "latest":   (default) Pair up the latest pair of sync events seen by each reader (this one and the reference).
+                    This makes no assumption about the size of the initial clock offset or drift rate. But it assumes the
+                    readers consistently see sync events in pairs, and record them in the correct order.
+    """
+
 
 class ReaderSyncRegistry():
-    """Keep track of sync events as seen by different readers, and clock drift compared to a referencce reader.
-
-        When comparing sync event times between readers the registry will use the latest sync information recorded so far.
-        It will also try to line up times in pairs so that both times correspond to the same real-world sync event.
-
-            reference: |   |   |   |   |   |   |   |
-            other:     |   |   |   |   |  |   |   |
-                                                  ^^ latest pair seen so far, seems like a reasonable drift estimate
-
-        The registry will form the pairs based on difference in time, as opposed just lining up array indexes.
-        This should make the drift estimates robust in case readers record different numbers of sync events.
-        For example, one reader might suddenly stop recording sync altogether.
-
-            reference: |   |   |   |   |   |   |   |
-            other:     |   |   |
-                                  ^ oops, sync from other dropped around here here!
-
-        In this case, pairing up the latest events by array index would lead to "drift" estimates that grow
-        in real time, and don't really reflect the underlying clock rates.
-
-        So instead, the registry will consider the latest sync event time from each reader, and pair it with the closest
-        event time from the other reader.  From these two "closest" pairs, it will choose the pair with the smallest
-        time difference.
-            reference: |   |   |   |   |   |   |   |
-            other:     |   |   |                   ^ "closest" from reference is huge and growing in real time!
-                               ^ "closest" from other is older, but still looks reasonable
-
-        All this assumes that clock drift is small compared to the interval between real-world sync events.  If that's
-        true then looking for small differences between readers is a good way to discover which times go together.
-    """
+    """Keep track of sync events as seen by different readers and clock drift compared to a referencce reader."""
 
     def __init__(
         self,
@@ -167,13 +151,84 @@ class ReaderSyncRegistry():
         reader_event_times.append(event_time)
         self.event_times[reader_name] = reader_event_times
 
+    def closest_pair(
+        self,
+        reader_event_times: list[float],
+        reference_event_times: list[float],
+    ) -> float:
+        """Find a pair of sync events that are close together in time.
+
+        This pairing strategy assumes that clock initial offsets and drift rate are small compared to the interval
+        between real-world sync events.  When that's true then looking for small differences between sync event times
+        is a good way to discover which pairs of recoreded sync events correspond to the same real-world events.
+
+        This strategy is robust in case the referece reader and the other produce different numbers of sync events.
+        For example, one of the readers might occasionally drop events, or one might have started recording syncs
+        before the other.
+
+        It will try to line up times in pairs so that both times in a pair correspond to the same real-world sync event.
+
+            reference: |   |   |   |   |   |   |   |
+            other:     |   |   |   |   |  |   |   |
+                                                  ^^ latest pair seen so far, seems like a reasonable drift estimate
+
+        This strategy will form the pairs based on difference in time, as opposed just lining up array indexes.
+        This should make the drift estimates robust in case readers record different numbers of sync events.
+        For example, one reader might suddenly stop recording sync altogether.
+
+            reference: |   |   |   |   |   |   |   |
+            other:     |   |   |
+                                  ^ oops, sync from other dropped out around here!
+
+        In this case, pairing up the latest events by array index would lead to "drift" estimates that grow
+        in real time, and don't really reflect the underlying clock rates.
+
+        So instead, this strategy will consider the latest sync event time from each reader, and pair it with the closest
+        event time from the other reader.  From these two "closest" pairs, it will choose the pair with the smallest
+        time difference.
+            reference: |   |   |   |   |   |   |   |
+            other:     |   |   |                   ^ "closest" from reference is huge and growing in real time!
+                               ^ "closest" from other is older, but still looks reasonable
+        """
+        reader_last = reader_event_times[-1]
+        reader_offsets = [reader_last - ref_time for ref_time in reference_event_times]
+        drift_from_reader = min(reader_offsets, key=abs)
+
+        reference_last = reference_event_times[-1]
+        reference_offsets = [reader_time - reference_last for reader_time in reader_event_times]
+        drift_from_reference = min(reference_offsets, key=abs)
+
+        return min(drift_from_reader, drift_from_reference, key=abs)
+
+    def latest_pair(
+        self,
+        reader_event_times: list[float],
+        reference_event_times: list[float],
+    ) -> float:
+        """Find the latest pair of sync events based on array index.
+
+        This pairing strategy assumes that the reference and other reader reliably record sync events in pairs.
+        The sequence of sync events recored by each reader must correspond 1:1 with the same sequence of real-world
+        sync events.
+
+        This streategy is brittle with respect to the sequences of recorded events, but makes no assumptions about
+        the initial clock offsets or drift rate.
+        """
+        last_pair_index = min(len(reader_event_times), len(reference_event_times)) - 1
+        return reader_event_times[last_pair_index] - reference_event_times[last_pair_index]
+
     def get_drift(
         self,
         reader_name: str,
         reference_end_time: float = None,
-        reader_end_time: float = None
+        reader_end_time: float = None,
+        pairing_strategy: str = "latest"
     ) -> float:
-        """Estimate clock drift between the named reader and the reference, based on events marked for each reader."""
+        """Estimate clock drift between the named reader and the reference, based on events marked for each reader.
+
+        Attempts to pick relevant sync events that are at or before the given reference_end_time and reader_end_time.
+        That is, tries not to use sync events from the future, even though those might be known in a data file.
+        """
         reference_event_times = self.event_times.get(self.reference_reader_name, None)
         if not reference_event_times:
             return 0.0
@@ -188,15 +243,10 @@ class ReaderSyncRegistry():
         if reader_end_time is not None:
             reader_event_times = [time for time in reader_event_times if time <= reader_end_time]
 
-        reader_last = reader_event_times[-1]
-        reader_offsets = [reader_last - ref_time for ref_time in reference_event_times]
-        drift_from_reader = min(reader_offsets, key=abs)
-
-        reference_last = reference_event_times[-1]
-        reference_offsets = [reader_time - reference_last for reader_time in reader_event_times]
-        drift_from_reference = min(reference_offsets, key=abs)
-
-        return min(drift_from_reader, drift_from_reference, key=abs)
+        if pairing_strategy == "closest":
+            return self.closest_pair(reader_event_times, reference_event_times)
+        else:
+            return self.latest_pair(reader_event_times, reference_event_times)
 
 
 class ReaderRouter():
@@ -224,6 +274,7 @@ class ReaderRouter():
 
         self.reader_exception = None
         self.max_buffer_time = 0.0
+
         self.clock_drift = 0.0
 
     def __eq__(self, other: object) -> bool:
@@ -300,7 +351,7 @@ class ReaderRouter():
                 buffer.data.append(data_copy)
             except Exception as exception:
                 logging.error(
-                    "Route buffer had exception appending data, skipping data for {route.reader_result_name} -> {route.buffer_name}:",
+                    f"Route buffer had exception appending data, skipping data for {route.reader_result_name} -> {route.buffer_name}:",
                     exc_info=True
                 )
                 continue
@@ -313,12 +364,14 @@ class ReaderRouter():
 
         return True
 
+    # TODO: route for a duration, rather than until an end time?
     def route_until(self, target_reference_time: float) -> float:
         """Ask the reader to read data 0 or more times until catching up to a target time.
 
         Return the latest timestamp seen, so far.
         """
         empty_reads = 0
+        # TODO: pick target_reader_time as self.max_buffer_time plus a duration
         target_reader_time = target_reference_time + self.clock_drift
         while self.max_buffer_time < target_reader_time and empty_reads <= self.empty_reads_allowed:
             got_data = self.route_next()
@@ -344,7 +397,8 @@ class ReaderRouter():
         self.clock_drift = self.sync_registry.get_drift(
             self.sync_config.reader_name,
             reference_end_time,
-            reader_end_time
+            reader_end_time,
+            self.sync_config.pairing_strategy
         )
         for buffer in self.named_buffers.values():
             buffer.clock_drift = self.clock_drift

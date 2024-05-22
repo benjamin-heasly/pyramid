@@ -183,6 +183,7 @@ class PyramidContext():
                     for trial_number, new_trial in new_trials.items():
                         # Let all readers catch up to the trial end time.
                         for router in self.routers.values():
+                            # TODO: route for duration of trial, rather than until end time?
                             router.route_until(new_trial.end_time)
 
                         # Re-estimate clock drift for all readers using latest events from reference and other readers.
@@ -236,6 +237,7 @@ class PyramidContext():
                     for trial_number, new_trial in new_trials.items():
                         # Let all readers catch up to the trial end time.
                         for router in self.routers.values():
+                            # TODO: route for duration of trial, rather than until end time?
                             router.route_until(new_trial.end_time)
 
                         # Re-estimate clock drift for all readers using latest events from reference and other readers.
@@ -490,10 +492,10 @@ def configure_readers(
             # Instantiate transformers by dynamic import.
             transformers = []
             transformers_config = buffer_config.get("transformers", [])
-            logging.info(f"Buffer {buffer_name} using {len(transformers_config)} transformers.")
+            logging.info(f"    Buffer {buffer_name} using {len(transformers_config)} transformers.")
             for transformer_config in transformers_config:
                 transformer_class = transformer_config["class"]
-                logging.info(f"  {transformer_class}")
+                logging.info(f"      {transformer_class}")
                 package_path = transformer_config.get("package_path", None)
                 transformer_args = transformer_config.get("args", {})
                 transformer = Transformer.from_dynamic_import(

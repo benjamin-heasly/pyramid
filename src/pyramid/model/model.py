@@ -168,7 +168,6 @@ class Buffer():
     Reader routers can update this offset as they calibrate themselves over time,
     and Trials can include this offset querying and aligning data.
     """
-
     def __init__(
         self,
         initial_data: BufferData,

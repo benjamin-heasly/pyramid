@@ -170,6 +170,7 @@ class TrialDelimiter():
 
     def discard_before(self, reference_time: float):
         """Let event buffer discard data no longer needed."""
+        # TODO: discard a duration's worth, rather than up to a fixed time.
         self.start_buffer.data.discard_before(self.start_buffer.reference_time_to_raw(reference_time))
 
 
@@ -341,6 +342,7 @@ class TrialExtractor():
 
     def discard_before(self, reference_time: float):
         """Let event wrt and named buffers discard data no longer needed."""
+        # Discard a duration's worth rather than up to a fixed time.
         self.wrt_buffer.data.discard_before(self.wrt_buffer.reference_time_to_raw(reference_time))
         for buffer in self.named_buffers.values():
             buffer.data.discard_before(buffer.reference_time_to_raw(reference_time))
