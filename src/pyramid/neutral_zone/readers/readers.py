@@ -95,7 +95,7 @@ class ReaderSyncConfig():
     """Whether the reader represents the canonical, reference clock to which others readers will be aligned."""
 
     reader_result_name: str = None
-    """The name of the reader result that will contain clock sync numeric events."""
+    """The name of the reader result that will contain clock sync events."""
 
     event_value: int | float = None
     """The value of sync events to look for, within the named event buffer."""
@@ -205,17 +205,16 @@ class ReaderSyncRegistry():
         reader_event_times: list[float],
         reference_event_times: list[float],
     ) -> float:
-        """Find the latest pair of sync events based on array index.
+        """Use the latest sync events from the reader and reference.
 
         This pairing strategy assumes that the reference and other reader reliably record sync events in pairs.
-        The sequence of sync events recored by each reader must correspond 1:1 with the same sequence of real-world
-        sync events.
+        So when we estimate clock drift (like at the end of a trial), the latest recorded events should correspond
+        to the same real-world event.
 
-        This streategy is brittle with respect to the sequences of recorded events, but makes no assumptions about
-        the initial clock offsets or drift rate.
+        This approach is somewhat brittle, but has the advangage of making no assuptions about the size of the
+        initial clock offset or drift rate.
         """
-        last_pair_index = min(len(reader_event_times), len(reference_event_times)) - 1
-        return reader_event_times[last_pair_index] - reference_event_times[last_pair_index]
+        return reader_event_times[-1] - reference_event_times[-1]
 
     def get_drift(
         self,
@@ -226,7 +225,7 @@ class ReaderSyncRegistry():
     ) -> float:
         """Estimate clock drift between the named reader and the reference, based on events marked for each reader.
 
-        Attempts to pick relevant sync events that are at or before the given reference_end_time and reader_end_time.
+        Attempts to pick relevant sync events that are strictly before the given reference_end_time and reader_end_time.
         That is, tries not to use sync events from the future, even though those might be known in a data file.
         """
         reference_event_times = self.event_times.get(self.reference_reader_name, [])
@@ -317,17 +316,6 @@ class ReaderRouter():
         if not read_result:
             return False
 
-        if self.sync_config is not None and self.sync_registry is not None:
-            # Add any new sync events to the sync registry.
-            event_data = read_result.get(self.sync_config.reader_result_name, None)
-            if event_data is not None:
-                sync_event_times = event_data.times(
-                    value=self.sync_config.event_value,
-                    value_index=self.sync_config.event_value_index
-                )
-                for event_time in sync_event_times:
-                    self.sync_registry.record_event(self.sync_config.reader_name, event_time)
-
         for route in self.routes:
             buffer = self.named_buffers.get(route.buffer_name, None)
             if not buffer:
@@ -357,6 +345,18 @@ class ReaderRouter():
                     exc_info=True
                 )
                 continue
+
+        # TODO: look for routes and transformed data, not just raw reader results.
+        if self.sync_config is not None and self.sync_registry is not None:
+            # Add any new sync events to the sync registry.
+            event_data = read_result.get(self.sync_config.reader_result_name, None)
+            if event_data is not None:
+                sync_event_times = event_data.times(
+                    value=self.sync_config.event_value,
+                    value_index=self.sync_config.event_value_index
+                )
+                for event_time in sync_event_times:
+                    self.sync_registry.record_event(self.sync_config.reader_name, event_time)
 
         # Update the high water mark for the reader -- the latest timestamp seen so far.
         for buffer in self.named_buffers.values():
@@ -407,8 +407,10 @@ class ReaderRouter():
 
         # What is the best drift estimate up to the given end time?
         # This can be None, if sync events have not been recorded yet.
-        if reference_end_time is None or self.clock_drift is None:
+        if reference_end_time is None:
             reader_end_time = None
+        elif self.clock_drift is None:
+            reader_end_time = reference_end_time
         else:
             reader_end_time = reference_end_time + self.clock_drift
         return self.sync_registry.get_drift(

@@ -170,8 +170,9 @@ class TrialDelimiter():
 
     def discard_before(self, reference_time: float):
         """Let event buffer discard data no longer needed."""
-        self.start_buffer.data.discard_before(self.start_buffer.reference_time_to_raw(reference_time))
-
+        raw_time = self.start_buffer.reference_time_to_raw(reference_time)
+        self.start_buffer.data.discard_before(raw_time)
+        print("off")
 
 class TrialEnhancer(DynamicImport):
     """Compute new name-value pairs to save with each trial.

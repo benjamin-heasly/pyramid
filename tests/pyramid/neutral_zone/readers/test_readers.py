@@ -317,51 +317,50 @@ def test_reader_sync_registry_latest():
     assert sync_registry.get_drift("foo", pairing_strategy="latest") == 1.11 - 100.0
     assert sync_registry.get_drift("bar", pairing_strategy="latest") == 0.91 - 100.0
 
-    # If bar misses a sync event use an older, more reasonable drift estimate.
+    # If bar misses a sync event it will be off by one event.
     #   ref:                                               |    |
     #   foo:     |    |
     #   bar:   |    x
-    #          ^bar   ^foo
+    #          ^      ^
     sync_registry.record_event("ref", 200.0)
     sync_registry.record_event("foo", 2.12)
     assert sync_registry.get_drift("ref", pairing_strategy="latest") == 0
     assert sync_registry.get_drift("foo", pairing_strategy="latest") == 2.12 - 200.0
-    assert sync_registry.get_drift("bar", pairing_strategy="latest") == 0.91 - 100.0
+    assert sync_registry.get_drift("bar", pairing_strategy="latest") == 0.91 - 200.0
 
-    # Bar will try to recover, but now it's "latest pair" will be off by one event.
+    # Bar can recover for next time, though.
     #   ref:                                               |    |    |
     #   foo:     |    |    |
     #   bar:   |    x    |
-    #               ^      ^
+    #                    ^ ^
     sync_registry.record_event("ref", 300.0)
     sync_registry.record_event("foo", 3.13)
     sync_registry.record_event("bar", 2.93)
     assert sync_registry.get_drift("ref", pairing_strategy="latest") == 0
     assert sync_registry.get_drift("foo", pairing_strategy="latest") == 3.13 - 300.0
-    assert sync_registry.get_drift("bar", pairing_strategy="latest") == 2.93 - 200.0
+    assert sync_registry.get_drift("bar", pairing_strategy="latest") == 2.93 - 300.0
 
-    # If ref misses a sync event use older, more reasonable drift estimates for foo.
-    # But bar will still be off by one.
+    # If ref misses a sync event, everyone will be off by one!
     #   ref:                                               |    |    |    x
     #   foo:     |    |    |    |
     #   bar:   |    x    |    |
-    #                      ^  ^
+    #                         ^ ^
     sync_registry.record_event("foo", 4.14)
     sync_registry.record_event("bar", 3.94)
     assert sync_registry.get_drift("ref", pairing_strategy="latest") == 0
-    assert sync_registry.get_drift("foo", pairing_strategy="latest") == 3.13 - 300.0
+    assert sync_registry.get_drift("foo", pairing_strategy="latest") == 4.14 - 300.0
     assert sync_registry.get_drift("bar", pairing_strategy="latest") == 3.94 - 300.0
 
-    # After recording the next sync event bar will recover by coincidence, but foo will be off by one.
+    # Ref can recover for next time, though.
     #   ref:                                               |    |    |    x    |
     #   foo:     |    |    |    |    |
     #   bar:   |    x    |    |    |
-    #                           ^  ^
+    #                              ^ ^
     sync_registry.record_event("ref", 500.0)
     sync_registry.record_event("foo", 5.15)
     sync_registry.record_event("bar", 4.95)
     assert sync_registry.get_drift("ref", pairing_strategy="latest") == 0
-    assert sync_registry.get_drift("foo", pairing_strategy="latest") == 4.14 - 500.0
+    assert sync_registry.get_drift("foo", pairing_strategy="latest") == 5.15 - 500.0
     assert sync_registry.get_drift("bar", pairing_strategy="latest") == 4.95 - 500.0
 
     # Accept end times to keep the drift estimate contemporary to a time range of interest (eg a trial).
@@ -370,7 +369,7 @@ def test_reader_sync_registry_latest():
     reader_end_time = 3.5
     assert sync_registry.get_drift("ref", reference_end_time, reference_end_time, "latest") == 0
     assert sync_registry.get_drift("foo", reference_end_time, reader_end_time, "latest") == 3.13 - 300.0
-    assert sync_registry.get_drift("bar", reference_end_time, reader_end_time, "latest") == 2.93 - 200.0
+    assert sync_registry.get_drift("bar", reference_end_time, reader_end_time, "latest") == 2.93 - 300.0
 
 
 def test_reader_sync_registry_closest():

@@ -242,7 +242,7 @@ def test_gui_plotter_error(fixture_path, tmp_path):
     assert exit_code == 1
 
 
-def test_convert(fixture_path, tmp_path):
+def test_convert_normal(fixture_path, tmp_path):
     delimiter_csv = Path(fixture_path, "delimiter.csv").as_posix()
     foo_csv = Path(fixture_path, "foo.csv").as_posix()
     bar_csv = Path(fixture_path, "bar.csv").as_posix()

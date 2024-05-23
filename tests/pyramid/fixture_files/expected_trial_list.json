@@ -70,8 +70,8 @@
             }
         },
         "text_events": {
-            "foo": {"text_data": ["zero", "one", "forty-three", "forty-three"],
-            "timestamp_data": [-0.3099999999999996, -0.20999999999999996, 0.0, 0.10000000000000009]}
+            "foo": {"text_data": ["zero", "one", "forty-three"],
+            "timestamp_data": [-0.30000000000000004, -0.19999999999999996, 0.0]}
         },
         "enhancements": {
             "duration": 1.0,
