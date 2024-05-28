@@ -350,7 +350,7 @@ def test_expression_enhancer_bool_conversion():
     assert type(nonzero) == bool
 
 
-def test_text_key_value_enhancer():
+def test_text_key_value_enhancer_defaults():
     enhancer = TextKeyValueEnhancer(buffer_name="text")
 
     text = [
@@ -364,7 +364,12 @@ def test_text_key_value_enhancer():
         "name=name_7,value=42,type=int",
         "name=name_8,value=not a float,type=float",
         "name=name_9,value=3.14,type=float",
-        "name=name_10,value=special,category=special",
+        "name=name_10,value=multi_10",
+        "name=name_10,value=multi_11",
+        "name=name_10,value=multi_12",
+        "name=name_11,value=13.13,type=float",
+        "name=name_11,value=14.14,type=float",
+        "name=name_11,value=15.15,type=float",
     ]
     event_list = TextEventList(np.array(range(len(text))), np.array(text, dtype=np.str_))
     trial = Trial(
@@ -378,23 +383,38 @@ def test_text_key_value_enhancer():
 
     enhancer.enhance(trial, 0, {}, {})
 
-    assert trial.enhancements == {
-        "name_2": 2,
-        "name_3": 3,
-        "name_4": "value_4",
-        "name_5": "value_5",
-        "name_6": 0,
-        "name_7": 42,
-        "name_8": 0.0,
-        "name_9": 3.14,
-        "name_10": "special",
-    }
-    assert trial.enhancement_categories == {
-        "time": ["name_2", "name_3"],
-        "value": ["name_4", "name_5", "name_8", "name_9"],
-        "id": ["name_6", "name_7"],
-        "special": ["name_10"]
-    }
+    # Some events are parsed as numeric values, otherse as text.
+    assert trial.numeric_events.keys() == {"name_2", "name_3", "name_6", "name_7", "name_8", "name_9", "name_11"}
+    assert trial.text_events.keys() == {"text", "name_4", "name_5", "name_10"}
+
+    # Events that use timestamps for their values.
+    assert trial.numeric_events["name_2"].times() == [2]
+    assert trial.numeric_events["name_2"].values() == [2]
+    assert trial.numeric_events["name_3"].times() == [3]
+    assert trial.numeric_events["name_3"].values() == [3]
+
+    # Events that use text values.
+    assert trial.text_events["name_4"].times() == [4]
+    assert trial.text_events["name_4"].values() == ["value_4"]
+    assert trial.text_events["name_5"].times() == [5]
+    assert trial.text_events["name_5"].values() == ["value_5"]
+
+    # Events that use parsed or default numeric values.
+    assert trial.numeric_events["name_6"].times() == [6]
+    assert trial.numeric_events["name_6"].values() == [enhancer.int_default]
+    assert trial.numeric_events["name_7"].times() == [7]
+    assert trial.numeric_events["name_7"].values() == [42]
+    assert trial.numeric_events["name_8"].times() == [8]
+    assert trial.numeric_events["name_8"].values() == [enhancer.float_default]
+    assert trial.numeric_events["name_9"].times() == [9]
+    assert trial.numeric_events["name_9"].values() == [3.14]
+
+    # Events with multiple occurrences, grouped by name.
+    assert np.array_equal(trial.text_events["name_10"].times(), [10, 11, 12])
+    assert np.array_equal(trial.text_events["name_10"].values(), ["multi_10", "multi_11", "multi_12"])
+
+    assert np.array_equal(trial.numeric_events["name_11"].times(), [13, 14, 15])
+    assert np.array_equal(trial.numeric_events["name_11"].values(), [13.13, 14.14, 15.15])
 
 
 def test_text_key_value_enhancer_configure_literals():
@@ -405,15 +425,10 @@ def test_text_key_value_enhancer_configure_literals():
         name_key="N",
         value_key="V",
         type_key="T",
-        category_key="C",
         float_types=["F", "D"],
         float_default=-1e6,
         int_types=["I", "L"],
-        int_default=-1,
-        timestamp_category="tim",
-        str_category="stringo",
-        int_category="rupert grint",
-        float_category="floaty mcfloatface"
+        int_default=-1
     )
 
     text = [
@@ -424,11 +439,17 @@ def test_text_key_value_enhancer_configure_literals():
         "N->name_4|V->value_4",
         "N->name_5|V->value_5|T->garbage",
         "N->name_6|V->not an int|T->I",
-        "N->name_7|V->42|T->I",
+        "N->name_7|V->42|T->L",
         "N->name_8|V->not a float|T->F",
-        "N->name_9|V->3.14|T->F",
-        "N->name_10|V->special|C->special",
+        "N->name_9|V->3.14|T->D",
+        "N->name_10|V->multi_10",
+        "N->name_10|V->multi_11",
+        "N->name_10|V->multi_12",
+        "N->name_11|V->13.13|T->F",
+        "N->name_11|V->14.14|T->F",
+        "N->name_11|V->15.15|T->F",
     ]
+
     event_list = TextEventList(np.array(range(len(text))), np.array(text, dtype=np.str_))
     trial = Trial(
         start_time=0,
@@ -441,24 +462,38 @@ def test_text_key_value_enhancer_configure_literals():
 
     enhancer.enhance(trial, 0, {}, {})
 
-    assert trial.enhancements == {
-        "name_2": 2,
-        "name_3": 3,
-        "name_4": "value_4",
-        "name_5": "value_5",
-        "name_6": -1,
-        "name_7": 42,
-        "name_8": -1e6,
-        "name_9": 3.14,
-        "name_10": "special",
-    }
-    assert trial.enhancement_categories == {
-        "tim": ["name_2", "name_3"],
-        "stringo": ["name_4", "name_5"],
-        "rupert grint": ["name_6", "name_7"],
-        "floaty mcfloatface": ["name_8", "name_9"],
-        "special": ["name_10"]
-    }
+    # Some events are parsed as numeric values, otherse as text.
+    assert trial.numeric_events.keys() == {"name_2", "name_3", "name_6", "name_7", "name_8", "name_9", "name_11"}
+    assert trial.text_events.keys() == {"crazy_text", "name_4", "name_5", "name_10"}
+
+    # Events that use timestamps for their values.
+    assert trial.numeric_events["name_2"].times() == [2]
+    assert trial.numeric_events["name_2"].values() == [2]
+    assert trial.numeric_events["name_3"].times() == [3]
+    assert trial.numeric_events["name_3"].values() == [3]
+
+    # Events that use text values.
+    assert trial.text_events["name_4"].times() == [4]
+    assert trial.text_events["name_4"].values() == ["value_4"]
+    assert trial.text_events["name_5"].times() == [5]
+    assert trial.text_events["name_5"].values() == ["value_5"]
+
+    # Events that use parsed or default numeric values.
+    assert trial.numeric_events["name_6"].times() == [6]
+    assert trial.numeric_events["name_6"].values() == [enhancer.int_default]
+    assert trial.numeric_events["name_7"].times() == [7]
+    assert trial.numeric_events["name_7"].values() == [42]
+    assert trial.numeric_events["name_8"].times() == [8]
+    assert trial.numeric_events["name_8"].values() == [enhancer.float_default]
+    assert trial.numeric_events["name_9"].times() == [9]
+    assert trial.numeric_events["name_9"].values() == [3.14]
+
+    # Events with multiple occurrences, grouped by name.
+    assert np.array_equal(trial.text_events["name_10"].times(), [10, 11, 12])
+    assert np.array_equal(trial.text_events["name_10"].values(), ["multi_10", "multi_11", "multi_12"])
+
+    assert np.array_equal(trial.numeric_events["name_11"].times(), [13, 14, 15])
+    assert np.array_equal(trial.numeric_events["name_11"].values(), [13.13, 14.14, 15.15])
 
 
 def test_saccades_enhancer_empty_trial():

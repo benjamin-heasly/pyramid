@@ -7,6 +7,7 @@ import numpy as np
 from scipy.ndimage import gaussian_filter1d
 
 from pyramid.file_finder import FileFinder
+from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.trials.trials import Trial, TrialEnhancer, TrialExpression
 
 
@@ -245,7 +246,7 @@ class ExpressionEnhancer(TrialEnhancer):
 
 
 class TextKeyValueEnhancer(TrialEnhancer):
-    """Parse text events for key-value pairs, form them into enhancements, and add them to the trial.
+    """Parse text events for key-value pairs, group results by name, add to the trial as event lists.
 
     Each event should have text_data formated like these:
 
@@ -259,22 +260,23 @@ class TextKeyValueEnhancer(TrialEnhancer):
         - Each **entry** is a key-value pair with **key** and **value** separted by an equals sign ("=").
         - Both **key** and **value** can have surrounding whitespace, which will be trimmed.
 
-    For each text event in a named buffer, this enhancer will parse out the keys and values,
-    form them into an enhancement, and add this to the current trial. The formation works like this:
+    This enhancer will transform text events from the named buffer by parsing out keys and values from the
+    event text.  It will group parsed events by name and add them back to the trial in groups of numeric or
+    or text events.
+
+    It parses each event like this:
 
         - Look for an entry with **key** "name".  Use its **value** as the name of the trial enhancement.
             - If there is no "name" entry, skip the text event.
         - Look for an entry with **key** "value".  Parse its **value** to get the value for the enhancement.
-            - If there is no "value" entry, the enhancement will take the value of the event's timestamp (and category "time").
+            - If there is no "value" entry, take the event's timestamp as the value.
         - Look for an entry with **key** "type".  If present, this can be a hint for how to parse the "value" entry:
-            - type=float or type=double -> Try to parse "value" as a Python float (with category "value").
-            - type=int or type=long -> Try to parse "value" as a Python int (with category "id").
-            - type=str -> Take "value" as-is as a Python str (with category "value").
-            - no "type" entry or unknown type -> Take "value" as-is as a Python str (with category "value").
-        - Look for a key called "category".  If present, this can specify the enhancement's category explicitly
-          and override the default categories (as guessed above).
+            - type=float or type=double -> Try to parse "value" as a Python float.
+            - type=int or type=long -> Try to parse "value" as a Python int.
+            - type=str -> Take "value" as-is as a Python str.
+            - no "type" entry or unknown type -> Take "value" as-is as a Python str.
 
-    The literal delimiters and keys used for parsing can be cusomized as args to this enhancer.
+    The literal delimiters and keys used for parsing can be cusomized via constructer args.
 
     Args:
         buffer_name:            Name of a trial TextEventList buffer to read from.
@@ -283,15 +285,10 @@ class TextKeyValueEnhancer(TrialEnhancer):
         name_key:               Key to use for the name of each enhancement (default is "name")
         value_key:              Key to use for the value of each enhancement (default is "value")
         type_key:               Key to use for the type of each value (default is "type")
-        category_key:           Key to use for the category of each enhancement (default is "category")
         float_types:            List of types to parse as Python floats (default is ["float", "double"])
         float_default:          Default value to use when float parsing fails (default is 0.0)
         int_types:              List of types to parse as Python ints (default is ["int", "long"])
         int_default:            Default value to use when int parsing fails (default is 0)
-        timestamp_category:     Enhancement category to use with event timestamps (default is "time")
-        str_category:           Default enhancement category to use with str values (default is "value")
-        int_category:           Default enhancement category to use with int values (default is "id")
-        float_category:         Default enhancement category to use with float values (default is "value")
     """
 
     def __init__(
@@ -302,15 +299,10 @@ class TextKeyValueEnhancer(TrialEnhancer):
         name_key: str = "name",
         value_key: str = "value",
         type_key: str = "type",
-        category_key: str = "category",
         float_types: list[str] = ["float", "double"],
         float_default: float = 0.0,
         int_types: list[str] = ["int", "long"],
         int_default: int = 0,
-        timestamp_category: str = "time",
-        str_category: str = "value",
-        int_category: str = "id",
-        float_category: str = "value",
     ) -> None:
         self.buffer_name = buffer_name
         self.entry_delimiter = entry_delimiter
@@ -318,15 +310,10 @@ class TextKeyValueEnhancer(TrialEnhancer):
         self.name_key = name_key
         self.value_key = value_key
         self.type_key = type_key
-        self.category_key = category_key
         self.float_types = float_types
         self.float_default = float_default
         self.int_types = int_types
         self.int_default = int_default
-        self.timestamp_category = timestamp_category
-        self.str_category = str_category
-        self.int_category = int_category
-        self.float_category = float_category
 
     def enhance(
         self,
@@ -335,17 +322,45 @@ class TextKeyValueEnhancer(TrialEnhancer):
         experiment_info: dict[str: Any],
         subject_info: dict[str: Any]
     ) -> None:
+        # Parse each text event from the named buffer.
         event_list = trial.text_events[self.buffer_name]
+
+        # Group event values and categories by name.
+        events_by_name = {}
         for index in range(event_list.event_count()):
+            # Parse out a name and a value for this event.
             timestamp = event_list.timestamp_data[index]
             text = str(event_list.text_data[index])
-            info = self.parse_entries(text)
-            if not self.name_key in info:
+            key_value_entries = self.parse_entries(text)
+            name = key_value_entries.get(self.name_key, None)
+            if name is None:
                 logging.warning(f"Skipping text that has no name key '{self.name_key}': {text}")
                 continue
-            name = info[self.name_key]
-            (value, category) = self.parse_value(info, timestamp)
-            trial.add_enhancement(name, value, category)
+            value = self.parse_value(key_value_entries, timestamp)
+
+            # Group parsed event info by name.
+            if name in events_by_name:
+                events_by_name[name]["timestamps"].append(timestamp)
+                events_by_name[name]["values"].append(value)
+            else:
+                events_by_name[name] = {
+                    "timestamps": [timestamp],
+                    "values": [value]
+                }
+
+        # For each name group create a text or numeric event list.
+        for name, data in events_by_name.items():
+            timestamps = data["timestamps"]
+            values = data["values"]
+            if isinstance(values[0], str):
+                timestamp_data = np.array(timestamps)
+                text_data = np.array(values, dtype=np.str_)
+                text_event_list = TextEventList(timestamp_data, text_data)
+                trial.add_enhancement(name, text_event_list)
+            else:
+                event_data = np.stack([timestamps, values]).T
+                numeric_event_list = NumericEventList(event_data)
+                trial.add_enhancement(name, numeric_event_list)
 
     def parse_entries(self, text: str) -> dict[str, str]:
         entries = text.split(self.entry_delimiter)
@@ -360,37 +375,28 @@ class TextKeyValueEnhancer(TrialEnhancer):
             info[key] = value
         return info
 
-    def parse_value(self, info: dict[str, str], timestamp: float) -> tuple[Any, str]:
+    def parse_value(self, info: dict[str, str], timestamp: float) -> Any:
         raw_value = info.get(self.value_key, None)
         if raw_value is None:
-            # Use the event's timesetamp as the enhancement value, with category "time".
-            return (timestamp, self.timestamp_category)
+            # Use the event's timesetamp as the value.
+            return timestamp
 
         # Parse out a value based on the type, if provided.
-        # Also guess a default enhancement category for the type.
         type = info.get(self.type_key, None)
         if type in self.int_types:
-            category = self.int_category
             try:
-                value = int(raw_value)
+                return int(raw_value)
             except Exception:
                 logging.warning(f"Could not parse value as int, using default ({self.int_default}): {raw_value}")
-                value = self.int_default
+                return self.int_default
         elif type in self.float_types:
-            category = self.float_category
             try:
-                value = float(raw_value)
+                return float(raw_value)
             except Exception:
                 logging.warning(f"Could not parse value as float, using default ({self.float_default}): {raw_value}")
-                value = self.float_default
+                return self.float_default
         else:
-            category = self.str_category
-            value = raw_value
-
-        # Look for an explicit category to override the default guessed above.
-        category = info.get(self.category_key, category)
-
-        return (value, category)
+            return raw_value
 
 
 class SaccadesEnhancer(TrialEnhancer):
