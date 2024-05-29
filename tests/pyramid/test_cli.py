@@ -271,6 +271,11 @@ def test_convert(fixture_path, tmp_path):
     with open(trial_file) as f:
         trials = [json.loads(trial_line) for trial_line in f]
 
+    # The expected trials JSON is big, brittle, but complete comparison!
+    # The data in trial zero include a time correction based on sync events that arrive in trial 1.
+    # This is not obvious from staring at the JSON, but it is expected behavior.
+    # The use case is: don't go delimiting and populating trials until we have sync data in hand --
+    # Even if this means buffering ahead for trial zero. 
     expected_trial_list = Path(fixture_path, "expected_trial_list.json")
     with open(expected_trial_list) as f:
         expected_trials = json.load(f)

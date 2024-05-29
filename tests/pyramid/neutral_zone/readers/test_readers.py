@@ -371,6 +371,15 @@ def test_reader_sync_registry():
     assert sync_registry.get_drift("foo", reference_end_time=end_time, reader_end_time=end_time) == 3.13 - 3.0
     assert sync_registry.get_drift("bar", reference_end_time=end_time, reader_end_time=end_time) == 2.93 - 3.0
 
+    # On eg. trial zero, the trial end time might be before the first sync event arrives,
+    # perhaps if trial one is the first trial with complete data.
+    # In this case, use the earliest sync data available.
+    # This is like going back in time to the very first example, above.
+    end_time = -1.0
+    assert sync_registry.get_drift("ref", reference_end_time=end_time, reader_end_time=end_time) == 0
+    assert sync_registry.get_drift("foo", reference_end_time=end_time, reader_end_time=end_time) == 1.11 - 1.0
+    assert sync_registry.get_drift("bar", reference_end_time=end_time, reader_end_time=end_time) == 0.91 - 1.0
+
 
 def test_router_records_sync_events_in_registry():
     reader = FakeNumericEventReader([[[0, 0], [0, 42]], [[1, 10], [1, 0]], [[2, 20], [2, 42]]])

@@ -111,6 +111,12 @@ class ReaderSyncConfig():
     For example, a Phy spike reader might want to use sync info from an upstream data source like Plexon or OpenEphys.
     """
 
+    init_event_count: int = 1
+    """How many initial sync events Pyramid to try to read for this reader, before deliminting trials."""
+
+    init_max_reads: int = 10
+    """How many times Pyramid should keep trying to read when waiting for initial sync events."""
+
 
 class ReaderSyncRegistry():
     """Keep track of sync events as seen by different readers, and clock drift compared to a referencce reader.
@@ -161,11 +167,36 @@ class ReaderSyncRegistry():
         else:  # pragma: no cover
             return False
 
+    def event_count(self, reader_name: str) -> int:
+        times = self.event_times.get(reader_name, [])
+        return len(times)
+
     def record_event(self, reader_name: str, event_time: float) -> None:
         """Record a sync event as seen by the named reader."""
         reader_event_times = self.event_times.get(reader_name, [])
         reader_event_times.append(event_time)
         self.event_times[reader_name] = reader_event_times
+
+    def events(self, reader_name: str, end_time: float) -> list[float]:
+        """Find sync events for the given reader, at or before the given end time.
+
+        In case end_time is before the first sync event, return the first sync event.
+        """
+        event_times = self.event_times.get(reader_name, [])
+        if not event_times:
+            return []
+
+        if end_time is None:
+            return event_times
+
+        filtered_event_times = [time for time in event_times if time <= end_time]
+        if not filtered_event_times and event_times:
+            # We have sync data but it's after the requested end time.
+            # Return the first event we have, as the best match for end_time.
+            return [event_times[0]]
+
+        # Return times at or before the requested end_time.
+        return filtered_event_times
 
     def get_drift(
         self,
@@ -174,19 +205,13 @@ class ReaderSyncRegistry():
         reader_end_time: float = None
     ) -> float:
         """Estimate clock drift between the named reader and the reference, based on events marked for each reader."""
-        reference_event_times = self.event_times.get(self.reference_reader_name, None)
+        reference_event_times = self.events(self.reference_reader_name, reference_end_time)
         if not reference_event_times:
             return 0.0
 
-        if reference_end_time is not None:
-            reference_event_times = [time for time in reference_event_times if time <= reference_end_time]
-
-        reader_event_times = self.event_times.get(reader_name, None)
+        reader_event_times = self.events(reader_name, reader_end_time)
         if not reader_event_times:
             return 0.0
-
-        if reader_end_time is not None:
-            reader_event_times = [time for time in reader_event_times if time <= reader_end_time]
 
         reader_last = reader_event_times[-1]
         reader_offsets = [reader_last - ref_time for ref_time in reference_event_times]

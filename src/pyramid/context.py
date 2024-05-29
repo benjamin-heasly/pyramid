@@ -161,6 +161,30 @@ class PyramidContext():
             file_finder=file_finder
         )
 
+    def read_initial_sync_events(self) -> None:
+        """Read some initial sync events for each reader that has sync configured."""
+        for name, router in self.routers.items():
+            # Does this reader have sync configured?
+            if router.sync_config is None or router.sync_registry is None or router.sync_config.reader_name != name:
+                # We can skip this reader because it has no sync config, or it's using events from another reader.
+                continue
+
+            init_event_count = router.sync_config.init_event_count
+            init_max_reads = router.sync_config.init_max_reads
+            logging.info(f"Waiting for {init_event_count} inital sync events for reader {name}.")
+
+            count = router.sync_registry.event_count(name)
+            reads = 0
+            while count < init_event_count and reads < init_max_reads:
+                router.route_next()
+                count = router.sync_registry.event_count(name)
+                reads += 1
+
+            if (count < init_event_count):
+                logging.warning(f"Reader {name} has {count} of {init_event_count} sync events after {reads} reads.")
+            else:
+                logging.info(f"OK, reader {name} has {count} of {init_event_count} sync events.")
+
     def run_without_plots(self, trial_file: str) -> None:
         """Run without plots as fast as the data allow.
 
@@ -174,6 +198,9 @@ class PyramidContext():
             writer = stack.enter_context(TrialFile.for_file_suffix(found_trial_file, create_empty=True))
             for reader in self.readers.values():
                 stack.enter_context(reader)
+
+            # Make sure readers with sync config have some sync data before delimiting and populating trials.
+            self.read_initial_sync_events()
 
             # Extract trials indefinitely, as they come.
             while self.start_router.still_going():
@@ -221,6 +248,9 @@ class PyramidContext():
             for reader in self.readers.values():
                 stack.enter_context(reader)
             stack.enter_context(self.plot_figure_controller)
+
+            # Make sure readers with sync config have some sync data before delimiting and populating trials.
+            self.read_initial_sync_events()
 
             # Extract trials indefinitely, as they come.
             next_gui_update = time.time()
@@ -491,10 +521,10 @@ def configure_readers(
             # Instantiate transformers by dynamic import.
             transformers = []
             transformers_config = buffer_config.get("transformers", [])
-            logging.info(f"Buffer {buffer_name} using {len(transformers_config)} transformers.")
+            logging.info(f"  Buffer {buffer_name} using {len(transformers_config)} transformers.")
             for transformer_config in transformers_config:
                 transformer_class = transformer_config["class"]
-                logging.info(f"  {transformer_class}")
+                logging.info(f"    {transformer_class}")
                 package_path = transformer_config.get("package_path", None)
                 transformer_args = transformer_config.get("args", {})
                 transformer = Transformer.from_dynamic_import(

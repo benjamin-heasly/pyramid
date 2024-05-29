@@ -16,7 +16,7 @@
             }
         },
         "text_events": {
-            "foo": {"text_data": ["zero"], "timestamp_data": [0.2]}
+            "foo": {"text_data": ["zero"], "timestamp_data": [0.14999999999999997]}
         },
         "enhancements": {
             "duration": 1.0,
@@ -43,7 +43,7 @@
             }
         },
         "text_events": {
-            "foo": {"text_data": ["zero", "one", "forty-three"], "timestamp_data": [-0.30000000000000004, -0.19999999999999996, 0.0]}
+            "foo": {"text_data": ["zero", "one", "forty-three"], "timestamp_data": [-0.3500000000000001, -0.25, 0.0]}
         },
         "enhancements": {
             "duration": 1.0,
