@@ -312,17 +312,17 @@ def test_router_records_sync_events_in_registry():
     # The first read should contain two events, including a sync event at time 0.
     assert router.route_next() == True
     assert router.named_buffers["events"].data.event_count() == 2
-    assert sync_registry.event_times["test_reader"] == [0]
+    assert sync_registry.find_events("test_reader") == [(0,0)]
 
     # The second read should contain two more events but no sync event.
     assert router.route_next() == True
     assert router.named_buffers["events"].data.event_count() == 4
-    assert sync_registry.event_times["test_reader"] == [0]
+    assert sync_registry.find_events("test_reader") == [(0,0)]
 
     # The last read should contain two more events, including a sync event at time 2.
     assert router.route_next() == True
     assert router.named_buffers["events"].data.event_count() == 6
-    assert sync_registry.event_times["test_reader"] == [0, 2]
+    assert sync_registry.find_events("test_reader") == [(0,0), (2,2)]
 
     # All done.
     assert router.route_next() == False

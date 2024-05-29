@@ -1,34 +1,45 @@
 from dataclasses import dataclass
+from typing import NamedTuple
+
 
 @dataclass
 class ReaderSyncConfig():
-    """Specify configuration for how a reader should find sync events and correct for clock drift."""
+    """Specify configuration for how a reader should find sync events and align to a reference clock."""
 
     is_reference: str = False
     """Whether the reader represents the canonical, reference clock to which others readers will be aligned."""
 
     buffer_name: str = None
-    """The name of the reader result or extra buffer that will contain clock sync events."""
+    """The name of the reader result or extra buffer that will contain sync events."""
 
     event_value: int | float = None
-    """The value of sync events to look for, within the named event buffer."""
+    """The event value to look for to identify sync events within the named event buffer."""
 
     event_value_index: int = 0
-    """The numeric event value index to use within the named event buffer."""
+    """The event value index to use when looking for event_value within the named event buffer."""
 
     reader_name: str = None
     """The name of the reader to act as when aligning data within trials.
 
-    Usually reader_name would be the name of the same reader that this config applies to.
+    Usually reader_name would be the name of the reader itself.
     Or it may be the name of a different reader so that one reader may reuse sync info from another.
-    For example, a Phy spike reader might want to use sync info from an upstream data source like Plexon or OpenEphys.
     """
 
     init_event_count: int = 1
-    """How many initial sync events Pyramid to try to read for this reader, before deliminting trials."""
+    """How many initial sync events Pyramid should to try to read for this reader, before delimiting trials."""
 
     init_max_reads: int = 10
     """How many times Pyramid should keep trying to read when waiting for initial sync events."""
+
+
+class SyncEvent(NamedTuple):
+    """Record a sync event as a pair of timestamp (used for alignment) and key (used to pair up corresponding events)."""
+
+    timestamp: float
+    """When a real-world sync event occurred, according to a particular reader and its clock."""
+
+    key: float
+    """Key used to match up sync events that represent the same real-world event, as seen by different readers."""
 
 
 class ReaderSyncRegistry():
@@ -68,48 +79,49 @@ class ReaderSyncRegistry():
         reference_reader_name: str
     ) -> None:
         self.reference_reader_name = reference_reader_name
-        self.event_times = {}
+        self.reader_events: dict[str, list[SyncEvent]] = {}
 
     def __eq__(self, other: object) -> bool:
         """Compare registry field-wise, to support use of this class in tests."""
         if isinstance(other, self.__class__):
             return (
                 self.reference_reader_name == other.reference_reader_name
-                and self.event_times == other.event_times
+                and self.reader_events == other.reader_events
             )
         else:  # pragma: no cover
             return False
 
     def event_count(self, reader_name: str) -> int:
-        times = self.event_times.get(reader_name, [])
-        return len(times)
+        events = self.reader_events.get(reader_name, [])
+        return len(events)
 
+    # TODO: accept keys selected by caller.
     def record_event(self, reader_name: str, event_time: float) -> None:
         """Record a sync event as seen by the named reader."""
-        reader_event_times = self.event_times.get(reader_name, [])
-        reader_event_times.append(event_time)
-        self.event_times[reader_name] = reader_event_times
+        events = self.reader_events.get(reader_name, [])
+        events.append(SyncEvent(timestamp=event_time, key=event_time))
+        self.reader_events[reader_name] = events
 
-    def events(self, reader_name: str, end_time: float) -> list[float]:
+    def find_events(self, reader_name: str, end_time: float = None) -> list[float]:
         """Find sync events for the given reader, at or before the given end time.
 
-        In case end_time is before the first sync event, return the first sync event.
+        If end_time is before the first sync event, return the first sync event.
         """
-        event_times = self.event_times.get(reader_name, [])
-        if not event_times:
+        events = self.reader_events.get(reader_name, [])
+        if not events:
             return []
 
         if end_time is None:
-            return event_times
+            return events
 
-        filtered_event_times = [time for time in event_times if time <= end_time]
-        if not filtered_event_times and event_times:
+        filtered_events = [event for event in events if event.timestamp <= end_time]
+        if not filtered_events and events:
             # We have sync data but it's after the requested end time.
             # Return the first event we have, as the best match for end_time.
-            return [event_times[0]]
+            return [events[0]]
 
         # Return times at or before the requested end_time.
-        return filtered_event_times
+        return filtered_events
 
     def get_drift(
         self,
@@ -118,20 +130,20 @@ class ReaderSyncRegistry():
         reader_end_time: float = None
     ) -> float:
         """Estimate clock drift between the named reader and the reference, based on events marked for each reader."""
-        reference_event_times = self.events(self.reference_reader_name, reference_end_time)
-        if not reference_event_times:
+        reference_events = self.find_events(self.reference_reader_name, reference_end_time)
+        if not reference_events:
             return 0.0
 
-        reader_event_times = self.events(reader_name, reader_end_time)
-        if not reader_event_times:
+        reader_events = self.find_events(reader_name, reader_end_time)
+        if not reader_events:
             return 0.0
 
-        reader_last = reader_event_times[-1]
-        reader_offsets = [reader_last - ref_time for ref_time in reference_event_times]
+        reader_last = reader_events[-1]
+        reader_offsets = [reader_last.key - reference_event.key for reference_event in reference_events]
         drift_from_reader = min(reader_offsets, key=abs)
 
-        reference_last = reference_event_times[-1]
-        reference_offsets = [reader_time - reference_last for reader_time in reader_event_times]
+        reference_last = reference_events[-1]
+        reference_offsets = [reader_event.key - reference_last.key for reader_event in reader_events]
         drift_from_reference = min(reference_offsets, key=abs)
 
         return min(drift_from_reader, drift_from_reference, key=abs)
