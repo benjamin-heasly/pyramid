@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import NamedTuple
 
@@ -31,6 +32,9 @@ class ReaderSyncConfig():
     init_max_reads: int = 10
     """How many times Pyramid should keep trying to read when waiting for initial sync events."""
 
+    pairing_strategy: str = "closest"
+    """How to pair up event keys between readers: "closest", "max", or "last equal"."""
+
 
 class SyncEvent(NamedTuple):
     """Record a sync event as a pair of timestamp (used for alignment) and key (used to pair up corresponding events)."""
@@ -43,36 +47,7 @@ class SyncEvent(NamedTuple):
 
 
 class ReaderSyncRegistry():
-    """Keep track of sync events as seen by different readers, and clock drift compared to a referencce reader.
-
-        When comparing sync event times between readers the registry will use the latest sync information recorded so far.
-        It will also try to line up times in pairs so that both times correspond to the same real-world sync event.
-
-            reference: |   |   |   |   |   |   |   |
-            other:     |   |   |   |   |  |   |   |
-                                                  ^^ latest pair seen so far, seems like a reasonable drift estimate
-
-        The registry will form the pairs based on difference in time, as opposed just lining up array indexes.
-        This should make the drift estimates robust in case readers record different numbers of sync events.
-        For example, one reader might suddenly stop recording sync altogether.
-
-            reference: |   |   |   |   |   |   |   |
-            other:     |   |   |
-                                  ^ oops, sync from other dropped around here here!
-
-        In this case, pairing up the latest events by array index would lead to "drift" estimates that grow
-        in real time, and don't really reflect the underlying clock rates.
-
-        So instead, the registry will consider the latest sync event time from each reader, and pair it with the closest
-        event time from the other reader.  From these two "closest" pairs, it will choose the pair with the smallest
-        time difference.
-            reference: |   |   |   |   |   |   |   |
-            other:     |   |   |                   ^ "closest" from reference is huge and growing in real time!
-                               ^ "closest" from other is older, but still looks reasonable
-
-        All this assumes that clock drift is small compared to the interval between real-world sync events.  If that's
-        true then looking for small differences between readers is a good way to discover which times go together.
-    """
+    """Keep track of sync events as seen by different readers and compute clock offsets compared to a reference reader."""
 
     def __init__(
         self,
@@ -123,27 +98,58 @@ class ReaderSyncRegistry():
         # Return times at or before the requested end_time.
         return filtered_events
 
-    def get_drift(
+    def offset_from_closest_keys(
+        self,
+        reference_events: list[SyncEvent],
+        reader_events: list[SyncEvent]
+    ) -> float:
+        """Choose a pair of sync events that are close together in time.
+
+        This pairs up sync events based on how close their keys are to each other
+        and computes a clock offset from the pair with the closest keys.
+
+        In general, we could compare all m X n pairs of keys from the given reference_events X reader_events.
+        This seems excessive, though.  Instead this considers m + n pairings:
+            - the last reference event vs each reader event
+            - the last reader event vs each reference event
+
+        This pairing strategy should be robust in case reference_events and reader_events contain different
+        numbers of events, or have missing events somewhere in the middle.
+        """
+
+        if not reference_events or not reader_events:
+            return 0.0
+
+        # How far is each reference key from the last reader key?
+        reader_last = reader_events[-1]
+        distances_from_reader_last = [reader_last.key - reference_event.key for reference_event in reference_events]
+        min_distance_from_reader_last = min(distances_from_reader_last, key=abs)
+
+        # How far is each reader key from the last reference key?
+        reference_last = reference_events[-1]
+        distances_from_reference_last = [reader_event.key - reference_last.key for reader_event in reader_events]
+        min_distance_from_reference_last = min(distances_from_reference_last, key=abs)
+
+        # Compute the timestamp offset at the closest pair of keys.
+        if abs(min_distance_from_reader_last) < abs(min_distance_from_reference_last):
+            reference_event = reference_events[distances_from_reader_last.index(min_distance_from_reader_last)]
+            return reader_last.timestamp - reference_event.timestamp
+        else:
+            reader_event = reader_events[distances_from_reference_last.index(min_distance_from_reference_last)]
+            return reader_event.timestamp - reference_last.timestamp
+
+    def compute_offset(
         self,
         reader_name: str,
+        pairing_strategy: str,
         reference_end_time: float = None,
         reader_end_time: float = None
     ) -> float:
         """Estimate clock drift between the named reader and the reference, based on events marked for each reader."""
         reference_events = self.find_events(self.reference_reader_name, reference_end_time)
-        if not reference_events:
-            return 0.0
-
         reader_events = self.find_events(reader_name, reader_end_time)
-        if not reader_events:
-            return 0.0
-
-        reader_last = reader_events[-1]
-        reader_offsets = [reader_last.key - reference_event.key for reference_event in reference_events]
-        drift_from_reader = min(reader_offsets, key=abs)
-
-        reference_last = reference_events[-1]
-        reference_offsets = [reader_event.key - reference_last.key for reader_event in reader_events]
-        drift_from_reference = min(reference_offsets, key=abs)
-
-        return min(drift_from_reader, drift_from_reference, key=abs)
+        if pairing_strategy == "closest":
+            return self.offset_from_closest_keys(reference_events, reader_events)
+        else:  # pragma: no cover
+            logging.error(f'Unknown sync event pairing strategy <{pairing_strategy}>, defaulting to "closest".')
+            return self.offset_from_closest_keys(reference_events, reader_events)

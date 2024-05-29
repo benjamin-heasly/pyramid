@@ -228,8 +228,9 @@ class ReaderRouter():
             reader_end_time = None
         else:
             reader_end_time = reference_end_time + self.clock_drift
-        self.clock_drift = self.sync_registry.get_drift(
+        self.clock_drift = self.sync_registry.compute_offset(
             self.sync_config.reader_name,
+            self.sync_config.pairing_strategy,
             reference_end_time,
             reader_end_time
         )
