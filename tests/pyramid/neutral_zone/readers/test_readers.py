@@ -377,7 +377,7 @@ def test_router_records_sync_events_in_registry():
     routes = [
         ReaderRoute("events", "events")
     ]
-    sync_config = ReaderSyncConfig(reader_result_name="events", event_value=42, reader_name="test_reader")
+    sync_config = ReaderSyncConfig(buffer_name="events", event_value=42, reader_name="test_reader")
     sync_registry = ReaderSyncRegistry(reference_reader_name="test_reader")
     router = ReaderRouter(
         reader=reader,
@@ -446,6 +446,6 @@ def test_router_propagates_drift_estimate_to_buffers():
 
     # End times can keep the drift estimate contemporary to a time range of interest (eg a trial).
     # This is like going back in time to a prevous example, above.
-    assert router.update_drift_estimate(reference_end_time = 1.5) == 1.11 - 1.0
+    assert router.update_drift_estimate(reference_end_time=1.5) == 1.11 - 1.0
     assert router.named_buffers["foo"].clock_drift == 1.11 - 1.0
     assert router.named_buffers["bar"].clock_drift == 1.11 - 1.0

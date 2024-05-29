@@ -94,8 +94,8 @@ class ReaderSyncConfig():
     is_reference: str = False
     """Whether the reader represents the canonical, reference clock to which others readers will be aligned."""
 
-    reader_result_name: str = None
-    """The name of the reader result that will contain clock sync numeric events."""
+    buffer_name: str = None
+    """The name of the reader result or extra buffer that will contain clock sync events."""
 
     event_value: int | float = None
     """The value of sync events to look for, within the named event buffer."""
@@ -264,17 +264,6 @@ class ReaderRouter():
         if not read_result:
             return False
 
-        if self.sync_config is not None and self.sync_registry is not None:
-            # Add any new sync events to the sync registry.
-            event_data = read_result.get(self.sync_config.reader_result_name, None)
-            if event_data is not None:
-                sync_event_times = event_data.times(
-                    value=self.sync_config.event_value,
-                    value_index=self.sync_config.event_value_index
-                )
-                for event_time in sync_event_times:
-                    self.sync_registry.record_event(self.sync_config.reader_name, event_time)
-
         for route in self.routes:
             buffer = self.named_buffers.get(route.buffer_name, None)
             if not buffer:
@@ -304,6 +293,15 @@ class ReaderRouter():
                     exc_info=True
                 )
                 continue
+
+            # Add any new sync events to the sync registry.
+            if self.sync_config is not None and self.sync_registry is not None and route.buffer_name == self.sync_config.buffer_name:
+                sync_event_times = data_copy.times(
+                    value=self.sync_config.event_value,
+                    value_index=self.sync_config.event_value_index
+                )
+                for event_time in sync_event_times:
+                    self.sync_registry.record_event(self.sync_config.reader_name, event_time)
 
         # Update the high water mark for the reader -- the latest timestamp seen so far.
         for buffer in self.named_buffers.values():

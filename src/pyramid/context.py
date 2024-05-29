@@ -399,7 +399,7 @@ class PyramidContext():
                 if router.sync_config:
                     if router.sync_config.event_value:
                         # This reader will read events to keep track of clock sync.
-                        sync_info = f"{router.sync_config.reader_result_name}[{router.sync_config.event_value_index}] == {router.sync_config.event_value}"
+                        sync_info = f"{router.sync_config.buffer_name}[{router.sync_config.event_value_index}] == {router.sync_config.event_value}"
                         if router.sync_config.is_reference:
                             reader_label += f"| sync ref {sync_info}\\l"
                         else:
@@ -439,7 +439,8 @@ class PyramidContext():
                     dot.edge(f"{results_name}:{route.reader_result_name}:e", f"{route_name}:w")
                     dot.edge(f"{route_name}:e", f"{buffer_node_name}:{route.buffer_name}:w")
                 else:
-                    dot.edge(f"{results_name}:{route.reader_result_name}:e", f"{buffer_node_name}:{route.buffer_name}:w")
+                    dot.edge(f"{results_name}:{route.reader_result_name}:e",
+                             f"{buffer_node_name}:{route.buffer_name}:w")
 
         # Render the graph and write to disk.
         out_path = Path(out_file)

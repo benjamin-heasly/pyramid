@@ -49,7 +49,7 @@ experiment_config = {
             },
             "sync": {
                 "is_reference": True,
-                "reader_result_name": "start",
+                "buffer_name": "start",
                 "event_value": 42
             }
         },
@@ -57,7 +57,7 @@ experiment_config = {
             "class": "pyramid.neutral_zone.readers.csv.CsvTextEventReader",
             "args": {"result_name": "foo"},
             "sync": {
-                "reader_result_name": "foo",
+                "buffer_name": "foo",
                 "event_value": "forty-three"
             }
         },

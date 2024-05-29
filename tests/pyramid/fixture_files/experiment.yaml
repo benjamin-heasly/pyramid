@@ -17,7 +17,7 @@ readers:
     simulate_delay: True
     sync:
       is_reference: True
-      reader_result_name: start
+      buffer_name: start
       event_value: 1010
   wrt_reader:
     class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
