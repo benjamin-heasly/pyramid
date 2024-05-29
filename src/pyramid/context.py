@@ -11,8 +11,9 @@ from pyramid.file_finder import FileFinder
 from pyramid.model.model import Buffer, DynamicImport
 from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
-from pyramid.neutral_zone.readers.readers import Reader, ReaderRoute, ReaderRouter, Transformer, ReaderSyncConfig, ReaderSyncRegistry
+from pyramid.neutral_zone.readers.readers import Reader, ReaderRoute, ReaderRouter, Transformer
 from pyramid.neutral_zone.readers.delay_simulator import DelaySimulatorReader
+from pyramid.neutral_zone.readers.sync import ReaderSyncConfig, ReaderSyncRegistry
 from pyramid.trials.trials import TrialDelimiter, TrialExtractor, TrialEnhancer, TrialCollecter, TrialExpression
 from pyramid.trials.trial_file import TrialFile
 from pyramid.plotters.plotters import Plotter, PlotFigureController

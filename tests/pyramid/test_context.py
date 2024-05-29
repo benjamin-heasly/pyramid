@@ -4,7 +4,8 @@ import yaml
 
 from pyramid.model.model import Buffer
 from pyramid.model.events import NumericEventList, TextEventList
-from pyramid.neutral_zone.readers.readers import ReaderRoute, ReaderRouter, ReaderSyncConfig, ReaderSyncRegistry
+from pyramid.neutral_zone.readers.readers import ReaderRoute, ReaderRouter
+from pyramid.neutral_zone.readers.sync import ReaderSyncConfig, ReaderSyncRegistry
 from pyramid.neutral_zone.readers.delay_simulator import DelaySimulatorReader
 from pyramid.neutral_zone.readers.csv import CsvNumericEventReader, CsvTextEventReader
 from pyramid.neutral_zone.transformers.standard_transformers import OffsetThenGain
