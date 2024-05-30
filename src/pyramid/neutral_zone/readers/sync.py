@@ -14,11 +14,17 @@ class ReaderSyncConfig():
     buffer_name: str = None
     """The name of the reader result or extra buffer that will contain sync events."""
 
+    # TODO: replace this with a filter expression?
     event_value: int | float = None
     """The event value to look for to identify sync events within the named event buffer."""
 
+    # TODO: replace this with a filter expression?
     event_value_index: int = 0
     """The event value index to use when looking for event_value within the named event buffer."""
+
+    # TODO: filter_expression
+    # TODO: timestamp_expression
+    # TODO: key_expression
 
     reader_name: str = None
     """The name of the reader to act as when aligning data within trials.

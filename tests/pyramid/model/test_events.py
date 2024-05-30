@@ -10,6 +10,8 @@ def test_numeric_list_getters():
     event_list = NumericEventList(event_data)
 
     assert event_list.event_count() == event_count
+
+    assert event_list.event_count() == event_count
     assert event_list.values_per_event() == 1
     assert np.array_equal(event_list.times(), np.array(range(event_count)))
     assert np.array_equal(event_list.values(), 10*np.array(range(event_count)))
@@ -49,6 +51,14 @@ def test_numeric_list_getters():
     assert event_list.times(50.0, end_time=5.0).size == 0
     assert np.array_equal(event_list.times(50.0, end_time=6.0), np.array([5.0]))
     assert np.array_equal(event_list.times(50.0, start_time=4.0, end_time=6.0), np.array([5.0]))
+
+
+    each_count = 0
+    for index, (timestamp, values) in enumerate(event_list.each()):
+        assert timestamp == index
+        assert values == [10 * index]
+        each_count += 1
+    assert each_count == event_count
 
 
 def test_numeric_list_append():
@@ -195,6 +205,8 @@ def test_text_list_getters():
     text_data = np.array(raw_data, dtype=np.str_)
     event_list = TextEventList(timestamp_data, text_data)
 
+    assert event_list.event_count() == event_count
+
     assert event_list.first() == '0'
     assert event_list.last() == '99'
     assert np.array_equal(event_list.values(), [str(t) for t in range(event_count)])
@@ -228,6 +240,13 @@ def test_text_list_getters():
     assert event_list.times('5', end_time=5.0).size == 0
     assert np.array_equal(event_list.times('5', end_time=6.0), np.array([5.0]))
     assert np.array_equal(event_list.times('5', start_time=4.0, end_time=6.0), np.array([5.0]))
+
+    each_count = 0
+    for index, (timestamp, text) in enumerate(event_list.each()):
+        assert timestamp == index
+        assert text == str(index)
+        each_count += 1
+    assert each_count == event_count
 
 
 def test_text_list_append():

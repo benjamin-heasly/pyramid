@@ -185,6 +185,15 @@ class ReaderRouter():
 
             # Add any new sync events to the sync registry.
             if self.sync_config is not None and self.sync_registry is not None and route.buffer_name == self.sync_config.buffer_name:
+                # Iterate over events in data_copy.each()
+                # Pass each to a filter callback with bound locals: timestamp, value
+                # If the filter passes, look for a timestamp:
+                #   - eval timestamp callback with bound locals: timestamp, value, count (of reader sync events recorded so far)
+                #   - if no callback, use event timestamp itself
+                # Also if the filter passes, look for a key:
+                #   - eval key callback with same bound locals: timestamp, value, count (of reader sync events recorded so far)
+                #   - if no callback, use timestamp as the key
+                # Finally if filter passes, record the sync event for the reader.
                 sync_event_times = data_copy.times(
                     value=self.sync_config.event_value,
                     value_index=self.sync_config.event_value_index

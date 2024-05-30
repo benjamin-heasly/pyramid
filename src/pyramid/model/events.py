@@ -1,4 +1,4 @@
-from typing import Any, Self
+from typing import Any, Self, Iterator
 from dataclasses import dataclass
 import numpy as np
 
@@ -200,6 +200,10 @@ class NumericEventList(BufferData):
         value_column = value_index + 1
         return self.event_data[at_or_after[0], value_column]
 
+    def each(self) -> Iterator[tuple[float, list[float]]]:
+        """Return an iterator over events in this list, with each event presented as a tuple: (timestamp, values)."""
+        return ((self.event_data[index, 0], self.event_data[index, 1:]) for index in range(self.event_count()))
+
 
 @dataclass
 class TextEventList(BufferData):
@@ -364,3 +368,7 @@ class TextEventList(BufferData):
         if at_or_after.size == 0:
             return None
         return self.text_data[at_or_after[0]]
+
+    def each(self) -> Iterator[tuple[float, str]]:
+        """Return an iterator over events in this list, with each event presented as a tuple: (timestamp, text)."""
+        return ((self.timestamp_data[index], self.text_data[index]) for index in range(self.event_count()))
