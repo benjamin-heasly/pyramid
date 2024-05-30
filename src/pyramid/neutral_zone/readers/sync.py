@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
 from typing import NamedTuple
+from operator import itemgetter
 
 
 @dataclass
@@ -70,11 +71,12 @@ class ReaderSyncRegistry():
         events = self.reader_events.get(reader_name, [])
         return len(events)
 
-    # TODO: accept keys selected by caller.
-    def record_event(self, reader_name: str, event_time: float) -> None:
+    def record_event(self, reader_name: str, event_time: float, event_key: float = None) -> None:
         """Record a sync event as seen by the named reader."""
+        if event_key is None:
+            event_key = event_time
         events = self.reader_events.get(reader_name, [])
-        events.append(SyncEvent(timestamp=event_time, key=event_time))
+        events.append(SyncEvent(timestamp=event_time, key=event_key))
         self.reader_events[reader_name] = events
 
     def find_events(self, reader_name: str, end_time: float = None) -> list[float]:
@@ -120,23 +122,57 @@ class ReaderSyncRegistry():
         if not reference_events or not reader_events:
             return 0.0
 
-        # How far is each reference key from the last reader key?
+        # Which reference event has the closest key to the last reader event?
         reader_last = reader_events[-1]
-        distances_from_reader_last = [reader_last.key - reference_event.key for reference_event in reference_events]
-        min_distance_from_reader_last = min(distances_from_reader_last, key=abs)
+        reference_closest = min(reference_events, key=lambda event: abs(reader_last.key - event.key))
 
-        # How far is each reader key from the last reference key?
+        # Which reader event has the closest key to the last reference event?
         reference_last = reference_events[-1]
-        distances_from_reference_last = [reader_event.key - reference_last.key for reader_event in reader_events]
-        min_distance_from_reference_last = min(distances_from_reference_last, key=abs)
+        reader_closest = min(reader_events, key=lambda event: abs(event.key - reference_last.key))
 
-        # Compute the timestamp offset at the closest pair of keys.
-        if abs(min_distance_from_reader_last) < abs(min_distance_from_reference_last):
-            reference_event = reference_events[distances_from_reader_last.index(min_distance_from_reader_last)]
-            return reader_last.timestamp - reference_event.timestamp
+        # Of those two candidate pairings, which is the closest?
+        reader_last_distance = abs(reader_last.key - reference_closest.key)
+        reference_last_distance = abs(reader_closest.key - reference_last.key)
+        if reader_last_distance < reference_last_distance:
+            return reader_last.timestamp - reference_closest.timestamp
         else:
-            reader_event = reader_events[distances_from_reference_last.index(min_distance_from_reference_last)]
-            return reader_event.timestamp - reference_last.timestamp
+            return reader_closest.timestamp - reference_last.timestamp
+
+    def offset_from_max_keys(
+        self,
+        reference_events: list[SyncEvent],
+        reader_events: list[SyncEvent]
+    ) -> float:
+        """Compute a clock offset from the pair of sync events with the greatest key from each reader."""
+
+        if not reference_events or not reader_events:
+            return 0.0
+
+        # Compare events by value at index 1, ie key.
+        reference_max_by_key = max(reference_events, key=itemgetter(1))
+        reader_max_by_key = max(reader_events, key=itemgetter(1))
+        return reader_max_by_key.timestamp - reference_max_by_key.timestamp
+
+    def offset_from_last_equal_keys(
+        self,
+        reference_events: list[SyncEvent],
+        reader_events: list[SyncEvent]
+    ) -> float:
+        """Compute a clock offset from the last pair of sync events that share the same key."""
+
+        if not reference_events or not reader_events:
+            return 0.0
+
+        # Walk the lists backwards, stopping at the first key match.
+        # In the worst case with no match this will do m X n comparisons, which is lame.
+        # In practice it ought to find a match near the array ends and short-circuit well before that.
+        for reference_event in reversed(reference_events):
+            for reader_event in reversed(reader_events):
+                if reference_event.key == reader_event.key:
+                    return reader_event.timestamp - reference_event.timestamp
+
+        # We compared all the events and never found matching keys!
+        return 0.0
 
     def compute_offset(
         self,
@@ -150,6 +186,10 @@ class ReaderSyncRegistry():
         reader_events = self.find_events(reader_name, reader_end_time)
         if pairing_strategy == "closest":
             return self.offset_from_closest_keys(reference_events, reader_events)
+        elif pairing_strategy == "max":
+            return self.offset_from_max_keys(reference_events, reader_events)
+        elif pairing_strategy == "last_equal":
+            return self.offset_from_last_equal_keys(reference_events, reader_events)
         else:  # pragma: no cover
             logging.error(f'Unknown sync event pairing strategy <{pairing_strategy}>, defaulting to "closest".')
             return self.offset_from_closest_keys(reference_events, reader_events)
