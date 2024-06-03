@@ -188,10 +188,11 @@ class ReaderRouter():
                 # Iterate incoming, candidate sync events one at a time.
                 for (timestamp, value) in data_copy.each():
                     # Check which incoming events pass a configured event filter.
-                    if self.sync_config.filter_event(timestamp, value):
+                    count = self.sync_registry.event_count(self.sync_config.reader_name)
+                    if self.sync_config.filter_event(timestamp, value, count):
                         # Get a default or custom sync timestamp and sync key from each event.
-                        sync_timestamp = self.sync_config.sync_timestamp(timestamp, value, timestamp)
-                        sync_key = self.sync_config.sync_key(timestamp, value, sync_timestamp)
+                        sync_timestamp = self.sync_config.sync_timestamp(timestamp, value, count, timestamp)
+                        sync_key = self.sync_config.sync_key(timestamp, value, count, sync_timestamp)
 
                         # Record a new sync event for this reader.
                         self.sync_registry.record_event(self.sync_config.reader_name, sync_timestamp, sync_key)

@@ -4,33 +4,37 @@ from pyramid.neutral_zone.readers.sync import ReaderSyncConfig, ReaderSyncRegist
 def test_reader_sync_config_event_callbacks():
     # Default to no event filter -- take all events
     default_config = ReaderSyncConfig()
-    assert default_config.filter_event(1.0, [1, 2, 3]) == True
-    assert default_config.filter_event(2.0, [3, 4, 5]) == True
+    assert default_config.filter_event(1.0, [1, 2, 3], 0) == True
+    assert default_config.filter_event(2.0, [3, 4, 5], 1) == True
 
-    # Default to given default as sync event timestamp.
-    assert default_config.sync_timestamp(1.0, [1, 2, 3], 10.0) == 10.0
-    assert default_config.sync_timestamp(2.0, [3, 4, 5], 20.0) == 20.0
+    # Default to given value as sync event timestamp.
+    assert default_config.sync_timestamp(1.0, [1, 2, 3], 0, 10.0) == 10.0
+    assert default_config.sync_timestamp(2.0, [3, 4, 5], 1, 20.0) == 20.0
 
-    # Default to given default as sync event key.
-    assert default_config.sync_key(1.0, [1, 2, 3], 111) == 111
-    assert default_config.sync_key(2.0, [3, 4, 5], 222) == 222
+    # Default to given value as sync event key.
+    assert default_config.sync_key(1.0, [1, 2, 3], 0, 111) == 111
+    assert default_config.sync_key(2.0, [3, 4, 5], 1, 222) == 222
 
-    # Event filter has access to timestamp and value.
-    filter_config = ReaderSyncConfig(filter="timestamp > 0 and value > 0")
-    assert filter_config.filter_event(-1, -1) == False
-    assert filter_config.filter_event(-1, 1) == False
-    assert filter_config.filter_event(1, -1) == False
-    assert filter_config.filter_event(1, 1) == True
+    # Event filter has access to timestamp, value, and count.
+    filter_config = ReaderSyncConfig(filter="timestamp > 0 and (value > 0 or count > 0)")
+    assert filter_config.filter_event(-1, -1, 0) == False
+    assert filter_config.filter_event(-1, 1, 0) == False
+    assert filter_config.filter_event(1, -1, 0) == False
+    assert filter_config.filter_event(1, 1, 0) == True
+    assert filter_config.filter_event(-1, -1, 1) == False
+    assert filter_config.filter_event(-1, 1, 1) == False
+    assert filter_config.filter_event(1, -1, 1) == True
+    assert filter_config.filter_event(1, 1, 1) == True
 
-    # Timestamps callback has access to timestamp and value.
-    timestamps_config = ReaderSyncConfig(timestamps="int(timestamp) + value[0] / 1000")
-    assert timestamps_config.sync_timestamp(1.1, [234, 567], 1.0) == 1 + 234 / 1000
-    assert timestamps_config.sync_timestamp(2.2, [345, 678], 2.0) == 2 + 345 / 1000
+    # Timestamps callback has access to timestamp, value, and count.
+    timestamps_config = ReaderSyncConfig(timestamps="int(timestamp) + value[0] / 1000 + count")
+    assert timestamps_config.sync_timestamp(1.1, [234, 567], 0, 1.0) == 1 + 234 / 1000 + 0
+    assert timestamps_config.sync_timestamp(2.2, [345, 678], 1, 2.0) == 2 + 345 / 1000 + 1
 
-    # Keys callback has access to timestamp and value.
-    keys_config = ReaderSyncConfig(keys="value[0] if timestamp < 0 else value[1]")
-    assert keys_config.sync_key(-5.5, [234, 567], 1.0) == 234
-    assert keys_config.sync_key(+5.5, [345, 678], 2.0) == 678
+    # Keys callback has access to timestamp, value, and count.
+    keys_config = ReaderSyncConfig(keys="value[0] if timestamp < 0 else value[1] + count")
+    assert keys_config.sync_key(-5.5, [234, 567], 0, 1.0) == 234
+    assert keys_config.sync_key(+5.5, [345, 678], 1, 2.0) == 678 + 1
 
 
 def test_sync_registry_find_events():

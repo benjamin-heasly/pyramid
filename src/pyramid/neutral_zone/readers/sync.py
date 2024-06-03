@@ -17,11 +17,15 @@ class ReaderSyncConfig():
     filter: str = None
     """Expression to evaluate and select events from the named buffer.
 
-    The filter expression is evaluated once per event, with each event's "timestamp" and "value" made
-    available as local variables.  Only events where filter_expression returns True (or truthy) will be
-    recorded as sync events.  The default filter is None, meaning record all events as sync events.
+    The filter expression is evaluated once per event, with the following local variables available:
+        "timestamp" the original timestamp of the incoming event
+        "value"     the numeric or text value of the incoming event
+        "count"     the overall count of sync events recorded for the reader, so far
 
-    For numeric events, "value" will be an array with zero or more values per event.  To record only numeric
+    Only events where filter_expression returns True (or truthy) will be recorded as new sync events.
+    The default filter is None, meaning record all incoming events as sync events.
+
+    For numeric events, "value" will be a list of zero or more values per event.  To record only numeric
     events where the second value is 42, use a filter expression like this one:
 
         value[1] == 42
@@ -31,18 +35,22 @@ class ReaderSyncConfig():
 
         value.startswith("Sync")
 
-    Filter expressions can also access the event timestamp, if that's helpful.  For example:
+    Filter expressions can combine the timestamp, value, and event count as needed,  For example:
 
-        timestmp > 0 and value[2] = 42
+        timestmp > 0 and value[2] = 42 and count < 1000
     """
 
     timestamps: str = None
     """Expression to evaluate for each event, to obtain a sync event timestamp.
 
-    The timestamps expression is evaluated once for each event that passes the filter expression, with each
-    event's "timestamp" and "value" made available as local variables.  The expression should return a float
-    value to use as the sync event's timestamp.  The default timestamps expression is None, meaning use the
-    original event's timestamp as the sycn event timestamp.
+    The timestamps expression is evaluated once for each event that passes the filter expression with the
+    following local variables available:
+        "timestamp" the original timestamp of the incoming event
+        "value"     the numeric or text value of the incoming event
+        "count"     the overall count of sync events recorded for the reader, so far
+
+    The expression should return a float value to use as the sync event's timestamp.
+    The default timestamps expression is None, meaning use the original event's timestamp as the sync timestamp.
 
     For numeric events, "value" will be an array with zero or more values per event.  A timestamps expression
     like this one could substitute an event value for the orginal event timestamp:
@@ -50,23 +58,27 @@ class ReaderSyncConfig():
         value[0]
 
     For text events, "value" will be the event's text string.  A timestamps expression like this one could
-    parse a timestamp out of a string like "Sync@123.45" and use the result to replace the original timestamp:
+    parse a value out of a string like "Sync@123.45" and use the result to replace the original timestamp:
 
         float(value.split("@")[-1])
 
-    A timestamps expression like this one could combine the original timestamp with the event value in some custom way,
-    perhaps by replacing the fractional part of the original timestamp.
+    The timestamps expresion can combine the timestamp, value, and event count as needed.  An expression like
+    this one could conditionally replace the fracitonal part of the original event timestamp.
 
-        int(timestamp) + value[0] / 1000
+        timestamp if count < 100 else int(timestamp) + value[0] / 1000
     """
 
     keys: str = None
     """Expression to evaluate for each event, to obtain a sync event key.
 
-    The keys expression is evaluated once for each event that passes the filter expression, with each
-    event's "timestamp" and "value" made available as local variables.  The expression should return a float
-    value to use as the sync event's key.  The default keys expression is None, meaning use the result of
-    the timetamps expression as the sync event key.
+    The keys expression is evaluated once for each event that passes the filter expression, with the
+    following local variables available:
+        "timestamp" the original timestamp of the incoming event
+        "value"     the numeric or text value of the incoming event
+        "count"     the overall count of sync events recorded for the reader, so far
+
+    The expression should return a float value to use as the sync event's key.
+    The default keys expression is None, meaning reuse the result of the timetamps expression as the sync event key.
 
     For numeric events, "value" will be an array with zero or more values per event.  A keys expression
     like this one could take the second value per event as they sync event key:
@@ -78,9 +90,10 @@ class ReaderSyncConfig():
 
         int(value.split("=")[-1])
 
-    A keys expression like this one could choose a key conditionally based on both the timestamp and the value.
+    The keys expression can combine the timestamp, value, and event count as needed.  An expression like
+    this one could choose a key conditionally based on all of these.
 
-        value[0] if timestamp > 0 else value[1]
+        value[0] if timestamp < 100 else count + value[1] / 1000
     """
 
     reader_name: str = None
@@ -116,38 +129,41 @@ class ReaderSyncConfig():
         else:
             self.compiled_keys = compile(self.keys, '<string>', 'eval')
 
-    def filter_event(self, timestamp: float, value: Any) -> bool:
+    def filter_event(self, timestamp: float, value: Any, count: int) -> bool:
         """Apply the filter expression to the given timestamp and value and return the True/False result."""
         if self.compiled_filter is None:
             return True
         else:
             locals = {
                 "timestamp": timestamp,
-                "value": value
+                "value": value,
+                "count": count
             }
             filter_result = eval(self.compiled_filter, {}, locals)
             return bool(filter_result)
 
-    def sync_timestamp(self, timestamp: float, value: Any, default: float) -> float:
+    def sync_timestamp(self, timestamp: float, value: Any, count: int, default: float) -> float:
         """Apply the timestamps expression to the given timestamp and value and return the numeric result."""
         if self.compiled_timestamps is None:
             return default
         else:
             locals = {
                 "timestamp": timestamp,
-                "value": value
+                "value": value,
+                "count": count
             }
             timestamp_result = eval(self.compiled_timestamps, {}, locals)
             return float(timestamp_result)
 
-    def sync_key(self, timestamp: float, value: Any, default: float) -> float:
+    def sync_key(self, timestamp: float, value: Any, count: int, default: float) -> float:
         """Apply the keys expression to the given timestamp and value and return the numeric result."""
         if self.compiled_keys is None:
             return default
         else:
             locals = {
                 "timestamp": timestamp,
-                "value": value
+                "value": value,
+                "count": count
             }
             keys_result = eval(self.compiled_keys, {}, locals)
             return float(keys_result)
