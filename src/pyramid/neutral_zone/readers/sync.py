@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass
-from typing import NamedTuple
+from typing import NamedTuple, Any
 from operator import itemgetter
 
 
@@ -14,17 +14,74 @@ class ReaderSyncConfig():
     buffer_name: str = None
     """The name of the reader result or extra buffer that will contain sync events."""
 
-    # TODO: replace this with a filter expression?
-    event_value: int | float = None
-    """The event value to look for to identify sync events within the named event buffer."""
+    filter: str = None
+    """Expression to evaluate and select events from the named buffer.
 
-    # TODO: replace this with a filter expression?
-    event_value_index: int = 0
-    """The event value index to use when looking for event_value within the named event buffer."""
+    The filter expression is evaluated once per event, with each event's "timestamp" and "value" made
+    available as local variables.  Only events where filter_expression returns True (or truthy) will be
+    recorded as sync events.  The default filter is None, meaning record all events as sync events.
 
-    # TODO: filter_expression
-    # TODO: timestamp_expression
-    # TODO: key_expression
+    For numeric events, "value" will be an array with zero or more values per event.  To record only numeric
+    events where the second value is 42, use a filter expression like this one:
+
+        value[1] == 42
+
+    For text events, "value" will be the event's text string.  To record only only text events that start
+    with the prefix "Sync", use a filter expression like this one:
+
+        value.startswith("Sync")
+
+    Filter expressions can also access the event timestamp, if that's helpful.  For example:
+
+        timestmp > 0 and value[2] = 42
+    """
+
+    timestamps: str = None
+    """Expression to evaluate for each event, to obtain a sync event timestamp.
+
+    The timestamps expression is evaluated once for each event that passes the filter expression, with each
+    event's "timestamp" and "value" made available as local variables.  The expression should return a float
+    value to use as the sync event's timestamp.  The default timestamps expression is None, meaning use the
+    original event's timestamp as the sycn event timestamp.
+
+    For numeric events, "value" will be an array with zero or more values per event.  A timestamps expression
+    like this one could substitute an event value for the orginal event timestamp:
+
+        value[0]
+
+    For text events, "value" will be the event's text string.  A timestamps expression like this one could
+    parse a timestamp out of a string like "Sync@123.45" and use the result to replace the original timestamp:
+
+        float(value.split("@")[-1])
+
+    A timestamps expression like this one could combine the original timestamp with the event value in some custom way,
+    perhaps by replacing the fractional part of the original timestamp.
+
+        int(timestamp) + value[0] / 1000
+    """
+
+    keys: str = None
+    """Expression to evaluate for each event, to obtain a sync event key.
+
+    The keys expression is evaluated once for each event that passes the filter expression, with each
+    event's "timestamp" and "value" made available as local variables.  The expression should return a float
+    value to use as the sync event's key.  The default keys expression is None, meaning use the result of
+    the timetamps expression as the sync event key.
+
+    For numeric events, "value" will be an array with zero or more values per event.  A keys expression
+    like this one could take the second value per event as they sync event key:
+
+        value[1]
+
+    For text events, "value" will be the event's text string.  A keys expression like this one could
+    parse a key out of a string like "Sync@123.45=001":
+
+        int(value.split("=")[-1])
+
+    A keys expression like this one could choose a key conditionally based on both the timestamp and the value.
+
+        value[0] if timestamp > 0 else value[1]
+    """
 
     reader_name: str = None
     """The name of the reader to act as when aligning data within trials.
@@ -41,6 +98,59 @@ class ReaderSyncConfig():
 
     pairing_strategy: str = "closest"
     """How to pair up event keys between readers: "closest", "max", or "last equal"."""
+
+    def __post_init__(self):
+        """Compile callback expressoins for use in methods below."""
+        if self.filter is None:
+            self.compiled_filter = None
+        else:
+            self.compiled_filter = compile(self.filter, '<string>', 'eval')
+
+        if self.timestamps is None:
+            self.compiled_timestamps = None
+        else:
+            self.compiled_timestamps = compile(self.timestamps, '<string>', 'eval')
+
+        if self.keys is None:
+            self.compiled_keys = None
+        else:
+            self.compiled_keys = compile(self.keys, '<string>', 'eval')
+
+    def filter_event(self, timestamp: float, value: Any) -> bool:
+        """Apply the filter expression to the given timestamp and value and return the True/False result."""
+        if self.compiled_filter is None:
+            return True
+        else:
+            locals = {
+                "timestamp": timestamp,
+                "value": value
+            }
+            filter_result = eval(self.compiled_filter, {}, locals)
+            return bool(filter_result)
+
+    def sync_timestamp(self, timestamp: float, value: Any, default: float) -> float:
+        """Apply the timestamps expression to the given timestamp and value and return the numeric result."""
+        if self.compiled_timestamps is None:
+            return default
+        else:
+            locals = {
+                "timestamp": timestamp,
+                "value": value
+            }
+            timestamp_result = eval(self.compiled_timestamps, {}, locals)
+            return float(timestamp_result)
+
+    def sync_key(self, timestamp: float, value: Any, default: float) -> float:
+        """Apply the keys expression to the given timestamp and value and return the numeric result."""
+        if self.compiled_keys is None:
+            return default
+        else:
+            locals = {
+                "timestamp": timestamp,
+                "value": value
+            }
+            keys_result = eval(self.compiled_keys, {}, locals)
+            return float(keys_result)
 
 
 class SyncEvent(NamedTuple):

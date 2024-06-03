@@ -104,7 +104,7 @@ readers:
       # The delimiter_reader is the reference clock.
       is_reference: True
       buffer_name: delimiter
-      event_value: 1
+      filter: value[0] == 1
 ```
 The `delimiter_reader` reads trial-delimiting events from `delimiter.csv` into a Pyramid buffer named `delimiter`.
 It looks for sync events with value `1` within this buffer and Pyramid stores these events as they arrive.
@@ -140,7 +140,7 @@ readers:
     sync:
       # The signal_sync_reader has independent measurements of sync events.
       buffer_name: sync
-      event_value: 1
+      filter: value[0] == 1
 ```
 The `signal_sync_reader` is new for the second part of this demo.
 It reads trial-delimiting events from `signal_sync.csv` into a Pyramid buffer named `sync`.

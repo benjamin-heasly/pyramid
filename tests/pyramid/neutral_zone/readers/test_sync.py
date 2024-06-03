@@ -1,4 +1,36 @@
-from pyramid.neutral_zone.readers.sync import ReaderSyncRegistry
+from pyramid.neutral_zone.readers.sync import ReaderSyncConfig, ReaderSyncRegistry
+
+
+def test_reader_sync_config_event_callbacks():
+    # Default to no event filter -- take all events
+    default_config = ReaderSyncConfig()
+    assert default_config.filter_event(1.0, [1, 2, 3]) == True
+    assert default_config.filter_event(2.0, [3, 4, 5]) == True
+
+    # Default to given default as sync event timestamp.
+    assert default_config.sync_timestamp(1.0, [1, 2, 3], 10.0) == 10.0
+    assert default_config.sync_timestamp(2.0, [3, 4, 5], 20.0) == 20.0
+
+    # Default to given default as sync event key.
+    assert default_config.sync_key(1.0, [1, 2, 3], 111) == 111
+    assert default_config.sync_key(2.0, [3, 4, 5], 222) == 222
+
+    # Event filter has access to timestamp and value.
+    filter_config = ReaderSyncConfig(filter="timestamp > 0 and value > 0")
+    assert filter_config.filter_event(-1, -1) == False
+    assert filter_config.filter_event(-1, 1) == False
+    assert filter_config.filter_event(1, -1) == False
+    assert filter_config.filter_event(1, 1) == True
+
+    # Timestamps callback has access to timestamp and value.
+    timestamps_config = ReaderSyncConfig(timestamps="int(timestamp) + value[0] / 1000")
+    assert timestamps_config.sync_timestamp(1.1, [234, 567], 1.0) == 1 + 234 / 1000
+    assert timestamps_config.sync_timestamp(2.2, [345, 678], 2.0) == 2 + 345 / 1000
+
+    # Keys callback has access to timestamp and value.
+    keys_config = ReaderSyncConfig(keys="value[0] if timestamp < 0 else value[1]")
+    assert keys_config.sync_key(-5.5, [234, 567], 1.0) == 234
+    assert keys_config.sync_key(+5.5, [345, 678], 2.0) == 678
 
 
 def test_sync_registry_find_events():
@@ -251,7 +283,7 @@ def test_sync_registry_offset_for_tandem_indices():
     assert registry.compute_offset("ref", "last_equal") == 0
     assert registry.compute_offset("foo", "last_equal") == 103.0 - 3.0
 
-    # In case one reader gets ahead by one event, we'll stick with the latest index in common. 
+    # In case one reader gets ahead by one event, we'll stick with the latest index in common.
     #   ref:   0.0    1.0     2.0     3.0
     #   foo:        101.0   102.0   102.0   103.0   104.0
     #                                   ^       ^ last equal index is still 3
@@ -332,7 +364,7 @@ def test_sync_registry_offset_for_custom_keys():
     assert registry.compute_offset("ref", "last_equal", reference_end_time=1.5, reader_end_time=1.5) == 0
     assert registry.compute_offset("foo", "last_equal", reference_end_time=1.5, reader_end_time=101.5) == 101.0 - 1.0
 
-    # If we try to go back in time before the first sync events, we'll use the first sync events. 
-    # In this case, the first events are non-matching garbage that we ignore. 
+    # If we try to go back in time before the first sync events, we'll use the first sync events.
+    # In this case, the first events are non-matching garbage that we ignore.
     assert registry.compute_offset("ref", "last_equal", reference_end_time=-1.0, reader_end_time=-1.0) == 0
     assert registry.compute_offset("foo", "last_equal", reference_end_time=-1.0, reader_end_time=-1.0) == 0

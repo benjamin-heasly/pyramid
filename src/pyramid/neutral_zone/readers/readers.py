@@ -185,21 +185,16 @@ class ReaderRouter():
 
             # Add any new sync events to the sync registry.
             if self.sync_config is not None and self.sync_registry is not None and route.buffer_name == self.sync_config.buffer_name:
-                # Iterate over events in data_copy.each()
-                # Pass each to a filter callback with bound locals: timestamp, value
-                # If the filter passes, look for a timestamp:
-                #   - eval timestamp callback with bound locals: timestamp, value, count (of reader sync events recorded so far)
-                #   - if no callback, use event timestamp itself
-                # Also if the filter passes, look for a key:
-                #   - eval key callback with same bound locals: timestamp, value, count (of reader sync events recorded so far)
-                #   - if no callback, use timestamp as the key
-                # Finally if filter passes, record the sync event for the reader.
-                sync_event_times = data_copy.times(
-                    value=self.sync_config.event_value,
-                    value_index=self.sync_config.event_value_index
-                )
-                for event_time in sync_event_times:
-                    self.sync_registry.record_event(self.sync_config.reader_name, event_time)
+                # Iterate incoming, candidate sync events one at a time.
+                for (timestamp, value) in data_copy.each():
+                    # Check which incoming events pass a configured event filter.
+                    if self.sync_config.filter_event(timestamp, value):
+                        # Get a default or custom sync timestamp and sync key from each event.
+                        sync_timestamp = self.sync_config.sync_timestamp(timestamp, value, timestamp)
+                        sync_key = self.sync_config.sync_key(timestamp, value, sync_timestamp)
+
+                        # Record a new sync event for this reader.
+                        self.sync_registry.record_event(self.sync_config.reader_name, sync_timestamp, sync_key)
 
         # Update the high water mark for the reader -- the latest timestamp seen so far.
         for buffer in self.named_buffers.values():

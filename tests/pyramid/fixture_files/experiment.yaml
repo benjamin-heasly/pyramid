@@ -18,7 +18,7 @@ readers:
     sync:
       is_reference: True
       buffer_name: start
-      event_value: 1010
+      filter: value[0] == 1010
   wrt_reader:
     class: pyramid.neutral_zone.readers.csv.CsvNumericEventReader
     args:

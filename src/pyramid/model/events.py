@@ -201,7 +201,7 @@ class NumericEventList(BufferData):
         return self.event_data[at_or_after[0], value_column]
 
     def each(self) -> Iterator[tuple[float, list[float]]]:
-        """Return an iterator over events in this list, with each event presented as a tuple: (timestamp, values)."""
+        """Implementing BufferData superclass."""
         return ((self.event_data[index, 0], self.event_data[index, 1:]) for index in range(self.event_count()))
 
 
@@ -370,5 +370,5 @@ class TextEventList(BufferData):
         return self.text_data[at_or_after[0]]
 
     def each(self) -> Iterator[tuple[float, str]]:
-        """Return an iterator over events in this list, with each event presented as a tuple: (timestamp, text)."""
+        """Implementing BufferData superclass."""
         return ((self.timestamp_data[index], self.text_data[index]) for index in range(self.event_count()))

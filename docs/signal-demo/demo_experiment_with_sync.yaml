@@ -20,7 +20,7 @@ readers:
       # The delimiter_reader is the reference clock.
       is_reference: True
       buffer_name: delimiter
-      event_value: 1
+      filter: value[0] == 1
   signal_reader:
     class: pyramid.neutral_zone.readers.csv.CsvSignalReader
     args:
@@ -38,7 +38,7 @@ readers:
     sync:
       # The signal_sync_reader has independent measurements of sync events.
       buffer_name: sync
-      event_value: 1
+      filter: value[0] == 1
 trials:
   # How to delimit Trials in time, and how to align data within each trial.
   start_buffer: delimiter

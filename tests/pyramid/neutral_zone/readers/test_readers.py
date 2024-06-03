@@ -299,7 +299,7 @@ def test_router_records_sync_events_in_registry():
     routes = [
         ReaderRoute("events", "events")
     ]
-    sync_config = ReaderSyncConfig(buffer_name="events", event_value=42, reader_name="test_reader")
+    sync_config = ReaderSyncConfig(buffer_name="events", filter="value[0] == 42", reader_name="test_reader")
     sync_registry = ReaderSyncRegistry(reference_reader_name="test_reader")
     router = ReaderRouter(
         reader=reader,

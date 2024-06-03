@@ -428,16 +428,17 @@ class PyramidContext():
             for name, router in self.routers.items():
                 reader_label = f"{name}|{graphviz_label(router.reader)}"
                 if router.sync_config:
-                    if router.sync_config.event_value:
-                        # This reader will read events to keep track of clock sync.
-                        sync_info = f"{router.sync_config.buffer_name}[{router.sync_config.event_value_index}] == {router.sync_config.event_value}"
+                    if router.sync_config.reader_name != name:
+                        # This reader will borrow clock sync results from another reader.
+                        reader_label += f"| sync like {router.sync_config.reader_name}\\l"
+                    else:
+                        sync_info = f"{router.sync_config.buffer_name}"
+                        if router.sync_config.filter is not None:
+                            sync_info += f" where {router.sync_config.filter}"
                         if router.sync_config.is_reference:
                             reader_label += f"| sync ref {sync_info}\\l"
                         else:
                             reader_label += f"| sync on {sync_info}\\l"
-                    elif router.sync_config.reader_name != name:
-                        # This reader will borrow clock sync results from another reader.
-                        reader_label += f"| sync like {router.sync_config.reader_name}\\l"
                 readers.node(name=name, label=reader_label)
 
         # Show the configured results coming from each reader.

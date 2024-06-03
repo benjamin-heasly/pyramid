@@ -1,6 +1,6 @@
 import sys
 from importlib import import_module
-from typing import Any, Self
+from typing import Any, Self, Iterator
 from inspect import signature
 
 import numpy as np
@@ -158,6 +158,10 @@ class BufferData():
 
         Implementations that store non-scalar values can use value_index to pick from one column/channel/etc.
         """
+        raise NotImplementedError  # pragma: no cover
+
+    def each(self) -> Iterator[tuple[float, Any]]:
+        """Return an iterator over events or samples in this buffer, with each presented as a tuple: (timestamp, value)."""
         raise NotImplementedError  # pragma: no cover
 
 

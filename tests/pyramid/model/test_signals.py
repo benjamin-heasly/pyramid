@@ -76,6 +76,13 @@ def test_signal_chunk_getters():
     assert np.array_equal(signal_chunk.times(5.0, end_time=0.6), np.array([0.5]))
     assert np.array_equal(signal_chunk.times(5.0, start_time=0.4, end_time=6.0), np.array([0.5]))
 
+    each_count = 0
+    for index, (timestamp, values) in enumerate(signal_chunk.each()):
+        assert timestamp == index / 10
+        assert np.array_equal(values, [index, 10 + index, 10 * index])
+        each_count += 1
+    assert each_count == sample_count
+
 
 def test_signal_chunk_append():
     sample_count = 100

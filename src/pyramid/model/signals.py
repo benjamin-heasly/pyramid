@@ -1,4 +1,4 @@
-from typing import Any, Self
+from typing import Any, Self, Iterator
 from dataclasses import dataclass
 import numpy as np
 
@@ -253,3 +253,7 @@ class SignalChunk(BufferData):
         elif sample_index < self.sample_count():
             return self.sample_data[sample_index, value_index]
         return None
+
+    def each(self) -> Iterator[tuple[float, list[float]]]:
+        """Implementing BufferData superclass."""
+        return ((time, self.sample_data[index, :]) for index, time in enumerate(self.times()))

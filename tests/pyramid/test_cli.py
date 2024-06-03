@@ -50,7 +50,7 @@ experiment_config = {
             "sync": {
                 "is_reference": True,
                 "buffer_name": "start",
-                "event_value": 42
+                "filter": "value[0] == 42"
             }
         },
         "foo_reader": {
@@ -58,7 +58,7 @@ experiment_config = {
             "args": {"result_name": "foo"},
             "sync": {
                 "buffer_name": "foo",
-                "event_value": "forty-three"
+                "filter": "value == 'forty-three'"
             }
         },
         "bar_reader": {
