@@ -106,7 +106,7 @@ class ReaderSyncConfig():
     init_event_count: int = 1
     """How many initial sync events Pyramid should to try to read for this reader, before delimiting trials."""
 
-    init_max_reads: int = 10
+    init_max_reads: int = 100
     """How many times Pyramid should keep trying to read when waiting for initial sync events."""
 
     pairing_strategy: str = "closest"
@@ -210,6 +210,7 @@ class ReaderSyncRegistry():
         events = self.reader_events.get(reader_name, [])
         events.append(SyncEvent(timestamp=event_time, key=event_key))
         self.reader_events[reader_name] = events
+        logging.info(f"Recorded sync for {reader_name} at time {event_time} with key {event_key} ({len(events)} total).")
 
     def find_events(self, reader_name: str, end_time: float = None) -> list[float]:
         """Find sync events for the given reader, at or before the given end time.
