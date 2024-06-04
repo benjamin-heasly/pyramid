@@ -475,8 +475,19 @@ class SaccadesEnhancer(TrialEnhancer):
     def enhance(self, trial: Trial, trial_number: int, experiment_info: dict, subject_info: dict) -> None:
 
         # Get event times from trial enhancements to delimit saccade parsing.
-        fp_off_time = trial.get_one(self.fp_off_name)
-        all_off_time = trial.get_one(self.all_off_name)
+        if self.fp_off_name in trial.numeric_events:
+            fp_off_time = trial.numeric_events[self.fp_off_name].start()
+        elif self.fp_off_name in trial.text_events:
+            fp_off_time = trial.text_events[self.fp_off_name].start()
+        else:
+            fp_off_time = trial.get_one(self.fp_off_name)
+
+        if self.all_off_name in trial.numeric_events:
+            all_off_time = trial.numeric_events[self.all_off_name].start()
+        elif self.all_off_name in trial.text_events:
+            all_off_time = trial.text_events[self.all_off_name].start()
+        else:
+            all_off_time = trial.get_one(self.all_off_name)
 
         # Use trial.signals for gaze signal chunks.
         if self.x_buffer_name not in trial.signals and self.y_buffer_name not in trial.signals:
