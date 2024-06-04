@@ -73,6 +73,7 @@ class OpenEphysSessionSignalReader(Reader):
             for continuous in self.session.recording.continuous:
                 if continuous.metadata["stream_name"] == self.stream_name:
                     self.continuous = continuous
+                    break
 
         # Pick a set of channels to keep, by name.
         if "channel_names" in self.continuous.metadata:
