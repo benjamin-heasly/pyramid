@@ -85,19 +85,75 @@ class Trial():
         """Get the value of a previously added enhancement, or return the given default."""
         return self.enhancements.get(name, default)
 
-    def get_one(self, name: str, default: Any = None, index: int = 0) -> Any:
-        """Get one element from of a list previously added as an enhancement, or return the given default."""
-        data = self.get_enhancement(name, default)
-        if isinstance(data, list):
-            if len(data):
-                # One list element.
-                return data[index]
-            else:
-                # Empty list!
+    def get_one(self, name: str, default: Any = None, index: int = 0, value_index: int = 0) -> Any:
+        """Get one element from the named buffer or enhancement, indexing into lists if needed."""
+        if name in self.signals:
+            signal_chunk = self.signals[name]
+            if signal_chunk.sample_count() <= index or signal_chunk.channel_count() <= value_index:
                 return default
-        else:
-            # Data is already a scalar.
-            return data
+            else:
+                return signal_chunk.sample_data[index, value_index]
+
+        if name in self.numeric_events:
+            event_list = self.numeric_events[name]
+            if event_list.event_count() <= index or event_list.values_per_event() <= value_index:
+                return default
+            else:
+                return event_list.event_data[index, value_index + 1]
+
+        if name in self.text_events:
+            event_list = self.text_events[name]
+            if event_list.event_count() <= index:
+                return default
+            else:
+                return event_list.text_data[index]
+
+        if name in self.enhancements:
+            data = self.enhancements[name]
+            if isinstance(data, list):
+                if len(data) <= index:
+                    return default
+                else:
+                    return data[index]
+            else:
+                return data
+
+        return default
+
+    def get_time(self, name: str, default: Any = None, index: int = 0) -> Any:
+        """Get one timestamp from the named buffer or enhancement, indexing into lists if needed."""
+        if name in self.signals:
+            times = self.signals[name].times()
+            if len(times) <= index:
+                return default
+            else:
+                return times[index]
+
+        if name in self.numeric_events:
+            times = self.numeric_events[name].times()
+            if len(times) <= index:
+                return default
+            else:
+                return times[index]
+
+        if name in self.text_events:
+            times = self.text_events[name].times()
+            if len(times) <= index:
+                return default
+            else:
+                return times[index]
+
+        if name in self.enhancements:
+            data = self.enhancements[name]
+            if isinstance(data, list):
+                if len(data) <= index:
+                    return default
+                else:
+                    return data[index]
+            else:
+                return data
+
+        return default
 
 
 class TrialDelimiter():

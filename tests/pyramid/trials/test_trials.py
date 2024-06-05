@@ -702,44 +702,106 @@ def test_add_buffer_data_and_enhancements():
     assert trial == expected_trial
 
 
+def test_trial_get_values_and_times():
+    # Populate the trial with buffer data and enhancements.
+    trial = Trial(start_time=0.0, end_time=None)
+    assert trial.add_buffer_data("numeric", NumericEventList(np.array([[0, 0], [1, 11], [2, 22]])))
+    assert trial.add_buffer_data("text", TextEventList(np.array([100, 101, 102]), np.array(["a", "b", "c"])))
+    assert trial.add_buffer_data("signal", SignalChunk(
+        sample_data=np.array([[0, 0], [1, 11], [2, 22]]),
+        sample_frequency=10.0,
+        first_sample_time=0.0,
+        channel_ids=["a", "b"]
+    ))
+    assert trial.add_enhancement("int", 40)
+    assert trial.add_enhancement("ints", [40, 41, 42])
+
+    # Get one should default to the first value of a buffer or enhancement.
+    assert trial.get_one("numeric") == 0
+    assert trial.get_one("text") == "a"
+    assert trial.get_one("signal") == 0
+    assert trial.get_one("int") == 40
+    assert trial.get_one("ints") == 40
+
+    # Get one should support taking indexed values, when meaningul.
+    assert trial.get_one("numeric", index=2) == 22
+    assert trial.get_one("text", index=2) == "c"
+    assert trial.get_one("signal", index=2) == 2
+    assert trial.get_one("signal", index=2, value_index=1) == 22
+    assert trial.get_one("int", index=2) == 40
+    assert trial.get_one("ints", index=2) == 42
+
+    # Get one should fall back on a default value instead of erroring.
+    assert trial.get_one("bogus", default="default") == "default"
+    assert trial.get_one("numeric", index=400, default="default") == "default"
+    assert trial.get_one("text", index=400, default="default") == "default"
+    assert trial.get_one("signal", index=400, default="default") == "default"
+    assert trial.get_one("signal", index=400, default="default") == "default"
+    assert trial.get_one("int", index=400, default="default") == 40
+    assert trial.get_one("ints", index=400, default="default") == "default"
+
+    # Get time should default to the first timestamp in a buffer, or the first value of an enhancement.
+    assert trial.get_time("numeric") == 0
+    assert trial.get_time("text") == 100
+    assert trial.get_time("signal") == 0
+    assert trial.get_time("int") == 40
+    assert trial.get_time("ints") == 40
+
+    # Get time should support taking indexed times or enhancement values, when meaningul.
+    assert trial.get_time("numeric", index=2) == 2
+    assert trial.get_time("text", index=2) == 102
+    assert trial.get_time("signal", index=2) == 0.2
+    assert trial.get_time("int", index=2) == 40
+    assert trial.get_time("ints", index=2) == 42
+
+    # Get time should fall back on a default value instead of erroring.
+    assert trial.get_time("bogus", default=99.9) == 99.9
+    assert trial.get_time("numeric", index=400, default=99.9) == 99.9
+    assert trial.get_time("text", index=400, default=99.9) == 99.9
+    assert trial.get_time("signal", index=400, default=99.9) == 99.9
+    assert trial.get_time("signal", index=400, default=99.9) == 99.9
+    assert trial.get_time("int", index=400, default=99.9) == 40
+    assert trial.get_time("ints", index=400, default=99.9) == 99.9
+
+
 def test_trial_constant_expression():
-    expression = TrialExpression(expression="True")
-    trial = Trial(start_time=0.0, end_time=1.0)
-    result = expression.evaluate(trial)
+    expression= TrialExpression(expression="True")
+    trial= Trial(start_time=0.0, end_time=1.0)
+    result= expression.evaluate(trial)
     assert result == True
 
 
 def test_trial_string_expression():
-    expression = TrialExpression(expression="foo + bar")
-    trial = Trial(start_time=0.0, end_time=1.0)
+    expression= TrialExpression(expression="foo + bar")
+    trial= Trial(start_time=0.0, end_time=1.0)
     assert trial.add_enhancement("foo", "f")
     assert trial.add_enhancement("bar", "b")
-    result = expression.evaluate(trial)
+    result= expression.evaluate(trial)
     assert result == "fb"
 
 
 def test_trial_numeric_expression():
-    expression = TrialExpression(expression="foo + bar")
-    trial = Trial(start_time=0.0, end_time=1.0)
+    expression= TrialExpression(expression="foo + bar")
+    trial= Trial(start_time=0.0, end_time=1.0)
     assert trial.add_enhancement("foo", 2)
     assert trial.add_enhancement("bar", 3)
-    result = expression.evaluate(trial)
+    result= expression.evaluate(trial)
     assert result == 5
 
 
 def test_trial_boolean_expression():
-    expression = TrialExpression(expression="foo & bar")
-    trial = Trial(start_time=0.0, end_time=1.0)
+    expression= TrialExpression(expression="foo & bar")
+    trial= Trial(start_time=0.0, end_time=1.0)
     assert trial.add_enhancement("foo", True)
     assert trial.add_enhancement("bar", False)
-    result = expression.evaluate(trial)
+    result= expression.evaluate(trial)
     assert result == False
 
 
 def test_trial_error_expression():
-    expression = TrialExpression(expression="4 / 0", default_value="No way!")
-    trial = Trial(start_time=0.0, end_time=1.0)
-    result = expression.evaluate(trial)
+    expression= TrialExpression(expression="4 / 0", default_value="No way!")
+    trial= Trial(start_time=0.0, end_time=1.0)
+    result= expression.evaluate(trial)
     assert result == "No way!"
 
 
@@ -767,26 +829,26 @@ class BadCollecter(TrialCollecter):
 
 def test_collect_and_revise_trials():
     # Expect several trials with regular durations.
-    start_times = range(0, 10)
-    start_script = [[[start, 1010]] for start in start_times]
-    start_reader = FakeNumericEventReader(script=start_script)
-    start_route = ReaderRoute("events", "start")
-    start_router = router_for_reader_and_routes(start_reader, [start_route])
+    start_times= range(0, 10)
+    start_script= [[[start, 1010]] for start in start_times]
+    start_reader= FakeNumericEventReader(script=start_script)
+    start_route= ReaderRoute("events", "start")
+    start_router= router_for_reader_and_routes(start_reader, [start_route])
 
-    delimiter = TrialDelimiter(start_router.named_buffers["start"], 1010)
+    delimiter= TrialDelimiter(start_router.named_buffers["start"], 1010)
 
     # Expect wrt times part way through each trial.
-    wrt_script = [[[start + 0.5, 42]] for start in start_times]
-    wrt_reader = FakeNumericEventReader(script=wrt_script)
-    wrt_route = ReaderRoute("events", "wrt")
-    wrt_router = router_for_reader_and_routes(wrt_reader, [wrt_route])
+    wrt_script= [[[start + 0.5, 42]] for start in start_times]
+    wrt_reader= FakeNumericEventReader(script=wrt_script)
+    wrt_route= ReaderRoute("events", "wrt")
+    wrt_router= router_for_reader_and_routes(wrt_reader, [wrt_route])
 
     # Collect stats during the run and revise trials afterwards.
     # The first one always errors -- which should not blow up the overall process.
     # The second one would error, but never gets called because of its "when" expression.
     # The last one adds a "percent_complete" enhancement to each trial.
-    session_percentage_collecter = SessionPercentageCollecter()
-    collecters = {
+    session_percentage_collecter= SessionPercentageCollecter()
+    collecters= {
         BadCollecter(): None,
         BadCollecter(): TrialExpression(expression="False"),
         session_percentage_collecter: TrialExpression(expression="True")
@@ -794,20 +856,20 @@ def test_collect_and_revise_trials():
 
     extractor = TrialExtractor(
         wrt_router.named_buffers["wrt"],
-        wrt_value=42,
-        collecters=collecters
+        wrt_value = 42,
+        collecters = collecters
     )
 
     # Consume the first start event at 0, which gets ignored.
     assert start_router.route_next() == True
 
     # Run through trials the first time, collecting stats as they come.
-    trial_file = {}
+    trial_file= {}
     for index, start in enumerate(start_times[0:-1]):
         assert start_router.route_next() == True
-        trials = delimiter.next()
+        trials= delimiter.next()
         assert len(trials) == 1
-        trial = trials[index]
+        trial= trials[index]
         assert trial.start_time == start
 
         wrt_router.route_until(trial.end_time)
@@ -819,24 +881,24 @@ def test_collect_and_revise_trials():
         assert session_percentage_collecter.max_start_time == start
 
         # remember all the trials we've seen, as if written to a trial file.
-        trial_file[index] = trial
+        trial_file[index]= trial
 
     # We should now be done consuming data.
     # Pick up the last trial, which is always a special case.
     assert start_router.route_next() == False
     assert wrt_router.route_next() == False
-    (last_index, last_trial) = delimiter.last()
+    (last_index, last_trial)= delimiter.last()
     assert last_trial.start_time == start_times[-1]
     assert last_index == len(start_times) - 1
     extractor.populate_trial(last_trial, last_index, {}, {})
     assert last_trial.wrt_time == start_times[-1] + 0.5
     assert session_percentage_collecter.max_start_time == start_times[-1]
-    trial_file[last_index] = last_trial
+    trial_file[last_index]= last_trial
 
     # Run through all the trials again, as if at the end of the session.
     # The session percentage collector should add a "percent_complete" to each trial.
     # The bad collectors should not interfere.
     for index, trial in trial_file.items():
         extractor.revise_trial(trial, index, {}, {})
-        expected_percent_complete = 100 * trial.start_time / start_times[-1]
+        expected_percent_complete= 100 * trial.start_time / start_times[-1]
         assert trial.get_enhancement("percent_complete") == expected_percent_complete
