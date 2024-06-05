@@ -616,3 +616,71 @@ class SaccadesEnhancer(TrialEnhancer):
 
         # Add the list of saccade dictionaries to trial enhancements.
         trial.add_enhancement(self.saccades_name, saccades, self.saccades_category)
+
+
+class RenameEnhancer(TrialEnhancer):
+    """Rename trial data buffers and enhancements based on rules declared in a .csv file.
+
+    Args:
+        rules_csv:      one or more .csv files where each row contains a rule for how to rename
+                        buffers and enhancements.  Each .csv must have at least the following columns:
+
+                            "value":  name of an existing trial buffer or enhancement, for example "1010"
+                            "name":   new name to use for the same buffer or enhancement, for example "fp_on"
+
+        file_finder:    a utility to find() files in the conigured Pyramid configured search path.
+                        Pyramid will automatically create and pass in the file_finder for you.
+        dialect:        CSV dialect to pass on to the .csv reader
+        fmtparams:      Additional format parameters to pass on to the .csv reader.
+
+    The expected .csv column names "value", "name" were chosen to match the column names expected by
+    PairedCodesEnhancer and EventTimesEnhancer.
+    """
+
+    def __init__(
+        self,
+        rules_csv: str | list[str],
+        file_finder: FileFinder,
+        dialect: str = 'excel',
+        **fmtparams
+    ) -> None:
+        if isinstance(rules_csv, list):
+            self.rules_csv = [file_finder.find(file) for file in rules_csv]
+        else:
+            self.rules_csv = [file_finder.find(rules_csv)]
+        self.dialect = dialect
+        self.fmtparams = fmtparams
+
+        rules = {}
+        for rules_csv in self.rules_csv:
+            with open(rules_csv, mode='r', newline='') as f:
+                csv_reader = csv.DictReader(f, dialect=self.dialect, **self.fmtparams)
+                for row in csv_reader:
+                    old_name = row['value']
+                    new_name = row['name']
+                    rules[old_name] = new_name
+        self.rules = rules
+
+    def enhance(
+        self,
+        trial: Trial,
+        trial_number: int,
+        experiment_info: dict[str: Any],
+        subject_info: dict[str: Any]
+    ) -> None:
+        for old_name, new_name in self.rules.items():
+            if old_name in trial.signals:
+                trial.signals[new_name] = trial.signals.pop(old_name)
+
+            if old_name in trial.numeric_events:
+                trial.numeric_events[new_name] = trial.numeric_events.pop(old_name)
+
+            if old_name in trial.text_events:
+                trial.text_events[new_name] = trial.text_events.pop(old_name)
+
+            if old_name in trial.enhancements:
+                trial.enhancements[new_name] = trial.enhancements.pop(old_name)
+                for names in trial.enhancement_categories.values():
+                    if old_name in names:
+                        names.remove(old_name)
+                        names.append(new_name)

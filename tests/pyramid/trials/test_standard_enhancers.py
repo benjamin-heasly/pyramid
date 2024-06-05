@@ -10,7 +10,8 @@ from pyramid.trials.standard_enhancers import (
     EventTimesEnhancer,
     ExpressionEnhancer,
     TextKeyValueEnhancer,
-    SaccadesEnhancer
+    SaccadesEnhancer,
+    RenameEnhancer
 )
 
 
@@ -598,3 +599,118 @@ def test_saccades_enhancer_step_saccade():
             'vector_distance': 7.0710678118654755
         }
     ]
+
+
+def test_rename_enhancer(tmp_path):
+    # Write out a .csv file with rules in it.
+    rules_csv = Path(tmp_path, "rules.csv")
+    with open(rules_csv, 'w') as f:
+        f.write('value,name,comment\n')
+        f.write('42,foo,this is just a comment\n')
+        f.write('43,bar,this is just a comment\n')
+        f.write('44,baz,this is just a comment\n')
+        f.write('777,quux,this is just a comment\n')
+
+    enhancer = RenameEnhancer(rules_csv, file_finder=FileFinder())
+
+    trial = Trial(
+        start_time=0,
+        end_time=20,
+        wrt_time=0
+    )
+
+    # Poptulate the trial with buffer data and enhancements.
+    # Some will get renamed according to rules, some will stay the same.
+    assert trial.add_buffer_data("42", SignalChunk.empty())
+    assert trial.add_buffer_data("unchanged_signal", SignalChunk.empty())
+    assert trial.add_buffer_data("43", NumericEventList.empty())
+    assert trial.add_buffer_data("unchanged_numeric", NumericEventList.empty())
+    assert trial.add_buffer_data("44", TextEventList.empty())
+    assert trial.add_buffer_data("unchanged_text", TextEventList.empty())
+    assert trial.add_enhancement("777", "test data", "cat")
+    assert trial.add_enhancement("unchanged_string", "test data", "cat")
+
+    enhancer.enhance(trial, 0, {}, {})
+
+    assert trial.signals == {
+        "foo": SignalChunk.empty(),
+        "unchanged_signal": SignalChunk.empty(),
+    }
+
+    assert trial.numeric_events == {
+        "bar": NumericEventList.empty(),
+        "unchanged_numeric": NumericEventList.empty(),
+    }
+
+    assert trial.text_events == {
+        "baz": TextEventList.empty(),
+        "unchanged_text": TextEventList.empty(),
+    }
+
+    assert trial.enhancements == {
+        "quux": "test data",
+        "unchanged_string": "test data"
+    }
+    assert trial.enhancement_categories == {
+        "cat": ["unchanged_string", "quux"]
+    }
+
+def test_rename_enhancer_multiple_csvs(tmp_path):
+    # Write out .csv files with rules in them.
+    rules_csv = Path(tmp_path, "rules.csv")
+    with open(rules_csv, 'w') as f:
+        f.write('value,name,comment\n')
+        f.write('42,foo,this is just a comment\n')
+        f.write('43,bar,this is just a comment\n')
+        f.write('44,baz,this is just a comment\n')
+        f.write('777,quux,this is just a comment\n')
+
+    rules_csv_2 = Path(tmp_path, "rules_2.csv")
+    with open(rules_csv_2, 'w') as f:
+        f.write('name,value\n')
+        f.write('FOO,42\n')
+        f.write('BAR,43\n')
+
+    enhancer = RenameEnhancer([rules_csv, rules_csv_2], file_finder=FileFinder())
+
+    trial = Trial(
+        start_time=0,
+        end_time=20,
+        wrt_time=0
+    )
+
+    # Poptulate the trial with buffer data and enhancements.
+    # Some will get renamed according to rules, some will stay the same.
+    assert trial.add_buffer_data("42", SignalChunk.empty())
+    assert trial.add_buffer_data("unchanged_signal", SignalChunk.empty())
+    assert trial.add_buffer_data("43", NumericEventList.empty())
+    assert trial.add_buffer_data("unchanged_numeric", NumericEventList.empty())
+    assert trial.add_buffer_data("44", TextEventList.empty())
+    assert trial.add_buffer_data("unchanged_text", TextEventList.empty())
+    assert trial.add_enhancement("777", "test data", "cat")
+    assert trial.add_enhancement("unchanged_string", "test data", "cat")
+
+    enhancer.enhance(trial, 0, {}, {})
+
+    assert trial.signals == {
+        "FOO": SignalChunk.empty(),
+        "unchanged_signal": SignalChunk.empty(),
+    }
+
+    assert trial.numeric_events == {
+        "BAR": NumericEventList.empty(),
+        "unchanged_numeric": NumericEventList.empty(),
+    }
+
+    assert trial.text_events == {
+        "baz": TextEventList.empty(),
+        "unchanged_text": TextEventList.empty(),
+    }
+
+    assert trial.enhancements == {
+        "quux": "test data",
+        "unchanged_string": "test data"
+    }
+    assert trial.enhancement_categories == {
+        "cat": ["unchanged_string", "quux"]
+    }
