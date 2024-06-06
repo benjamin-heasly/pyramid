@@ -510,8 +510,8 @@ class EnhancementXYPlotter(Plotter):
 
         new = {}
         for x_name, y_name in self.xy_points.items():
-            x_value = current_trial.get_enhancement(x_name)
-            y_value = current_trial.get_enhancement(y_name)
+            x_value = current_trial.get_one(x_name)
+            y_value = current_trial.get_one(y_name)
             if x_value is not None and y_value is not None:
                 new[x_name] = (x_value, y_value)
 

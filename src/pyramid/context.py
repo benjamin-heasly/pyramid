@@ -164,6 +164,8 @@ class PyramidContext():
 
     def read_initial_sync_events(self) -> None:
         """Read some initial sync events for each reader that has sync configured."""
+
+        # Get some initial sync events for each reader.
         for name, router in self.routers.items():
             # Does this reader have sync configured?
             if router.sync_config is None or router.sync_registry is None or router.sync_config.reader_name != name:
@@ -181,10 +183,14 @@ class PyramidContext():
                 count = router.sync_registry.event_count(name)
                 reads += 1
 
-            if (count < init_event_count):
-                logging.warning(f"Reader {name} has {count} of {init_event_count} sync events after {reads} reads.")
-            else:
-                logging.info(f"OK, reader {name} has {count} of {init_event_count} sync events.")
+            logging.info(f"Reader {name} has {count} of {init_event_count} sync events after {reads} of {init_max_reads} reads.")
+
+        # With all those sync events now in hand, compute a starting drift estimate for each reader.
+        for name, router in self.routers.items():
+            if router.sync_config is None or router.sync_registry is None or router.sync_config.reader_name != name:
+                continue
+            reader_drift_estimate = router.update_drift_estimate()
+            logging.info(f"Reader {name} using initial clock offset {reader_drift_estimate}.")
 
     def run_without_plots(self, trial_file: str) -> None:
         """Run without plots as fast as the data allow.

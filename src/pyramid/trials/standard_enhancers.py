@@ -477,13 +477,15 @@ class SaccadesEnhancer(TrialEnhancer):
         # Get event times from trial enhancements to delimit saccade parsing.
         fp_off_time = trial.get_time(self.fp_off_name)
         all_off_time = trial.get_time(self.all_off_name)
+        if fp_off_time is None or all_off_time is None:
+            return
 
         # Use trial.signals for gaze signal chunks.
-        if self.x_buffer_name not in trial.signals and self.y_buffer_name not in trial.signals:
+        if self.x_buffer_name not in trial.signals or self.y_buffer_name not in trial.signals:  # pragma: no cover
             return
         x_signal = trial.signals[self.x_buffer_name]
         y_signal = trial.signals[self.y_buffer_name]
-        if x_signal.end() < fp_off_time or y_signal.end() < fp_off_time:
+        if x_signal.end() < fp_off_time or y_signal.end() < fp_off_time:  # pragma: no cover
             return
 
         # Possibly center at fp.
