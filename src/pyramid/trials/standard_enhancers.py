@@ -650,7 +650,12 @@ class RenameRescaleEnhancer(TrialEnhancer):
                 for row in csv_reader:
                     old_name = row['value']
                     new_name = row['name']
-                    scale = float(row['scale']) if 'scale' in row else None
+                    raw_scale = row.get('scale', None)
+                    if raw_scale:
+                        # Must be present (not None) and not empty.
+                        scale = float(raw_scale)
+                    else:
+                        scale = None
                     rules[old_name] = (new_name, scale)
         self.rules = rules
 

@@ -724,7 +724,7 @@ def test_rename_rescale_enhancer_with_scale(tmp_path):
         f.write('value,name,scale\n')
         f.write('42,foo,1.0\n')
         f.write('43,bar,2.0\n')
-        f.write('44,baz,3.0\n')
+        f.write('44,baz,\n')
         f.write('777,quux,4.0\n')
 
     enhancer = RenameRescaleEnhancer(rules_csv, file_finder=FileFinder())
