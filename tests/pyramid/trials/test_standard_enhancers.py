@@ -11,7 +11,7 @@ from pyramid.trials.standard_enhancers import (
     ExpressionEnhancer,
     TextKeyValueEnhancer,
     SaccadesEnhancer,
-    RenameEnhancer
+    RenameRescaleEnhancer
 )
 
 
@@ -601,7 +601,7 @@ def test_saccades_enhancer_step_saccade():
     ]
 
 
-def test_rename_enhancer(tmp_path):
+def test_rename_rescale_enhancer(tmp_path):
     # Write out a .csv file with rules in it.
     rules_csv = Path(tmp_path, "rules.csv")
     with open(rules_csv, 'w') as f:
@@ -611,7 +611,7 @@ def test_rename_enhancer(tmp_path):
         f.write('44,baz,this is just a comment\n')
         f.write('777,quux,this is just a comment\n')
 
-    enhancer = RenameEnhancer(rules_csv, file_finder=FileFinder())
+    enhancer = RenameRescaleEnhancer(rules_csv, file_finder=FileFinder())
 
     trial = Trial(
         start_time=0,
@@ -619,7 +619,7 @@ def test_rename_enhancer(tmp_path):
         wrt_time=0
     )
 
-    # Poptulate the trial with buffer data and enhancements.
+    # Populate the trial with buffer data and enhancements.
     # Some will get renamed according to rules, some will stay the same.
     assert trial.add_buffer_data("42", SignalChunk.empty())
     assert trial.add_buffer_data("unchanged_signal", SignalChunk.empty())
@@ -655,7 +655,8 @@ def test_rename_enhancer(tmp_path):
         "cat": ["unchanged_string", "quux"]
     }
 
-def test_rename_enhancer_multiple_csvs(tmp_path):
+
+def test_rename_rescale_enhancer_multiple_csvs(tmp_path):
     # Write out .csv files with rules in them.
     rules_csv = Path(tmp_path, "rules.csv")
     with open(rules_csv, 'w') as f:
@@ -671,7 +672,7 @@ def test_rename_enhancer_multiple_csvs(tmp_path):
         f.write('FOO,42\n')
         f.write('BAR,43\n')
 
-    enhancer = RenameEnhancer([rules_csv, rules_csv_2], file_finder=FileFinder())
+    enhancer = RenameRescaleEnhancer([rules_csv, rules_csv_2], file_finder=FileFinder())
 
     trial = Trial(
         start_time=0,
@@ -679,7 +680,7 @@ def test_rename_enhancer_multiple_csvs(tmp_path):
         wrt_time=0
     )
 
-    # Poptulate the trial with buffer data and enhancements.
+    # Populate the trial with buffer data and enhancements.
     # Some will get renamed according to rules, some will stay the same.
     assert trial.add_buffer_data("42", SignalChunk.empty())
     assert trial.add_buffer_data("unchanged_signal", SignalChunk.empty())
@@ -713,4 +714,67 @@ def test_rename_enhancer_multiple_csvs(tmp_path):
     }
     assert trial.enhancement_categories == {
         "cat": ["unchanged_string", "quux"]
+    }
+
+
+def test_rename_rescale_enhancer_with_scale(tmp_path):
+    # Write out a .csv file with rules in it.
+    rules_csv = Path(tmp_path, "rules.csv")
+    with open(rules_csv, 'w') as f:
+        f.write('value,name,scale\n')
+        f.write('42,foo,1.0\n')
+        f.write('43,bar,2.0\n')
+        f.write('44,baz,3.0\n')
+        f.write('777,quux,4.0\n')
+
+    enhancer = RenameRescaleEnhancer(rules_csv, file_finder=FileFinder())
+
+    trial = Trial(
+        start_time=0,
+        end_time=20,
+        wrt_time=0
+    )
+
+    # Populate the trial with buffer data and enhancements to rename and rescale according to rules.
+    signal = SignalChunk(
+        sample_data=np.array(range(10), dtype=np.float64),
+        sample_frequency=1.0,
+        first_sample_time=0.0,
+        channel_ids=["test"]
+    )
+    assert trial.add_buffer_data("42", signal)
+
+    numeric_events = NumericEventList(np.array([[0, 0], [1, 10], [2, 20]], dtype=np.float64))
+    assert trial.add_buffer_data("43", numeric_events)
+
+    text_events = TextEventList(np.array([0, 1, 2]), np.array(["zero", "one", "two"]))
+    assert trial.add_buffer_data("44", text_events)
+
+    number = 10
+    assert trial.add_enhancement("777", number)
+
+    enhancer.enhance(trial, 0, {}, {})
+
+    # Expect signal "42" renamed to "foo" and scaled by 1.0.
+    assert trial.signals == {
+        "foo": signal
+    }
+
+    # Expect numeric events "43" renamed to "bar" and scaled by 2.0.
+    expected_numeric_events = NumericEventList(np.array([[0, 0], [1, 20], [2, 40]]))
+    assert trial.numeric_events == {
+        "bar": expected_numeric_events
+    }
+
+    # Expect text events "44" renamed to "baz" -- and scale has no effect on text.
+    assert trial.text_events == {
+        "baz": text_events
+    }
+
+    # Expect enhancement "777" renamed to "quux" and scaled by 4
+    assert trial.enhancements == {
+        "quux": 40,
+    }
+    assert trial.enhancement_categories == {
+        "value": ["quux"]
     }

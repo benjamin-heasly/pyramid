@@ -1,5 +1,5 @@
 from typing import Any
-from numpy import bool_
+from numbers import Number
 import logging
 import csv
 
@@ -239,7 +239,7 @@ class ExpressionEnhancer(TrialEnhancer):
         value = self.trial_expression.evaluate(trial)
 
         # Many numpy types are json-serializable like standard Python float, int, etc. -- but not numpy.bool_!
-        if isinstance(value, bool_):
+        if isinstance(value, np.bool_):
             value = bool(value)
 
         trial.add_enhancement(self.value_name, value, self.value_category)
@@ -609,22 +609,23 @@ class SaccadesEnhancer(TrialEnhancer):
         trial.add_enhancement(self.saccades_name, saccades, self.saccades_category)
 
 
-class RenameEnhancer(TrialEnhancer):
-    """Rename trial data buffers and enhancements based on rules declared in a .csv file.
+class RenameRescaleEnhancer(TrialEnhancer):
+    """Rename and optionally rescale trial buffers and enhancements based on rules declared in a .csv file.
 
     Args:
-        rules_csv:      one or more .csv files where each row contains a rule for how to rename
-                        buffers and enhancements.  Each .csv must have at least the following columns:
+        rules_csv:      one or more .csv files where each row contains a rule for how to rename and rescale
+                        buffers and enhancements.  Each .csv can use the following columns headers:
 
-                            "value":  name of an existing trial buffer or enhancement, for example "1010"
-                            "name":   new name to use for the same buffer or enhancement, for example "fp_on"
+                            "value":    name of an existing trial buffer or enhancement, for example "1010"
+                            "name":     new name to use for the same buffer or enhancement, for example "fp_on"
+                            "scale":    optinal scale factor to apply to buffer values
 
         file_finder:    a utility to find() files in the conigured Pyramid configured search path.
                         Pyramid will automatically create and pass in the file_finder for you.
         dialect:        CSV dialect to pass on to the .csv reader
         fmtparams:      Additional format parameters to pass on to the .csv reader.
 
-    The expected .csv column names "value", "name" were chosen to match the column names expected by
+    The expected .csv column names "value", "name", and "scale" were chosen to match the column names expected by
     PairedCodesEnhancer and EventTimesEnhancer.
     """
 
@@ -649,7 +650,8 @@ class RenameEnhancer(TrialEnhancer):
                 for row in csv_reader:
                     old_name = row['value']
                     new_name = row['name']
-                    rules[old_name] = new_name
+                    scale = float(row['scale']) if 'scale' in row else None
+                    rules[old_name] = (new_name, scale)
         self.rules = rules
 
     def enhance(
@@ -659,18 +661,25 @@ class RenameEnhancer(TrialEnhancer):
         experiment_info: dict[str: Any],
         subject_info: dict[str: Any]
     ) -> None:
-        for old_name, new_name in self.rules.items():
+        for old_name, (new_name, scale) in self.rules.items():
             if old_name in trial.signals:
                 trial.signals[new_name] = trial.signals.pop(old_name)
+                if scale is not None:
+                    trial.signals[new_name].apply_offset_then_gain(gain=scale)
 
             if old_name in trial.numeric_events:
                 trial.numeric_events[new_name] = trial.numeric_events.pop(old_name)
+                if scale is not None:
+                    trial.numeric_events[new_name].apply_offset_then_gain(gain=scale)
 
             if old_name in trial.text_events:
                 trial.text_events[new_name] = trial.text_events.pop(old_name)
 
             if old_name in trial.enhancements:
                 trial.enhancements[new_name] = trial.enhancements.pop(old_name)
+                if scale is not None and isinstance(trial.enhancements[new_name], Number):
+                    trial.enhancements[new_name] *= scale
+
                 for names in trial.enhancement_categories.values():
                     if old_name in names:
                         names.remove(old_name)
