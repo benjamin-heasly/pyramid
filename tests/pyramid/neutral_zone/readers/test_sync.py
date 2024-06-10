@@ -38,24 +38,27 @@ def test_reader_sync_config_event_callbacks():
 
 
 def test_sync_registry_find_events():
-    registry = ReaderSyncRegistry("ref")
+    registry = ReaderSyncRegistry("foo")
 
     # It's okay to ask for sync events before any have been reported.
-    assert registry.find_events("ref") == []
+    assert registry.find_events("foo") == []
 
-    registry.record_event("ref", 1.0)
-    registry.record_event("ref", 2.0)
-    registry.record_event("ref", 3.0)
-    registry.record_event("ref", 4.0)
+    registry.record_event("foo", 1.0)
+    registry.record_event("foo", 2.0)
+    registry.record_event("foo", 3.0)
+    registry.record_event("foo", 4.0)
 
     # With no end time, return all events for the given reader.
-    assert registry.find_events("ref", end_time=None) == [(1.0, 1.0), (2.0, 2.0), (3.0, 3.0), (4.0, 4.0)]
+    assert registry.find_events("foo", end_time=None) == [(1.0, 1.0), (2.0, 2.0), (3.0, 3.0), (4.0, 4.0)]
 
     # Return events at or before the given end time.
-    assert registry.find_events("ref", end_time=3.0) == [(1.0, 1.0), (2.0, 2.0), (3.0, 3.0)]
+    assert registry.find_events("foo", end_time=3.0) == [(1.0, 1.0), (2.0, 2.0), (3.0, 3.0)]
 
     # Return at least the first event, if we have it, event if this has timestamp after the given end time.
-    assert registry.find_events("ref", end_time=-100) == [(1.0, 1.0)]
+    assert registry.find_events("foo", end_time=-100) == [(1.0, 1.0)]
+
+    # Use padding to allow events close to but after the end time.
+    assert registry.find_events("foo", end_time=2.9, end_padding=0.2) == [(1.0, 1.0), (2.0, 2.0), (3.0, 3.0)]
 
 
 def test_sync_registry_offset_for_closest_time():

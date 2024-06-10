@@ -224,6 +224,9 @@ class ReaderRouter():
 
         # Is the reader already caught up?
         target_reader_time = target_reference_time + self.clock_drift
+
+        logging.info(f"Route until {target_reference_time} AKA {target_reader_time} - {self.clock_drift}")
+
         if self.max_buffer_time >= target_reader_time:
             return self.max_buffer_time
 
@@ -264,9 +267,11 @@ class ReaderRouter():
             self.sync_config.reader_name,
             self.sync_config.pairing_strategy,
             reference_end_time,
-            reader_end_time
+            reader_end_time,
+            self.sync_config.pairing_padding
         )
         for buffer in self.named_buffers.values():
             buffer.clock_drift = self.clock_drift
+            buffer.sync_events = self.sync_registry.find_events(self.sync_config.reader_name)
 
         return self.clock_drift

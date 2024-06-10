@@ -112,6 +112,18 @@ class ReaderSyncConfig():
     pairing_strategy: str = "closest"
     """How to pair up event keys between readers: "closest", "max", or "last equal"."""
 
+    pairing_padding: float = 0.01
+    """Padding to use when searching for timstamps to pair up.
+
+    Add some padding (10ms by default) to queries for reader sync events near a trial end time.
+    This should allow us to use the most up-to-date sync events we have on hand when estimating
+    clock offsets between reader, even when sync events have some jitter, or we encounter floating
+    point rounding errors.
+
+    The basic intuition for this is: when looking at sync events up to time 3.0, don't exclude
+    events with times like 3.00000001.
+    """
+
     def __post_init__(self):
         """Compile callback expressoins for use in methods below."""
         if self.filter is None:
@@ -212,10 +224,12 @@ class ReaderSyncRegistry():
         self.reader_events[reader_name] = events
         logging.info(f"Recorded sync for {reader_name} at time {event_time} with key {event_key} ({len(events)} total).")
 
-    def find_events(self, reader_name: str, end_time: float = None) -> list[float]:
+    def find_events(self, reader_name: str, end_time: float = None, end_padding: float = 0.0) -> list[float]:
         """Find sync events for the given reader, at or before the given end time.
 
         If end_time is before the first sync event, return the first sync event.
+
+        If padding is provided, allow sync events at or before (end_time + end_padding).
         """
         events = self.reader_events.get(reader_name, [])
         if not events:
@@ -224,7 +238,8 @@ class ReaderSyncRegistry():
         if end_time is None:
             return events
 
-        filtered_events = [event for event in events if event.timestamp <= end_time]
+        padded_end_time = end_time + end_padding
+        filtered_events = [event for event in events if event.timestamp <= padded_end_time]
         if not filtered_events and events:
             # We have sync data but it's after the requested end time.
             # Return the first event we have, as the best match for end_time.
@@ -267,8 +282,10 @@ class ReaderSyncRegistry():
         reader_last_distance = abs(reader_last.key - reference_closest.key)
         reference_last_distance = abs(reader_closest.key - reference_last.key)
         if reader_last_distance < reference_last_distance:
+            logging.info(f"offset {reader_last.timestamp} - {reference_closest.timestamp} = {reader_last.timestamp - reference_closest.timestamp}")
             return reader_last.timestamp - reference_closest.timestamp
         else:
+            logging.info(f"offset {reader_closest.timestamp} - {reference_last.timestamp} = {reader_closest.timestamp - reference_last.timestamp}")
             return reader_closest.timestamp - reference_last.timestamp
 
     def offset_from_max_keys(
@@ -312,11 +329,13 @@ class ReaderSyncRegistry():
         reader_name: str,
         pairing_strategy: str,
         reference_end_time: float = None,
-        reader_end_time: float = None
+        reader_end_time: float = None,
+        reader_pairing_padding: float = 0.0
     ) -> float:
         """Estimate clock drift between the named reader and the reference, based on events marked for each reader."""
+        logging.info(f"{reader_name} offset up to {reference_end_time} AKA {reader_end_time}")
         reference_events = self.find_events(self.reference_reader_name, reference_end_time)
-        reader_events = self.find_events(reader_name, reader_end_time)
+        reader_events = self.find_events(reader_name, reader_end_time, reader_pairing_padding)
         if pairing_strategy == "closest":
             return self.offset_from_closest_keys(reference_events, reader_events)
         elif pairing_strategy == "max":
