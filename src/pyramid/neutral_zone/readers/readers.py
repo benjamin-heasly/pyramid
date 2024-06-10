@@ -206,13 +206,40 @@ class ReaderRouter():
         return True
 
     def route_until(self, target_reference_time: float) -> float:
-        """Ask the reader to read data 0 or more times until catching up to a target time.
+        """Ask the reader to read 0 or more times until catching up to the given reference time.
 
-        Return the latest timestamp seen, so far.
+        This will convert the given target_reference_time into its own time frame, based on its
+        current clock_drift estimate.  This is a target_reader_time.
+
+        This will repeat reading until it sees some new data arrive with data_time_1 >= target_reader_time.
+
+        This will continue reading until it sees some new data arive with data_time_2 > data_time_1.
+        This last part is to ensure that any data with the same data_time_1 are treated as equivalent
+        in time, and not split between trials or lost between trials.
+
+        In case new data are not available, may return early, after exhausting empty_reads_allowed.
+
+        Returns the latest timestamp seen, so far.
         """
-        empty_reads = 0
+
+        # Is the reader already caught up?
         target_reader_time = target_reference_time + self.clock_drift
+        if self.max_buffer_time >= target_reader_time:
+            return self.max_buffer_time
+
+        # Catch up with at least one data item at or after the target time.
+        empty_reads = 0
         while self.max_buffer_time < target_reader_time and empty_reads <= self.empty_reads_allowed:
+            got_data = self.route_next()
+            if got_data:
+                empty_reads = 0
+            else:
+                empty_reads += 1
+
+        # Continue reading data that have equal times, so that time-equal items are not split up.
+        equal_item_time = self.max_buffer_time
+        empty_reads = 0
+        while self.max_buffer_time <= equal_item_time and empty_reads <= self.empty_reads_allowed:
             got_data = self.route_next()
             if got_data:
                 empty_reads = 0

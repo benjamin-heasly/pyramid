@@ -231,8 +231,8 @@ def test_populate_trials_from_private_buffers():
     assert trial_zero[0] == Trial(0.0, 1.0)
 
     # Now that we know a trial end time, ask each reader to read until just past that time.
-    assert wrt_router.route_until(1.0) == 1.5
-    assert foo_router.route_until(1.0) == 1.3
+    assert wrt_router.route_until(1.0) == 2.6
+    assert foo_router.route_until(1.0) == 2.3
     assert bar_router.route_until(1.0) == 3.1
 
     # Now that all the readers are caught up to the trial end time, extract the trial data.
@@ -365,7 +365,7 @@ def test_populate_trials_from_shared_buffers():
 
     # Now that we know a trial end time, ask each reader to read until just past that time.
     assert start_router.route_until(1.0) == 1.0
-    assert foo_router.route_until(1.0) == 1.3
+    assert foo_router.route_until(1.0) == 2.3
     assert bar_router.route_until(1.0) == 3.1
 
     # Now that all the readers are caught up to the trial end time, extract the trial data.
@@ -526,7 +526,7 @@ def test_enhance_trials():
     assert len(trial_zero) == 1
     assert trial_zero[0] == Trial(0.0, 1.0)
 
-    assert wrt_router.route_until(1.0) == 1.5
+    assert wrt_router.route_until(1.0) == 2.6
     extractor.populate_trial(trial_zero[0], 0, {}, {})
     assert trial_zero[0] == Trial(
         start_time=0,

@@ -174,8 +174,8 @@ def test_router_skip_buffer_append_errors():
     assert router.named_buffers["one"].data == NumericEventList(np.array([[0, 0], [1, 10], [3, 30]]))
 
 
-def test_router_routes_until_target_time():
-    reader = FakeNumericEventReader([[[0, 0]], [[1, 10]], [[2, 20]], [[3, 30]]])
+def test_router_route_until_target_time():
+    reader = FakeNumericEventReader([[[0, 0]], [[1, 10]], [[2, 20]], [[3, 30]], [[4, 40]]])
     routes = [ReaderRoute("events", "one")]
     router = ReaderRouter(
         reader=reader,
@@ -183,22 +183,22 @@ def test_router_routes_until_target_time():
         named_buffers=buffers_for_reader_and_routes(reader, routes)
     )
 
-    # Router should read until an event arrives past the target time.
-    # But not keep reading indefinitely after that.
-    assert router.route_until(1.5) == 2
+    # Router should read all events at or after the target time.
+    # It's allowed to read a bit ahead, but not indefinitely after that.
+    assert router.route_until(1.5) == 3
 
     # Once at the target time, router should not read any more.
-    assert router.route_until(1.5) == 2
-    assert router.route_until(1.5) == 2
+    assert router.route_until(1.5) == 3
+    assert router.route_until(1.5) == 3
 
-    # Check expected events buffered up to and just past the target time.
-    # But not way past the target time.
-    assert router.named_buffers["one"].data == NumericEventList(np.array([[0, 0], [1, 10], [2, 20]]))
+    # Check expected events buffered up to and a bit past the target time.
+    # But not way past the target time ie not 4.
+    assert router.named_buffers["one"].data == NumericEventList(np.array([[0, 0], [1, 10], [2, 20], [3, 30]]))
 
 
-def test_router_routes_until_target_time_with_retries():
+def test_router_route_until_max_retries():
     # The reader will have some gaps in the data that require retries to get passed.
-    reader = FakeNumericEventReader([None, [[0, 0]], None, None, [[1, 10]], None, [[2, 20]], [[3, 30]]])
+    reader = FakeNumericEventReader([None, [[0, 0]], None, None, [[1, 10]], None, [[2, 20]], [[3, 30]], [[4, 40]]])
     routes = [ReaderRoute("events", "one")]
     router = ReaderRouter(
         reader=reader,
@@ -210,17 +210,39 @@ def test_router_routes_until_target_time_with_retries():
     # As long as the data gaps are smaller than the router's empty_read_allowed limit,
     # The results should be the same as test_router_routes_until_target_time, above.
 
-    # Router should read until an event arrives past the target time.
-    # But not keep reading indefinitely after that.
-    assert router.route_until(1.5) == 2
+    # Router should read all events at or after the target time.
+    # It's allowed to read a bit ahead, but not indefinitely after that.
+    assert router.route_until(1.5) == 3
 
     # Once at the target time, router should not read any more.
-    assert router.route_until(1.5) == 2
-    assert router.route_until(1.5) == 2
+    assert router.route_until(1.5) == 3
+    assert router.route_until(1.5) == 3
+
+    # Check expected events buffered up to and a bit past the target time.
+    # But not way past the target time ie not 4.
+    assert router.named_buffers["one"].data == NumericEventList(np.array([[0, 0], [1, 10], [2, 20], [3, 30]]))
+
+
+def test_router_route_until_all_equal_items():
+    reader = FakeNumericEventReader([[[0, 0]], [[1, 10]], [[2, 20]], [[2, 21]], [[2, 22]], [[3, 30]], [[4, 40]]])
+    routes = [ReaderRoute("events", "one")]
+    router = ReaderRouter(
+        reader=reader,
+        routes=routes,
+        named_buffers=buffers_for_reader_and_routes(reader, routes)
+    )
+
+    # Router should read all events at or after the target time.
+    # It's allowed to read a bit ahead to find equal items, but not indefinitely after that.
+    assert router.route_until(1.5) == 3
+
+    # Once at the target time, router should not read any more.
+    assert router.route_until(1.5) == 3
+    assert router.route_until(1.5) == 3
 
     # Check expected events buffered up to and just past the target time.
     # But not way past the target time.
-    assert router.named_buffers["one"].data == NumericEventList(np.array([[0, 0], [1, 10], [2, 20]]))
+    assert router.named_buffers["one"].data == NumericEventList(np.array([[0, 0], [1, 10], [2, 20], [2, 21], [2, 22], [3, 30]]))
 
 
 def test_route_transforms_data():

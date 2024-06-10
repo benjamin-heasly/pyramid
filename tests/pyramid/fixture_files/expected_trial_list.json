@@ -90,7 +90,7 @@
         },
         "signals": {
             "match_trial_signal": {
-                "signal_data": [[3.0], [3.0], [3.0], [3.0], [3.0], [3.0]],
+                "signal_data": [[3.0], [3.0], [3.0], [3.0], [3.0], [3.0], [3.0], [3.0], [3.0]],
                 "sample_frequency": 10,
                 "first_sample_time": -0.5,
                 "channel_ids": ["match_trial"]
