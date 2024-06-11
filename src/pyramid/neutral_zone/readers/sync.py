@@ -282,10 +282,8 @@ class ReaderSyncRegistry():
         reader_last_distance = abs(reader_last.key - reference_closest.key)
         reference_last_distance = abs(reader_closest.key - reference_last.key)
         if reader_last_distance < reference_last_distance:
-            logging.info(f"offset {reader_last.timestamp} - {reference_closest.timestamp} = {reader_last.timestamp - reference_closest.timestamp}")
             return reader_last.timestamp - reference_closest.timestamp
         else:
-            logging.info(f"offset {reader_closest.timestamp} - {reference_last.timestamp} = {reader_closest.timestamp - reference_last.timestamp}")
             return reader_closest.timestamp - reference_last.timestamp
 
     def offset_from_max_keys(
@@ -333,7 +331,6 @@ class ReaderSyncRegistry():
         reader_pairing_padding: float = 0.0
     ) -> float:
         """Estimate clock drift between the named reader and the reference, based on events marked for each reader."""
-        logging.info(f"{reader_name} offset up to {reference_end_time} AKA {reader_end_time}")
         reference_events = self.find_events(self.reference_reader_name, reference_end_time)
         reader_events = self.find_events(reader_name, reader_end_time, reader_pairing_padding)
         if pairing_strategy == "closest":

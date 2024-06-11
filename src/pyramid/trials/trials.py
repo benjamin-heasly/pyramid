@@ -384,7 +384,6 @@ class TrialExtractor():
             trial.wrt_time = 0.0
 
         for name, buffer in self.named_buffers.items():
-            logging.info(f"{name} copy {buffer.reference_time_to_raw(trial.start_time)} to {buffer.reference_time_to_raw(trial.end_time)}")
             data = buffer.data.copy_time_range(
                 buffer.reference_time_to_raw(trial.start_time),
                 buffer.reference_time_to_raw(trial.end_time)

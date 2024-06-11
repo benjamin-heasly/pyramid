@@ -224,9 +224,6 @@ class ReaderRouter():
 
         # Is the reader already caught up?
         target_reader_time = target_reference_time + self.clock_drift
-
-        logging.info(f"Route until {target_reference_time} AKA {target_reader_time} - {self.clock_drift}")
-
         if self.max_buffer_time >= target_reader_time:
             return self.max_buffer_time
 
