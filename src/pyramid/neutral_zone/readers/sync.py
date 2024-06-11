@@ -124,6 +124,48 @@ class ReaderSyncConfig():
     events with times like 3.00000001.
     """
 
+    sync_snap_threshold: float = 0.000001
+    """When reader raw times are this close to a known sync event time, snap to the sync event time.
+
+    This is a workaround to address floating point rounding error. Usually rounding error is negligible!
+    But in case sync events and other events fall close to trial delimiting events, even tiny errors
+    can cause buffer data to be selected into the wrong trial.
+
+    Here's a real-world example that came up.  We used the same trial delimiting events as sync events.
+    For the reference reader and auxiliary reader, we had sync event times:
+
+        ref_time = 2641.2591
+        reader_time = 99.248
+
+    We used these to calculate a reader offset for the auxiliary reader:
+
+        reader_offset = reader_time - ref_time
+        -2542.0111
+
+    We then asked, given the reference reader's trial delimiting time 2641.2591,
+    what is the corresponding time in the auxiliary reader?  We want to use this
+    for selecting auxiliary data for the trial.  Algebraically, this should be
+    trivial and give us 99.248 again.  But with floating point arithmetic, we don't
+    recover the exact same result.
+
+        reader_end_time = ref_time + reader_offset
+        99.24800000000005
+
+    Any other auxiliary events that occurr right at 99.248 would appear to come
+    before this end time, and they would be assigned to the wrong, prevous trial.
+
+    With this sync_snap_threshold we can compare computed reader times to known
+    sync event times, and "snap" each computed times to a known time that's
+    very nearby, forcing
+
+        99.24800000000005 -> 99.248
+
+    This has been useful sometimes, but it's really just a best-effort workaround
+    for when sync events and other data occur very close to trial delimiters.
+    A more robust solution when possible would be to move important data farther
+    from the trial boundary, far enough that floating point errors don't matter.
+    """
+
     def __post_init__(self):
         """Compile callback expressoins for use in methods below."""
         if self.filter is None:

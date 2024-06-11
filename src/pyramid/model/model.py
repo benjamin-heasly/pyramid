@@ -181,6 +181,7 @@ class Buffer():
         self.data = initial_data
         self.clock_drift = initial_clock_drift
         self.sync_events = []
+        self.sync_snap_threshold = 0.0
 
     def __eq__(self, other: object) -> bool:
         """Compare buffers field-wise, to support use of this class in tests."""
@@ -192,7 +193,7 @@ class Buffer():
         else:  # pragma: no cover
             return False
 
-    def snap_to_sync_time(self, raw_time: float, snap_threshold: float = 0.0001) -> float:
+    def snap_to_sync_time(self, raw_time: float) -> float:
         """If the given raw time is close to a known sync time, snap to the known sync time.
 
         This is to avoid floating point rounding error on computed raw times.
@@ -205,7 +206,7 @@ class Buffer():
 
         differences = [abs(raw_time - event.timestamp) for event in self.sync_events]
         min_difference = min(differences)
-        if min_difference < snap_threshold:
+        if min_difference < self.sync_snap_threshold:
             min_index = differences.index(min_difference)
             return self.sync_events[min_index].timestamp
         else:
@@ -216,7 +217,7 @@ class Buffer():
         return self.snap_to_sync_time(raw_time) - self.clock_drift
 
     def reference_time_to_raw(self, reference_time: float) -> float:
-        """Convert a time Pyramid's reference clock to align with the buffer's own raw clock."""
+        """Convert a time from Pyramid's reference clock to align with the buffer's own raw clock."""
         if reference_time is None:
             return None
         else:

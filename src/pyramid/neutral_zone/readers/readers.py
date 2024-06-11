@@ -270,5 +270,6 @@ class ReaderRouter():
         for buffer in self.named_buffers.values():
             buffer.clock_drift = self.clock_drift
             buffer.sync_events = self.sync_registry.find_events(self.sync_config.reader_name)
+            buffer.sync_snap_threshold = self.sync_config.sync_snap_threshold
 
         return self.clock_drift
