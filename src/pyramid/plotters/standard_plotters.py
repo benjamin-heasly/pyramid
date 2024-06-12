@@ -358,7 +358,7 @@ class EnhancementTimesPlotter(Plotter):
         history_size: int = 10,
         xmin: float = -2.0,
         xmax: float = 2.0,
-        enhancement_categories: list[str] = ["time"],
+        categories: list[str] = ["time"],
         match_pattern: str = None,
         marker: str = "o",
         old_marker: str = '.'
@@ -368,7 +368,7 @@ class EnhancementTimesPlotter(Plotter):
 
         self.xmin = xmin
         self.xmax = xmax
-        self.enhancement_categories = enhancement_categories
+        self.categories = categories
         self.match_pattern = match_pattern
 
         self.marker = marker
@@ -397,9 +397,9 @@ class EnhancementTimesPlotter(Plotter):
         self.ax.set_xlabel("trial time (s)")
 
         if self.match_pattern:
-            self.ax.set_title(f"Enhancement Times: {self.enhancement_categories} {self.match_pattern}")
+            self.ax.set_title(f"Enhancement Times: {self.categories} {self.match_pattern}")
         else:
-            self.ax.set_title(f"Enhancement Times: {self.enhancement_categories}")
+            self.ax.set_title(f"Enhancement Times: {self.categories}")
 
         # Show old events faded out.
         for old in self.history:
@@ -412,8 +412,8 @@ class EnhancementTimesPlotter(Plotter):
 
         # Update finite, rolling history.
         enhancement_names = []
-        for category in self.enhancement_categories:
-            enhancement_names += current_trial.enhancement_categories.get(category, [])
+        for category in self.categories:
+            enhancement_names += current_trial.categories.get(category, [])
 
         new = {}
         for name in enhancement_names:

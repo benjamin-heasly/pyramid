@@ -83,7 +83,7 @@ def test_paired_codes_enhancer(tmp_path):
         "id": ["foo", "bar"],
         "value": ["baz", "quux"]
     }
-    assert trial.enhancement_categories == expected_categories
+    assert trial.categories == expected_categories
 
 
 def test_paired_codes_enhancer_multiple_csvs(tmp_path):
@@ -176,7 +176,7 @@ def test_event_times_enhancer(tmp_path):
     expected_categories = {
         "time": ["foo", "bar", "baz"]
     }
-    assert trial.enhancement_categories == expected_categories
+    assert trial.categories == expected_categories
 
 
 def test_event_times_enhancer_multiple_csvs(tmp_path):
@@ -651,7 +651,7 @@ def test_rename_rescale_enhancer(tmp_path):
         "quux": "test data",
         "unchanged_string": "test data"
     }
-    assert trial.enhancement_categories == {
+    assert trial.categories == {
         "cat": ["unchanged_string", "quux"]
     }
 
@@ -712,7 +712,7 @@ def test_rename_rescale_enhancer_multiple_csvs(tmp_path):
         "quux": "test data",
         "unchanged_string": "test data"
     }
-    assert trial.enhancement_categories == {
+    assert trial.categories == {
         "cat": ["unchanged_string", "quux"]
     }
 
@@ -775,6 +775,6 @@ def test_rename_rescale_enhancer_with_scale(tmp_path):
     assert trial.enhancements == {
         "quux": 40,
     }
-    assert trial.enhancement_categories == {
+    assert trial.categories == {
         "value": ["quux"]
     }

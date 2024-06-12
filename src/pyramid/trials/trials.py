@@ -32,8 +32,8 @@ class Trial():
     enhancements: dict[str, Any] = field(default_factory=dict)
     """Name-data pairs, to add to the trial."""
 
-    enhancement_categories: dict[str, list[str]] = field(default_factory=dict)
-    """Enhancement names grouped by category, like "id", "value", or "time"."""
+    categories: dict[str, list[str]] = field(default_factory=dict)
+    """Categories to use for enhancements or buffered data, like "id", "value", or "time"."""
 
     def add_buffer_data(self, name: str, data: BufferData) -> bool:
         """Add named data to this trial, of a specific buffer data type that requires conversion before writing."""
@@ -74,10 +74,10 @@ class Trial():
         if isinstance(data, BufferData):
             return self.add_buffer_data(name, data)
         else:
-            if category not in self.enhancement_categories:
-                self.enhancement_categories[category] = []
-            if name not in self.enhancement_categories[category]:
-                self.enhancement_categories[category].append(name)
+            if category not in self.categories:
+                self.categories[category] = []
+            if name not in self.categories[category]:
+                self.categories[category].append(name)
             self.enhancements[name] = data
             return True
 

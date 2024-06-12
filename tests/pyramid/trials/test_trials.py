@@ -536,7 +536,7 @@ def test_enhance_trials():
             "duration": 1.0,
             "duration_plus_trial_number": 1.0
         },
-        enhancement_categories={
+        categories={
             "value": ["duration", "duration_plus_trial_number"]
         }
     )
@@ -559,7 +559,7 @@ def test_enhance_trials():
             "duration_plus_trial_number": 2.1,
             "extra": True
         },
-        enhancement_categories={
+        categories={
             "value": ["duration", "duration_plus_trial_number", "extra"]
         }
     )
@@ -580,7 +580,7 @@ def test_enhance_trials():
             "duration_plus_trial_number": 2 + 3.3 - 2.1,
             "extra": True
         },
-        enhancement_categories={
+        categories={
             "value": ["duration", "duration_plus_trial_number", "extra"]
         }
     )
@@ -600,7 +600,7 @@ def test_enhance_trials():
             "duration": None,
             "duration_plus_trial_number": None
         },
-        enhancement_categories={
+        categories={
             "value": ["duration", "duration_plus_trial_number"]
         }
     )
@@ -638,8 +638,8 @@ def test_add_buffer_data_and_enhancements():
 
     assert trial.get_enhancement("int") == 42
     assert trial.get_enhancement("string") == "a string!"
-    assert "int" in trial.enhancement_categories["value"]
-    assert "string" in trial.enhancement_categories["value"]
+    assert "int" in trial.categories["value"]
+    assert "string" in trial.categories["value"]
 
     # Enhancements should be unique by name.
     assert trial.add_enhancement("int", 42.42)
@@ -653,8 +653,8 @@ def test_add_buffer_data_and_enhancements():
     assert trial.add_enhancement("string_2", "another string!", "my_category")
     assert trial.get_enhancement("int_2") == 43
     assert trial.get_enhancement("string_2") == "another string!"
-    assert "int_2" in trial.enhancement_categories["my_category"]
-    assert "string_2" in trial.enhancement_categories["my_category"]
+    assert "int_2" in trial.categories["my_category"]
+    assert "string_2" in trial.categories["my_category"]
 
     # Enhancements can be lists with convenient element access.
     assert trial.add_enhancement("empty_list", [])
@@ -694,7 +694,7 @@ def test_add_buffer_data_and_enhancements():
             "empty_list": [],
             "list": [0, 1, 2]
         },
-        enhancement_categories={
+        categories={
             "value": ["int", "string", "empty_list", "list"],
             "my_category": ["int_2", "string_2"]
         }

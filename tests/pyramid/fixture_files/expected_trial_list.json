@@ -22,7 +22,7 @@
             "duration": 1.0,
             "percent_complete": 0.0
         },
-        "enhancement_categories": {
+        "categories": {
             "value": ["duration", "percent_complete"]
         }
     },
@@ -49,7 +49,7 @@
             "duration": 1.0,
             "percent_complete": 33.333333333333336
         },
-        "enhancement_categories": {
+        "categories": {
             "value": ["duration", "percent_complete"]
         }
     },
@@ -76,7 +76,7 @@
             "duration": 1.0,
             "percent_complete": 66.66666666666667
         },
-        "enhancement_categories": {
+        "categories": {
             "value": ["duration", "percent_complete"]
         }
     },
@@ -103,7 +103,7 @@
             "duration": null,
             "percent_complete": 100.0
         },
-        "enhancement_categories": {
+        "categories": {
             "value": ["duration", "percent_complete"]
         }
     }

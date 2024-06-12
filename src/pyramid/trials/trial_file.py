@@ -159,8 +159,8 @@ class JsonTrialFile(TrialFile):
         if trial.enhancements:
             raw_dict["enhancements"] = trial.enhancements
 
-        if trial.enhancement_categories:
-            raw_dict["enhancement_categories"] = trial.enhancement_categories
+        if trial.categories:
+            raw_dict["categories"] = trial.categories
 
         return raw_dict
 
@@ -188,7 +188,7 @@ class JsonTrialFile(TrialFile):
             text_events=text_events,
             signals=signals,
             enhancements=raw_dict.get("enhancements", {}),
-            enhancement_categories=raw_dict.get("enhancement_categories", {})
+            categories=raw_dict.get("categories", {})
         )
         return trial
 
@@ -324,9 +324,9 @@ class Hdf5TrialFile(TrialFile):
             enhancements_json = json.dumps(trial.enhancements)
             trial_group.attrs["enhancements"] = enhancements_json
 
-        if trial.enhancement_categories:
-            categories_json = json.dumps(trial.enhancement_categories)
-            trial_group.attrs["enhancement_categories"] = categories_json
+        if trial.categories:
+            categories_json = json.dumps(trial.categories)
+            trial_group.attrs["categories"] = categories_json
 
     def load_trial(self, trial_group: h5py.Group) -> Trial:
         numeric_events = {}
@@ -353,11 +353,11 @@ class Hdf5TrialFile(TrialFile):
         else:
             enhancements = {}
 
-        categories_json = trial_group.attrs.get("enhancement_categories", None)
+        categories_json = trial_group.attrs.get("categories", None)
         if categories_json:
-            enhancement_categories = json.loads(categories_json)
+            categories = json.loads(categories_json)
         else:
-            enhancement_categories = {}
+            categories = {}
 
         if trial_group.attrs["end_time"].size < 1:
             end_time = None
@@ -371,6 +371,6 @@ class Hdf5TrialFile(TrialFile):
             text_events=text_events,
             signals=signals,
             enhancements=enhancements,
-            enhancement_categories=enhancement_categories
+            categories=categories
         )
         return trial

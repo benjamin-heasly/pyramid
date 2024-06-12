@@ -48,7 +48,7 @@ enhancements.empty_list = [];
 enhancements.dict = struct('a', 1, 'b', 2);
 enhancements.list = {'a'; 1; 'b'; 2};
 
-enhancement_categories.value = fieldnames(enhancements);
+categories.value = fieldnames(enhancements);
 
 % A simple trial with no data added.
 trials(1).start_time = 0;
@@ -58,7 +58,7 @@ trials(1).numeric_events = [];
 trials(1).text_events = [];
 trials(1).signals = [];
 trials(1).enhancements = [];
-trials(1).enhancement_categories = [];
+trials(1).categories = [];
 
 % A trial with only numeric events.
 trials(2).start_time = 1;
@@ -70,7 +70,7 @@ trials(2).numeric_events.complex = complexNumericEvents;
 trials(2).text_events = [];
 trials(2).signals = [];
 trials(2).enhancements = [];
-trials(2).enhancement_categories = [];
+trials(2).categories = [];
 
 % A trial with only text events
 trials(3).start_time = 1.5;
@@ -82,7 +82,7 @@ trials(3).text_events.short = shortTextEvents;
 trials(3).text_events.long = longTextEvents;
 trials(3).signals = [];
 trials(3).enhancements = [];
-trials(3).enhancement_categories = [];
+trials(3).categories = [];
 
 % A trial with only signals.
 trials(4).start_time = 2;
@@ -94,7 +94,7 @@ trials(4).signals.empty = emptySignal;
 trials(4).signals.simple = simpleSignal;
 trials(4).signals.complex = complexSignal;
 trials(4).enhancements = [];
-trials(4).enhancement_categories = [];
+trials(4).categories = [];
 
 % A trial with only per-trial enhancements.
 trials(5).start_time = 3;
@@ -104,7 +104,7 @@ trials(5).numeric_events = [];
 trials(5).text_events = [];
 trials(5).signals = [];
 trials(5).enhancements = enhancements;
-trials(5).enhancement_categories = enhancement_categories;
+trials(5).categories = categories;
 
 % A trial with everyting!
 trials(6).start_time = 4;
@@ -120,4 +120,4 @@ trials(6).signals.empty = emptySignal;
 trials(6).signals.simple = simpleSignal;
 trials(6).signals.complex = complexSignal;
 trials(6).enhancements = enhancements;
-trials(6).enhancement_categories = enhancement_categories;
+trials(6).categories = categories;

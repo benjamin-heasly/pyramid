@@ -226,7 +226,7 @@ trials =
     text_events
     signals
     enhancements
-    enhancement_categories
+    categories
 
 >> events = [trials.numeric_events]
 
@@ -256,7 +256,7 @@ trials =
     text_events
     signals
     enhancements
-    enhancement_categories
+    categories
 ```
 
 ## HDF5 trial file
@@ -289,7 +289,7 @@ trials =
     text_events
     signals
     enhancements
-    enhancement_categories
+    categories
 
 >> events = [trials.numeric_events]
 
@@ -313,5 +313,5 @@ trials =
     text_events
     signals
     enhancements
-    enhancement_categories
+    categories
 ```

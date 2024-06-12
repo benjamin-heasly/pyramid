@@ -41,8 +41,8 @@ classdef Hdf5TrialIterator < handle
                     case 'enhancements'
                         % JSON encoding supports nested enhancements.
                         trial.enhancements = jsondecode(attribute.Value);
-                    case 'enhancement_categories'
-                        trial.enhancement_categories = jsondecode(attribute.Value);
+                    case 'categories'
+                        trial.categories = jsondecode(attribute.Value);
                     otherwise
                         trial.(attribute.Name) = attribute.Value;
                 end

@@ -50,7 +50,7 @@ class PairedCodesEnhancer(TrialEnhancer):
     rules_csv is one or more .csv files where each row contains a rule for how to extract a property from the
     named buffer.  Each .csv must have the following columns:
 
-        - "type": Used to select relevant rows of the .csv, and also the trial enhancement category to
+        - "type": Used to select relevant rows of the .csv, and also the trial category to
                   use for each property.  By defalt only types "id" and "value" will be used.
                   Pass in rule_types to change this default.
         - "value": a numeric value that represents a property, for example 1010
@@ -141,7 +141,7 @@ class EventTimesEnhancer(TrialEnhancer):
     rules_csv is one or more .csv files where each row contains a rule for how to extract events from the
     named buffer.  Each .csv must have the following columns:
 
-        - "type": Used to select relevant rows of the .csv, and also the trial enhancement category to
+        - "type": Used to select relevant rows of the .csv, and also the trial category to
                   use for each property.  By defalt only the type "time" will be used.
                   Pass in rule_types to change this default.
         - "value": a numeric value that represents a property, for example 1010
@@ -423,7 +423,7 @@ class SaccadesEnhancer(TrialEnhancer):
         min_duration_ms: float = 5.0,           Minimum duration in ms of a saccade for it to count (default 5.0).
         max_duration_ms: float = 90.0,          Maximum duration in ms of a saccade for it to count (default 90.0).
         saccades_name:                          Trial enhancement name to use when adding detected saccades (default "saccades").
-        saccades_category:                      Trial enhancement category to use when adding detected saccades (default "saccades").
+        saccades_category:                      Trial category to use when adding detected saccades (default "saccades").
     """
 
     def __init__(
@@ -685,7 +685,7 @@ class RenameRescaleEnhancer(TrialEnhancer):
                 if scale is not None and isinstance(trial.enhancements[new_name], Number):
                     trial.enhancements[new_name] *= scale
 
-                for names in trial.enhancement_categories.values():
+                for names in trial.categories.values():
                     if old_name in names:
                         names.remove(old_name)
                         names.append(new_name)
