@@ -619,13 +619,14 @@ class RenameRescaleEnhancer(TrialEnhancer):
                             "value":    name of an existing trial buffer or enhancement, for example "1010"
                             "name":     new name to use for the same buffer or enhancement, for example "fp_on"
                             "scale":    optinal scale factor to apply to buffer values
+                            "type":     a category to use for the named buffer or enhancement, for example "id" or "time"
 
         file_finder:    a utility to find() files in the conigured Pyramid configured search path.
                         Pyramid will automatically create and pass in the file_finder for you.
         dialect:        CSV dialect to pass on to the .csv reader
         fmtparams:      Additional format parameters to pass on to the .csv reader.
 
-    The expected .csv column names "value", "name", and "scale" were chosen to match the column names expected by
+    The expected .csv column names "value", "name", "scale", and "type" were chosen to match the column names expected by
     PairedCodesEnhancer and EventTimesEnhancer.
     """
 
@@ -656,7 +657,8 @@ class RenameRescaleEnhancer(TrialEnhancer):
                         scale = float(raw_scale)
                     else:
                         scale = None
-                    rules[old_name] = (new_name, scale)
+                    new_category = row.get('type', None)
+                    rules[old_name] = (new_name, scale, new_category)
         self.rules = rules
 
     def enhance(
@@ -666,7 +668,7 @@ class RenameRescaleEnhancer(TrialEnhancer):
         experiment_info: dict[str: Any],
         subject_info: dict[str: Any]
     ) -> None:
-        for old_name, (new_name, scale) in self.rules.items():
+        for old_name, (new_name, scale, new_category) in self.rules.items():
             if old_name in trial.signals:
                 trial.signals[new_name] = trial.signals.pop(old_name)
                 if scale is not None:
@@ -685,7 +687,14 @@ class RenameRescaleEnhancer(TrialEnhancer):
                 if scale is not None and isinstance(trial.enhancements[new_name], Number):
                     trial.enhancements[new_name] *= scale
 
-                for names in trial.categories.values():
-                    if old_name in names:
-                        names.remove(old_name)
-                        names.append(new_name)
+            if new_category is None:
+                # Rename the value in any category where it already appears.
+                affected_categories = trial.remove_from_category(old_name)
+                for category in affected_categories:
+                    trial.add_to_category(new_name, category)
+            else:
+                # Rename the old name from any category where it already appears.
+                trial.remove_from_category(old_name)
+
+                # Add the new name to a new category.
+                trial.add_to_category(new_name, new_category)

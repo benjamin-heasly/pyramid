@@ -778,3 +778,59 @@ def test_rename_rescale_enhancer_with_scale(tmp_path):
     assert trial.categories == {
         "value": ["quux"]
     }
+
+
+def test_rename_rescale_enhancer_with_type(tmp_path):
+    # Write out a .csv file with rules in it.
+    rules_csv = Path(tmp_path, "rules.csv")
+    with open(rules_csv, 'w') as f:
+        f.write('value,name,type\n')
+        f.write('42,foo,value\n')
+        f.write('43,bar,id\n')
+        f.write('44,baz,time\n')
+        f.write('777,quux,more special\n')
+
+    enhancer = RenameRescaleEnhancer(rules_csv, file_finder=FileFinder())
+
+    trial = Trial(
+        start_time=0,
+        end_time=20,
+        wrt_time=0
+    )
+
+    # Populate the trial with buffer data and enhancements.
+    # Some will get renamed according to rules, some will stay the same.
+    assert trial.add_buffer_data("42", SignalChunk.empty())
+    assert trial.add_buffer_data("43", NumericEventList.empty())
+    assert trial.add_buffer_data("44", TextEventList.empty())
+    assert trial.add_enhancement("777", "test data", "less special")
+
+    enhancer.enhance(trial, 0, {}, {})
+
+    assert trial.signals == {
+        "foo": SignalChunk.empty(),
+    }
+
+    assert trial.numeric_events == {
+        "bar": NumericEventList.empty(),
+    }
+
+    assert trial.text_events == {
+        "baz": TextEventList.empty(),
+    }
+
+    assert trial.enhancements == {
+        "quux": "test data",
+    }
+
+    # The original "less special" category for enhancement 777 should be gone.
+    assert "less special" not in trial.categories
+
+    # Each buffer data or enhancement should get a category from the rules.
+    # The updated "more special" category should be used after renaming 777 -> quux
+    assert trial.categories == {
+        "value": ["foo"],
+        "id": ["bar"],
+        "time": ["baz"],
+        "more special": ["quux"]
+    }

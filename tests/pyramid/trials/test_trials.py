@@ -702,6 +702,45 @@ def test_add_buffer_data_and_enhancements():
     assert trial == expected_trial
 
 
+def test_trial_manage_categories():
+    # Add several names (like enhancement or buffer names) to a trial.
+    trial = Trial(start_time=0.0, end_time=1.0)
+    trial.add_to_category("foo", "id")
+    trial.add_to_category("bar", "id")
+    trial.add_to_category("baz", "value")
+    trial.add_to_category("baz", "time")
+    trial.add_to_category("quux", "time")
+
+    assert trial.categories == {
+        "id": ["foo", "bar"],
+        "value": ["baz"],
+        "time": ["baz", "quux"]
+    }
+
+    # Remove names and get the affected categories.
+    assert trial.remove_from_category("bogus") == []
+    assert trial.remove_from_category("bar") == ["id"]
+    assert trial.categories == {
+        "id": ["foo"],
+        "value": ["baz"],
+        "time": ["baz", "quux"]
+    }
+
+    assert trial.remove_from_category("baz") == ["value", "time"]
+    assert trial.categories == {
+        "id": ["foo"],
+        "time": ["quux"]
+    }
+
+    assert trial.remove_from_category("quux") == ["time"]
+    assert trial.categories == {
+        "id": ["foo"]
+    }
+
+    assert trial.remove_from_category("foo") == ["id"]
+    assert trial.categories == {}
+
+
 def test_trial_get_values_and_times():
     # Populate the trial with buffer data and enhancements.
     trial = Trial(start_time=0.0, end_time=None)

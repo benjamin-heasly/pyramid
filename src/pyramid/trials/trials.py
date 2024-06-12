@@ -74,12 +74,32 @@ class Trial():
         if isinstance(data, BufferData):
             return self.add_buffer_data(name, data)
         else:
-            if category not in self.categories:
-                self.categories[category] = []
-            if name not in self.categories[category]:
-                self.categories[category].append(name)
+            self.add_to_category(name, category)
             self.enhancements[name] = data
             return True
+
+    def add_to_category(self, name: str, category: str):
+        """Add the name of an enhancement or buffer data to the given category (create category if needed)."""
+        if category not in self.categories:
+            self.categories[category] = []
+        if name not in self.categories[category]:
+            self.categories[category].append(name)
+
+    def remove_from_category(self, name: str) -> list[str]:
+        """Remove the name of an enhancement or buffer from any categories where it appears.  Return the category names."""
+        # Remove the name from any category where it appears.
+        affected_categories = []
+        for category, names in self.categories.items():
+            if name in names:
+                names.remove(name)
+                affected_categories.append(category)
+
+        # Clean up categories that are now empty as a result.
+        for category in affected_categories:
+            if not self.categories[category]:
+                del self.categories[category]
+
+        return affected_categories
 
     def get_enhancement(self, name: str, default: Any = None) -> Any:
         """Get the value of a previously added enhancement, or return the given default."""
