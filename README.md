@@ -13,7 +13,7 @@ Here's an overview of the Pyramid flow:
 
 ## Read Sources
 
-Pyramid can read data from various sources and synthesize these to suite a given experiment / paradigm.
+Pyramid can read data from various sources and synthesize these to suit a given experiment / paradigm.
 As of writing (June 2024), Pyramid supports:
 
  - CSV files
