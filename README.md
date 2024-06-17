@@ -118,7 +118,7 @@ Pyramid supports Trial Files as:
 
 When writing either format, Pyramid appends one trial at a time and leaves the file in a consistent state between trials.
 
-Likewise, either format supports reading trials one at a time and doesn't require downstream processing to load the entire data into memory.
+Likewise, either format supports reading trials one at a time so downstream processing won't have to load the entire file into memory.
 
 ## Load Trials
 
