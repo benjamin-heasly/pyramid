@@ -134,12 +134,15 @@ def test_signal_smoother_golay():
 
     # The delta spike should get smooshed down, into 5 neighboring samples.
     expected_samples = np.zeros([20, 1])
-    expected_samples[8, 0] = -0.08571428571428594
-    expected_samples[9, 0] = 0.34285714285714297
-    expected_samples[10, 0] = 0.4857142857142857
-    expected_samples[11, 0] = 0.3428571428571429
-    expected_samples[12, 0] = -0.08571428571428562
+    expected_samples[8, 0] = -0.085714285714
+    expected_samples[9, 0] = 0.342857142857
+    expected_samples[10, 0] = 0.485714285714
+    expected_samples[11, 0] = 0.342857142857
+    expected_samples[12, 0] = -0.085714285714
 
     # The signal smoother should modify the signal sample data in place.
     signal_smoother.enhance(trial, trial_number=0, experiment_info={}, subject_info={})
-    assert np.array_equal(signal.sample_data, expected_samples)
+
+    # Round to 12 decimal places for comparison because trailing places seem to be machine-specific.
+    rounded_sample_data = signal.sample_data.round(12)
+    assert np.array_equal(rounded_sample_data, expected_samples)
