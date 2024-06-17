@@ -25,7 +25,7 @@ As of writing (June 2024), Pyramid supports:
 Pyramid readers are extensible, so you can add your own to use locally and/or contribute them to the project.
 
 The Readers are designed to view data in a sliding window over time, so as not to load entire data sets into memory.
-This should allow Pyramid able to work with live, online data as well as large data files.
+This should allow Pyramid to work with live, online data as well as large data files.
 
 ## Share Data Model: *The Neutral Zone*
 
