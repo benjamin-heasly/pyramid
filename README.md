@@ -97,7 +97,7 @@ Plotters are callbacks that accept one new trial at a time and create or update 
 Pyramid has Plotters for:
 
  - plotting signals over time
- - showign raw numeric events over time
+ - showing raw numeric events over time
  - listing text events over time
  - plotting trial x-y data, like targets and saccades
  - plotting numeric events as spike rasters
