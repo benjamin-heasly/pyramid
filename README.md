@@ -109,7 +109,7 @@ Plotting data may be helpful when following live data, when replaying data from 
 ## Write Trial File
 
 The main output of Pyramid is a "Trial File".
-This records the sequence of trials that Pyramdid found for a given run / data set / experiment session.
+This persists the sequence of trials that Pyramid found for a given run / data set / experiment session.
 
 Pyramid supports Trial Files as:
 
