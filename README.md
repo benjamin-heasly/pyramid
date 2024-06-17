@@ -81,8 +81,8 @@ Enhancers are callbacks that process trial data and can make modifications or ad
 
 For example, Pyramid has enhancers that can:
 
- - apply smoothing in place to one or more signals in a trial
- - parse trial saccades out of poit of gaze signals
+ - apply smoothing in place to trial signals
+ - parse trial saccades out of point of gaze signals
  - convert raw numeric codes into human-readable names and values
  - parse text into key-value pairs
  - apply a Python expression to trial signals, events, or other enhancements and save the result as a new enhnacement
