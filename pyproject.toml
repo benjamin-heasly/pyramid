@@ -16,7 +16,7 @@ classifiers = [
   "License :: OSI Approved :: The Unlicense (Unlicense)",
   "Operating System :: OS Independent",
 ]
-dependencies = ["numpy", "matplotlib", "PyYAML", "graphviz", "h5py", "pyzmq", "scipy", "open-ephys-python-tools"]
+dependencies = ["numpy==1.25.2", "matplotlib==3.8.0", "PyYAML==6.0", "graphviz==0.20.1", "h5py==3.8.0", "pyzmq==25.1.1", "scipy==1.11.4", "open-ephys-python-tools==0.1.8"]
 dynamic = ["version"]
 
 [project.urls]
