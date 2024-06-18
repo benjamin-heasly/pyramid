@@ -131,12 +131,28 @@ Python users can import Pyramid's own [trial_file](./src/pyramid/trials/trial_fi
 
 Matlab users can add the [matlab/](./matlab/) subfolder of this repo to the Matlab path and use the `TrialFile` Matlab class to iterate over trials.
 
-# Declarative Confituration with YAML
 
-Data sources and trials are configured in a declarative style based on an experiment YAML file.
+# Documentation
 
-WIP...
+Here are some docs with details about how to use Pyramid and examples you can run.
 
+For installation instructions, see [Installation](#installation) below.
+
+## Declarative Confituration with YAML
+
+All of the steps descried above can be confgiured and customized declaratively, via a YAML file.
+The Pyramid YAML file for your experiment / paradigm is what drive's Pyramid's behavior.
+It captures the outline and the details of what you want Pyramid to do.
+
+For a detailed, informal schema of Pyramid YAML files -- expected syntax, what's supported, links to code, etc. -- please see the [yaml-schema.md](./docs/reference/yaml-schema.md) here in this repo.
+
+## Tutorial and examples
+
+The [docs/](./docs/) folder of this repo contains several working examples that you can use to try workign with Pyramid.
+You might start with these two:
+
+ - [core-demo](./docs/core-demo/) is a minimal example that parses a few csvs into trials.
+ - [psychopy-demo](./docs/psychopy-demo/) is a more realistic demo that you can use to analyze a simple PsychoPy task.
 
 # Installation
 
@@ -203,10 +219,3 @@ hatch run test:cov
 
 Hatch is smart enough to install pytest automatically in the tests environment it creates.
 The reason I also install pytest manually is so that my IDE recognizes pytest for syntax highlighting, etc.
-
-
-# Documentation
-
-Please see some demos and other docs -- always works in progress, here this repo in the [docs](.docs/) folder.
-
-WIP ...
