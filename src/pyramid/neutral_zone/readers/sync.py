@@ -8,11 +8,11 @@ from operator import itemgetter
 class ReaderSyncConfig():
     """Specify configuration for how a reader should find sync events and align to a reference clock."""
 
-    is_reference: str = False
-    """Whether the reader represents the canonical, reference clock to which others readers will be aligned."""
-
     buffer_name: str = None
     """The name of the reader result or extra buffer that will contain sync events."""
+
+    is_reference: bool = False
+    """Whether the reader represents the canonical, reference clock to which others readers will be aligned."""
 
     filter: str = None
     """Expression to evaluate and select events from the named buffer.

@@ -597,7 +597,7 @@ def configure_trials(
     """Load the "trials:" section of an experiment YAML file."""
 
     start_buffer_name = trials_config.get("start_buffer", "start")
-    start_value = trials_config.get("start_value", 0.0)
+    start_value = trials_config.get("start_value", None)
     start_value_index = trials_config.get("start_value_index", 0)
     trial_start_time = trials_config.get("trial_start_time", 0.0)
     trial_count = trials_config.get("trial_count", 0)
@@ -610,7 +610,7 @@ def configure_trials(
     )
 
     wrt_buffer_name = trials_config.get("wrt_buffer", "wrt")
-    wrt_value = trials_config.get("wrt_value", 0.0)
+    wrt_value = trials_config.get("wrt_value", None)
     wrt_value_index = trials_config.get("wrt_value_index", 0)
 
     other_buffers = {name: buffer for name, buffer in named_buffers.items()

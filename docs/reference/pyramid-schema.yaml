@@ -1,0 +1,269 @@
+# This is an informal schema reference that outlines everything you can put in a Pyramid YAML file.
+# See also yaml-config.md in this repo for more commentary on what you can do with Pyramid YAML.
+#
+# Most of the keys used below are the literal keys that Pyramid will look for, for example
+# 'readers', 'start_buffer', 'class', and 'args'.
+# These can be REQUIRED or Optional.
+#
+# Keys below that start with the prefix 'my_' are placeholders for user-chosen names, for example
+# 'my_reader_1', 'my_reader_2', and 'my_arg_1'.
+#
+# The whole YAML file is itself a key-value mapping with top-level keys
+# 'experiment', 'readers', 'trials', and 'plotters'.
+
+
+# Optional.
+# Info about experiment, lab, institution, etc.
+# Dict of experiment info passed to enhancers, collecters, and plotters.
+experiment:
+  my_info_1: my_value_1
+  my_info_2: my_value_2
+
+# REQUIRED.
+# Configure data sources to read into Neutral Zone buffers.
+# Keys are reader names.
+# Values are how to construct and configure each reader and its buffers.
+readers:
+
+  # Any unique name for the reader.
+  my_reader_1:
+
+    # REQUIRED.
+    # Built-in or custom package, module, and class name to instantiate.
+    class: package.module.ReaderClassName
+
+    # Optional.
+    # For custom reader class, local path where the package is located.
+    package_path: dir/containing/package
+
+    # Optional.
+    # Class-specific keyword arguments to pass to the reader class constructor.
+    # Command line override for my_arg_1 could be: --readers my_reader_1.my_arg_1=override_1
+    args:
+      my_arg_1: my_value_1
+      my_arg_2: my_value_2
+
+    # Optional.
+    # How many empty reads in a row are allowed when querying for data at or before a trial end time.
+    empty_reads_allowed: 3
+
+    # Optional.
+    # Whether to pause in real time between data reads, as if replaying a session.
+    simulate_delay: False
+
+    # Optional.
+    # Keys are names of new buffers to add to The Neutral Zone.
+    # These are in addition to result buffers produced by the reader itself.
+    # Values are how to copy and/or transform data reader results into each extra buffer.
+    extra_buffers:
+
+      # Any unique name for the extra buffer.
+      my_buffer_1:
+
+        # REQUIRED.
+        # The name of a reader result buffer to copy data from.
+        reader_result_name: reader_result_1
+
+        # Optional.
+        # List of transformers to apply sequentially to reader_result_name buffer.
+        transformers:
+
+          # REQUIRED.
+          # Built-in or custom package, module, and class name to instantiate.
+          - class: package.module.TransformerClassName
+
+            # Optional.
+            # For custom transformer class, local path where the package is located.
+            package_path: dir/containing/package
+
+            # Optional.
+            # Class-specific keyword arguments to pass to the transformer class constructor.
+            args:
+              my_arg_1: my_value_1
+              my_arg_2: my_value_2
+
+          # Same schema as first transformers list element.
+          # Multiple transformers are allowed.
+          - class: package.module.TransformerClassName
+
+      # Same schema as my_buffer_1.
+      # Multiple extra buffers are allowed.
+      my_buffer_2:
+        reader_result_name: reader_result_2
+
+    # Optional.
+    # How to find and apply clock sync events for this reader.
+    sync:
+
+      # Required.
+      # The result or extra buffer for this reader that will have sync events.
+      buffer_name: my_buffer_1
+
+      # Optional.
+      # Whether this reader represents the canonical clock to which other data should be aligned.
+      is_reference: False
+
+      # Optional.
+      # Name to use for this reader when reading or applying sync events.
+      # Default null/None means use the reader's own name, ie my_reader_1.
+      reader_name: null
+
+      # Optional.
+      # Python bool expression for selecting events from buffer_name.
+      # May refer to variables with data for each event: timestamp, value, and count.
+      # Default null/None means let all events pass.
+      filter: null
+
+      # Optional.
+      # Python float expression for choosing a timestamp for each event that passes filter.
+      # May refer to variables with data for each event: timestamp, value, and count.
+      # Default null/None means take original event's timetamp.
+      timestamps: null
+
+      # Optional.
+      # Python float expression for choosing a pairing key for each event that passes filter.
+      # May refer to variables with data for each event: timestamp, value, and count.
+      # Default null/None means take result of timestamp expression.
+      keys: null
+
+      # Optional.
+      # How many sync events to try to read at startup, before delimiting trials.
+      init_event_count: 10
+
+      # Optional.
+      # How many times to try reading, when looking for init_event_count.
+      init_max_reads: 100
+
+      # Optional.
+      # How to use keys to pair up events between readers.
+      # One of: "closest", "max", or "last equal".
+      pairing_strategy: closest
+
+      # Optional.
+      # Padding to add to query time range when looking for sync events at or before a trial end time.
+      pairing_padding: 0.01
+
+      # Optional
+      # Snap computed query times to known sync event times, when results are at least this close.
+      sync_snap_threshold: 0.000001
+
+  # Same schema as my_reader_1.
+  # Multiple readers area allowed.
+  my_reader_2:
+    class: package.module.ReaderClassName
+
+# REQUIRED.
+# How to delimit, align, and populate trials from on buffers in The Neutral Zone.
+trials:
+
+  # REQUIRED.
+  # Name of a buffer in The Neutral Zone that has trial-delimiting events.
+  start_buffer: my_buffer_1
+
+  # Optional.
+  # Index into start_buffer event values.
+  start_value_index: 0
+
+  # Optional.
+  # Which events in start_buffer are trial-delimiting events?
+  # Default null/None means use all events.
+  start_value: null
+
+  # REQUIRED.
+  # Name of a buffer in The Neutral Zone that has trial-aligning events.
+  wrt_buffer: my_buffer_1
+
+  # Optional.
+  # Index into wrt_buffer event values.
+  wrt_value_index: 0
+
+  # Optional.
+  # Which events in wrt_buffer are trial-aligning events?
+  # Default null/None means use all events.
+  wrt_value: null
+
+  # Optional.
+  # Time to use for the start of the first trial.
+  trial_start_time: 0
+
+  # Optional.
+  # Count/index to use for the first trial.
+  trial_count: 0
+
+  # Optional.
+  # List of enhancers to apply sequentially to each trial, as trials arrive.
+  enhancers:
+
+    # REQUIRED.
+    # Built-in or custom package, module, and class name to instantiate.
+    - class: package.module.EnhancerClassName
+
+      # Optional.
+      # For custom enhancer class, local path where the package is located.
+      package_path: dir/containing/package
+
+      # Optional.
+      # Python boolean expression to choose which trials get this enhancement.
+      # May refer to buffers (signals, text events, and numeric events) and enhancements by name, as local variables.
+      # Default null/None means always all trials get this enhancement.
+      when: null
+
+      # Optional.
+      # Class-specific keyword arguments to pass to the enhancer class constructor.
+      args:
+        my_arg_1: my_value_1
+        my_arg_2: my_value_2
+
+    # Same schema as first enhancers list element.
+    # Multiple enhancers are allowed.
+    - class: package.module.EnhancerClassName
+
+  # Optional.
+  # List of collecters to apply sequentially to each trial, after all trials are known.
+  collecters:
+
+    # REQUIRED.
+    # Built-in or custom package, module, and class name to instantiate.
+    - class: package.module.CollecterClassName
+
+      # Optional.
+      # For custom collecter class, local path where the package is located.
+      package_path: dir/containing/package
+
+      # Optional.
+      # Python boolean expression to choose which trials get this collecter.
+      # May refer to buffers (signals, text events, and numeric events) and enhancements by name, as local variables.
+      # Default null/None means always all trials get this collecter.
+      when: null
+
+      # Optional.
+      # Class-specific keyword arguments to pass to the collecter class constructor.
+      args:
+        my_arg_1: my_value_1
+        my_arg_2: my_value_2
+
+    # Same schema as first collecters list element.
+    # Multiple collecters are allowed.
+    - class: package.module.CollecterClassName
+
+# Optional.
+# List of plot figures to create and update as trials arrive.
+plotters:
+
+  # REQUIRED.
+  # Built-in or custom package, module, and class name to instantiate.
+  - class: package.module.PlotterClassName
+
+    # Optional.
+    # For custom plotter class, local path where the package is located.
+    package_path: dir/containing/package
+
+    # Optional.
+    # Class-specific keyword arguments to pass to the plotter class constructor.
+    args:
+      my_arg_1: my_value_1
+      my_arg_2: my_value_2
+
+  # Same schema as first plotters list element.
+  # Multiple plotters are allowed.
+  - class: package.module.PlotterClassName
