@@ -42,10 +42,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                         help="Reader args eg: --readers reader_name.arg_name=value reader_name.arg_name=value ...")
     parser.add_argument("--trial-file", '-f',
                         type=str,
-                        help="JSON trial file to write")
+                        help="Trial file to write: (.json or .jsonl) -> JSON lines, (.hdf, .h5, .hdf5, or .he5) -> HDF5")
     parser.add_argument("--graph-file", '-g',
                         type=str,
-                        help="Graph file to write")
+                        help="Graph file to write: several formats supported like .pfd and .png")
     parser.add_argument("--plot-positions", "-p",
                         type=str,
                         default=None,
