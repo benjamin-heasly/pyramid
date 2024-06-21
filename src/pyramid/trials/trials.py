@@ -404,10 +404,9 @@ class TrialExtractor():
             trial.wrt_time = 0.0
 
         for name, buffer in self.named_buffers.items():
-            data = buffer.data.copy_time_range(
-                buffer.reference_time_to_raw(trial.start_time),
-                buffer.reference_time_to_raw(trial.end_time)
-            )
+            raw_start_time = buffer.reference_time_to_raw(trial.start_time)
+            raw_end_time = buffer.reference_time_to_raw(trial.end_time)
+            data = buffer.data.copy_time_range(raw_start_time, raw_end_time)
             raw_wrt_time = buffer.reference_time_to_raw(trial.wrt_time)
             data.shift_times(-raw_wrt_time)
             trial.add_buffer_data(name, data)
