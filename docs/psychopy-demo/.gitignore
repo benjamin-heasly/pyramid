@@ -1,2 +1,7 @@
 # PsychoPy session data
 data/
+hello_pyramid_lastrun.py
+
+# Pyramid trial files
+hello_pyramid.json
+hello_pyramid.hdf5

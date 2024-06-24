@@ -13,7 +13,7 @@ readers:
   wide_reader:
     class: pyramid.neutral_zone.readers.csv.WideCsvEventReader
     args:
-      csv_file: data/690122_hello_pyramid_2024-05-09_15h57.06.136.csv
+      csv_file: data/539585_hello_pyramid_2024-06-24_14h24.35.502.csv
       first_row_is_header: true
       column_config:
         trial_started:
@@ -22,7 +22,7 @@ readers:
         pause_started:
           column_selector: [pause.started]
           numeric: true
-        trial_wrt:
+        cue_started:
           column_selector: [cue.started]
           numeric: true
         prompt:
@@ -55,19 +55,24 @@ readers:
 trials:
   # How to delimit Trials in time, and how to align data within each trial.
   start_buffer: trial_started
-  start_value: null
-  wrt_buffer: trial_wrt
-  wrt_value: null
+  wrt_buffer: cue_started
   enhancers:
     - class: pyramid.trials.standard_enhancers.ExpressionEnhancer
+      args:
+        expression: clicked_name.first() is not None
+        value_name: complete_trial
+    - class: pyramid.trials.standard_enhancers.ExpressionEnhancer
+      when: complete_trial
       args:
         expression: clicked_name.first() == correct_target.first()
         value_name: correct
     - class: pyramid.trials.standard_enhancers.ExpressionEnhancer
+      when: complete_trial
       args:
         expression: clicked_name.start() - cue.start()
         value_name: reaction_time
     - class: pyramid.trials.standard_enhancers.ExpressionEnhancer
+      when: complete_trial
       args:
         expression: (cue.first() == '<---' and correct_target.first() == 'right') or (cue.first() == '--->' and correct_target.first() == 'left')
         value_name: miscue
@@ -77,7 +82,7 @@ plotters:
   - class: pyramid.plotters.standard_plotters.TextEventsPlotter
   - class: pyramid.plotters.standard_plotters.SignalChunksPlotter
     args:
-      xmin: -1.0
+      xmin: -5.0
       xmax: 5.0
       match_pattern: mouse_position
       ylabel: mouse position
