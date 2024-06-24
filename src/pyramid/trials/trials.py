@@ -345,7 +345,7 @@ class TrialExpression():
             }
             return eval(self.compiled_expression, {}, locals)
         except:
-            logging.warning(f"Error evaluating TrialExpression: {self.compiled_expression}", exc_info=True)
+            logging.warning(f"Error evaluating TrialExpression: {self.expression}", exc_info=True)
             logging.warning(f"Returning TrialExpression default value: {self.default_value}")
             return self.default_value
 

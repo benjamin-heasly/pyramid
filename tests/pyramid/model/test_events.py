@@ -10,8 +10,6 @@ def test_numeric_list_getters():
     event_list = NumericEventList(event_data)
 
     assert event_list.event_count() == event_count
-
-    assert event_list.event_count() == event_count
     assert event_list.values_per_event() == 1
     assert np.array_equal(event_list.times(), np.array(range(event_count)))
     assert np.array_equal(event_list.values(), 10*np.array(range(event_count)))
@@ -59,6 +57,73 @@ def test_numeric_list_getters():
         assert values == [10 * index]
         each_count += 1
     assert each_count == event_count
+
+
+def test_numeric_list_getters_times_only():
+    event_count = 100
+    raw_data = [[t] for t in range(event_count)]
+    event_data = np.array(raw_data)
+    event_list = NumericEventList(event_data)
+
+    assert event_list.event_count() == event_count
+    assert event_list.values_per_event() == 0
+    assert np.array_equal(event_list.times(), np.array(range(event_count)))
+    assert event_list.values() is None
+
+    assert event_list.first() == None
+    assert event_list.first(0) == None
+    assert event_list.last() == None
+    assert event_list.last(0) == None
+    assert event_list.values(start_time=60, end_time=40) is None
+
+    assert event_list.at(-1) == None
+    assert event_list.at(0) == None
+    assert event_list.at(50) == None
+    assert event_list.at(50, 0) == None
+
+    assert event_list.start() == 0
+    assert event_list.end() == 99
+    assert np.array_equal(event_list.times(10.0), [])
+
+    each_count = 0
+    for index, (timestamp, values) in enumerate(event_list.each()):
+        assert timestamp == index
+        assert values == None
+        each_count += 1
+    assert each_count == event_count
+
+
+def test_numeric_list_getters_single_time_only():
+    raw_data = [[42]]
+    event_data = np.array(raw_data)
+    event_list = NumericEventList(event_data)
+
+    assert event_list.event_count() == 1
+    assert event_list.values_per_event() == 0
+    assert np.array_equal(event_list.times(), [42])
+    assert event_list.values() is None
+
+    assert event_list.first() == None
+    assert event_list.first(0) == None
+    assert event_list.last() == None
+    assert event_list.last(0) == None
+    assert event_list.values(start_time=60, end_time=40) is None
+
+    assert event_list.at(-1) == None
+    assert event_list.at(0) == None
+    assert event_list.at(50) == None
+    assert event_list.at(50, 0) == None
+
+    assert event_list.start() == 42
+    assert event_list.end() == 42
+    assert np.array_equal(event_list.times(10.0), [])
+
+    each_count = 0
+    for index, (timestamp, values) in enumerate(event_list.each()):
+        assert timestamp == 42
+        assert values == None
+        each_count += 1
+    assert each_count == 1
 
 
 def test_numeric_list_append():

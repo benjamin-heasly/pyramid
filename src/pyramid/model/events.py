@@ -71,14 +71,18 @@ class NumericEventList(BufferData):
 
     def start(self) -> float:
         """Get the time of the first data item still in the buffer."""
-        if self.event_count():
+        if self.values_per_event() == 0:
             return self.event_data.min()
+        elif self.event_count():
+            return self.event_data[:, 0].min()
         else:
             return None
 
     def end(self) -> float:
         """Implementing BufferData superclass."""
-        if self.event_count():
+        if self.values_per_event() == 0:
+            return self.event_data.max()
+        elif self.event_count():
             return self.event_data[:, 0].max()
         else:
             return None
@@ -99,8 +103,11 @@ class NumericEventList(BufferData):
         if value is None:
             return self.event_data[rows_in_range, 0]
         else:
-            value_column = value_index + 1
-            matching_rows = (self.event_data[:, value_column] == value)
+            if self.values_per_event() == 0:
+                matching_rows = np.repeat(False, self.event_data.shape[0])
+            else:
+                value_column = value_index + 1
+                matching_rows = (self.event_data[:, value_column] == value)
             return self.event_data[rows_in_range & matching_rows, 0]
 
     def apply_offset_then_gain(self, offset: float = 0, gain: float = 1, value_index: int = 0) -> None:
@@ -133,7 +140,10 @@ class NumericEventList(BufferData):
         Optional additional event values may be in event_data[:,2], event_data[:,3], etc.
         So, the number of values per event is (event_data.shape[1] - 1).
         """
-        return self.event_data.shape[1] - 1
+        if len(self.event_data.shape) > 1:
+            return self.event_data.shape[1] - 1
+        else:
+            return 0
 
     def copy_value_range(self, min: float = None, max: float = None, value_index: int = 0) -> Self:
         """Make a new list containing only events with values in half open interval [min, max).
@@ -163,7 +173,9 @@ class NumericEventList(BufferData):
 
     def first(self, value_index: int = 0):
         """Implementing BufferData superclass."""
-        if self.event_count():
+        if self.values_per_event() == 0:
+            return None
+        elif self.event_count():
             value_column = value_index + 1
             return self.event_data[0, value_column]
         else:
@@ -171,7 +183,9 @@ class NumericEventList(BufferData):
 
     def last(self, value_index: int = 0):
         """Implementing BufferData superclass."""
-        if self.event_count():
+        if self.values_per_event() == 0:
+            return None
+        elif self.event_count():
             value_column = value_index + 1
             return self.event_data[-1, value_column]
         else:
@@ -184,9 +198,12 @@ class NumericEventList(BufferData):
         end_time: float = None
     ) -> np.ndarray:
         """Implementing BufferData superclass."""
-        rows_in_range = self.get_time_selector(start_time, end_time)
-        value_column = value_index + 1
-        return self.event_data[rows_in_range, value_column]
+        if self.values_per_event() == 0:
+            return None
+        else:
+            rows_in_range = self.get_time_selector(start_time, end_time)
+            value_column = value_index + 1
+            return self.event_data[rows_in_range, value_column]
 
     def at(
         self,
@@ -194,6 +211,9 @@ class NumericEventList(BufferData):
         value_index: int = 0,
     ) -> Any:
         """Implementing BufferData superclass."""
+        if self.values_per_event() == 0:
+            return None
+
         at_or_after = np.nonzero(self.event_data[:,0] >= time)[0]
         if at_or_after.size == 0:
             return None
@@ -202,7 +222,10 @@ class NumericEventList(BufferData):
 
     def each(self) -> Iterator[tuple[float, list[float]]]:
         """Implementing BufferData superclass."""
-        return ((self.event_data[index, 0], self.event_data[index, 1:]) for index in range(self.event_count()))
+        if self.values_per_event() == 0:
+            return ((self.event_data[index], None) for index in range(self.event_count()))
+        else:
+            return ((self.event_data[index, 0], self.event_data[index, 1:]) for index in range(self.event_count()))
 
 
 @dataclass
