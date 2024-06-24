@@ -10,7 +10,6 @@ experiment:
     - PsychoPy
     - tutorial
 readers:
-  # This is getting verbose and repetetive for the "wide" style of CSV.
   wide_reader:
     class: pyramid.neutral_zone.readers.csv.WideCsvEventReader
     args:

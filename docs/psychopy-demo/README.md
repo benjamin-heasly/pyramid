@@ -8,12 +8,34 @@ This is a work in progress, towards an end-to-end tutorial for Pyramid:
  - reading a trial file in an analysis script
  - plotting your own data as a pshychometric function, reaction times, or similar
 
+The experiment
+ - screen shots
+ - description
+ - you can run it if you install psychopy!
+    - recommend GUI because it seems better supported
+    - running as Python script works too, but setup is messy and janky
+ - generate a data file
+ - or use a canned one here
+
+Pyramid
+ - configure to look at "long wide" CSV output from Pyramid
+ - identify events and signals to add to trials
+ - create a trial file
+ - load the trial file in Matlab
+ - plot a summary of the data
+   - separate miscue vs good cue
+   - summarize number and percent correct
+   - show mouse trails: green for correct, red for incorrect
+
 # PsychoPy
 
 https://psychopy.org/download.html
 
+Linux
+
 conda create -n psychopy python=3.10
 conda activate psychopy
+
 pip install psychopy
 
 Very slow:
@@ -23,6 +45,59 @@ Apparently slow is expected:
 Eventually completed some time over night
   Successfully built wxPython esprima html2text
   etc...
+
+```
+# a link error
+psychopy
+
+# seems OK
+LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6 psychopy
+```
+
+macOS
+
+brew install hdf5
+
+conda create -n psychopy python=3.10
+conda activate psychopy
+
+pip install psychopy
+
+psychopy
+
+Gui etc Seemed OK
+
+python hello_pyramid.py
+
+NameError: name 'backend' is not defined
+1.0672  ERROR   Failed to load any of the audioLibs: ['ptb']. Falling back to PsychToolbox ('ptb') backend for sound. Be sure to add 'ptb' to preferences to avoid seeing this message again.
+1.0692  ERROR   No audioLib could be loaded. Tried: ['ptb']
+ Check whether the necessary audioLibs are installed
+
+Same when running task from GUI.
+Screwed up stuff in there.
+
+Latest version, not on pypi?
+pip install git+https://github.com/psychopy/psychopy.git@2024.1.5
+Nope, same error.
+
+Standalone installer?
+https://www.psychopy.org/download.html
+
+Getting farther, saw fullscreen "measuring refresh rate"
+Hung there, then
+
+"RuntimeError: Error starting ioHub server: ioHub startup failed."
+
+What the heck is that?
+https://discourse.psychopy.org/t/runtimeerror-error-starting-iohub-server-iohub-startup-failed-exit-code-1/29807
+
+Workround PsychToolbox or Pyglet input backend works better.
+I can play through the task.
+But cursor is not visible!
+
+Change to windowed mode, not fullscreen.
+Seems OK now.
 
 ## startup errors
 
@@ -55,7 +130,7 @@ There's a dialong that wants me to configure my system for performance.
 "For optimal performance on Linux, Psychtoolbox requires additional configuration changes to be made to this system..."
 
 What?  Why does it say Psychtoolbox?
-I guess there are some "PsychTollbox bindings" they are using.
+I guess there are some "PsychToolbox bindings" they are using.
 https://psychopy.org/download.html#linux-install
 
 Who cares, I'm not running this.
