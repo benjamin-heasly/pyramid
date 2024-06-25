@@ -10,6 +10,7 @@ experiment:
     - PsychoPy
     - tutorial
 readers:
+  # Select CSV columns and how to interpret them.
   wide_reader:
     class: pyramid.neutral_zone.readers.csv.WideCsvEventReader
     args:
@@ -18,12 +19,6 @@ readers:
       column_config:
         trial_started:
           column_selector: [trial.started]
-          numeric: true
-        pause_started:
-          column_selector: [pause.started]
-          numeric: true
-        cue_started:
-          column_selector: [cue.started]
           numeric: true
         prompt:
           column_selector: [prompt.started, prompt_text]
@@ -53,9 +48,9 @@ readers:
               channel_ids: [x, y]
     simulate_delay: True
 trials:
-  # How to delimit Trials in time, and how to align data within each trial.
+  # How to delimit and align trials in time, and process each trial.
   start_buffer: trial_started
-  wrt_buffer: cue_started
+  wrt_buffer: cue
   enhancers:
     - class: pyramid.trials.standard_enhancers.ExpressionEnhancer
       args:

@@ -3,5 +3,7 @@ data/
 hello_pyramid_lastrun.py
 
 # Pyramid trial files
-hello_pyramid.json
-hello_pyramid.hdf5
+all_correct.json
+all_correct.hdf5
+some_errors.json
+some_errors.hdf5
