@@ -241,14 +241,21 @@ pyramid gui --trial-file some_errors.json --experiment hello_pyramid.yaml --read
 
 # Analyzing Trials File in Matlab
 
-WIP...
+Once you've generated a trial file above, you can do some task analysys.
+Hopefully the trial structure and consistent data model of Pyramid trial files will make analysis easier and more fun!
 
-load the trial file in Matlab
+Here's an example of how to load a trial file in Matlab and create a behavior plot.
+See the Matlab script [plot_hello_pyramid.m](./plot_hello_pyramid.m) here in this folder.
 
-plot a summary of the data
-   - separate miscue vs good cue
-   - summarize number and percent correct
-   - select mouse data between cue and selection
-   - show mouse trails: green for correct, red for incorrect
+To use this in Matlab you can:
+ - open Matlab
+ - cd to this folder demo folder, `pyramid/docs/psychopy-demo/`
+ - add Pyramid trial file utils to the Matlab path, `pyramid/matlab/`
 
-screen shots
+Near the top of `plot_hello_pyramid.m` you can choose which session to plot.
+The default assumes you've run either the "all correct" or "some errors" example session from this repo.
+But you can plot your own session data by substituting `session_file = 'my_data.json';`
+
+This will plot mouse trails and reaction times, separated by trials with good cue vs miscue.
+
+![Matlab plot of Hello Pyramid session mouse trails and reaction times by cue vs miscue](./images/behavior-plot.png "Hello Pyramid session behavior")
