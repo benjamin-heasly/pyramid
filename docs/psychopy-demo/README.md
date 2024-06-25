@@ -1,25 +1,25 @@
 # Pyramid with PsychoPy CSV data.
 
 Pyramid can process data from PsychoPy CSV files -- ie the [Long Wide](https://www.psychopy.org/general/dataOutputs.html#long-wide-data-file) data files that PsychoPy outputs by default.
-These wide CSVs have many columns from which which Pyramid can read numeric events, text events, and/or continuous signals.
+These wide CSVs have many columns from which Pyramid can read numeric events, text events, and continuous signals.
 
 This demo is based on a PsychoPy "Hello Pyramid" task which is included here in this folder as [hello_pyramid.psyexp](./hello_pyramid.psyexp).
 If you install the PsychoPy Builder ([instructions](https://www.psychopy.org/download.html)) you can play through the task yourself!
 
 You can also find sample [data/](./data/) here in this folder.
 
-# The Hello Pyramid Task
+# Hello Pyramid Task
 
 The Hello Pyramid task was made using the PsychoPy [Builder](https://www.psychopy.org/builder/).
-It's a simple, mouse-based task aimed intended to demonstrate key aspects of working with Pyramid:
+It's a simple, mouse-based task intended to demonstrate key aspects of working with Pyramid:
  
  - numeric events, like when trials occur
- - text events, like what the participant clicks on
+ - text events, like names of things that were clicked on
  - continuous signals, like mouse trails
  - gathering data across multiple sessions
  - reusing Pyraimid config across sessions
 
-These PsychoPy mouse tutorials were very helpful when making Hello Pyramid:
+These two PsychoPy mouse tutorials were very helpful for making Hello Pyramid:
 
  - [Using Multiple Mouse Clicks in One Trial in PsychoPy](https://www.youtube.com/watch?v=E4LcWESNu10&ab_channel=PsychoPy)
  - [Accuracy Feedback From Key Presses & Mouse Clicks (Touchscreen Compatible)](https://www.youtube.com/watch?v=o6gG1LRngmU&ab_channel=PsychoPy)
@@ -30,16 +30,16 @@ The task asks the participant to move the mouse cursor and click on one of two t
 
 ![Hello Pyramid task circular targets on the left and right.](./images/wait.png "Hello Pyramid left and right targets")
 
-Before this it gives the participant a prompt indicating the correct target to click on: **"Click left."** or **"Click right."**.
+Before this it prompts the participant with the correct target to click on: **"Click left."** or **"Click right."**.
 
-In addition it shows the participant an arrow as a cue, pointing to the left or the right: **"<---"** or **"--->"**.
+It also cues the participant with an arrow pointing to the left or the right: **"<---"** or **"--->"**.
 
-On half of the trials the prompt and the cue will have the same direction -- both left or both right.
+On half of the trials, the prompt and the cue will have the same direction -- both left or both right.
 The other half of trials are miscue trials, where the prompt and cue have opposite directions.
-The cue and miscue conditions are declared in the [hello_pyramid_conditions.csv](./hello_pyramid_conditions.csv).
+The cue and miscue conditions are declared in [hello_pyramid_conditions.csv](./hello_pyramid_conditions.csv).
 
 Here's a visual summary of the conditions.
-The participant is supposed to follow the prompt on each trial, and not be fooled by the cue or miscue.
+The participant is supposed to follow the prompt on each trial, and ignore the cue or miscue.
 
 | Prompt | Cue | Miscue |
 | --- | --- | --- |
@@ -48,23 +48,23 @@ The participant is supposed to follow the prompt on each trial, and not be foole
 
 ## Task data
 
-PsychoPy will save timing info for each trial, including when each trial starts.
-Below, we'll read these into Pyramid as trial numeric events.
-
-It will save timing and choice info for each trial, including:
- - the text of the prompt and when it appeared
- - the text of the cue and when it appeared
- - the name of the target the participant clicked on, and when
-Below, we'll read these into Pyramid as trial text events.
-
-It will also save mouse trails for each trial as x and y position sampled once per video frame.
-Below we'll read these into Pyramid as trial signals.
-
-PsychoPy will write session data to a "long wide" CSV file.
+PsychoPy will write data from each session to a "long wide" CSV file.
 You can generate these yourself by playing through the task.
 You can also find example [data/](./data/) saved here in this repo:
  - all correct: [689056_hello_pyramid_2024-06-25_11h20.59.451.csv](./data/689056_hello_pyramid_2024-06-25_11h20.59.451.csv)
  - some errors: [350024_hello_pyramid_2024-06-25_11h22.12.994.csv](./data/350024_hello_pyramid_2024-06-25_11h22.12.994.csv)
+
+Each CSV will contain timing info, including when each trial starts.
+Below, we'll read these into Pyramid as numeric events.
+
+Each will contain choice-plus-timing info for each trial, including:
+ - the text of the prompt, and when it appeared
+ - the text of the cue, and when it appeared
+ - the name of the target the participant clicked on, and when
+Below, we'll read these into Pyramid as text events.
+
+Each will also contain mouse trails for each trial as x and y positions sampled once per video frame.
+Below, we'll read these into Pyramid as trial signals.
 
 # Processing PsychoPy Data with Pyramid
 
@@ -87,14 +87,16 @@ readers:
       first_row_is_header: true
 ```
 
-This in cludes the name of the CSV file to read, which we can also change later when we invoke Pyramid from the command line.
-It tells Pyramid that the CSV starts with a header line of column names.
+This in cludes the name of the CSV file to read
+We can also specify the file name later, from the command line.
+`first_row_is_header` tells Pyramid that the CSV starts with a header line of column names.
 We'll use these column names below.
+
+### column config
 
 Continuing in the same `readers` section, we configure the CSV columns that Pyramid should look for and how to interpret them.
 
-We'll select one column to interpret as numeric events:
- - column `trial.started` as a buffer of start times named `trial_started`
+We'll interpret the `trial.started` column as a buffer of trial start times named `trial_started`.
 
 ```
       column_config:
@@ -125,8 +127,7 @@ We'll select four pairs of columns to interpret as text events:
           unpack_lists: true
 ```
 
-We'll select three more columns to interpret as continuous signals
- - columns `mouse.time`, `mouse.x`, and `mouse.y` as buffer of signal samples named `mouse_position`
+We'll interpret the three columns `mouse.time`, `mouse.x`, and `mouse.y` as a continuous signal buffer named `mouse_position`.
 
 ```
         mouse_position:
@@ -147,18 +148,19 @@ We'll select three more columns to interpret as continuous signals
 The `mouse_position` signal requires some extra handling and transformation from the raw CSV data.
 
 First, each cell in these CSV columns contains a *list* of sample data, not just a scalar.
-We can use the `unpack_lists` option to tell Pyramid to unpack the list elements and concatenate them with the list elements from other cells.
+The `unpack_lists` option tells Pyramid to unpack lists and take all the elements.
 
-We also transform the data from an event list into a sampled signal.
-This is because the raw data come in as explicit events of the `[time, x-position, y-position]`.
-PsychoPy recordes these once per frame, but the frame timing is not guaranteed to be regular -- it's likely to have some jitter, and we may occasionally drop frames.
+We also transform the data from discrete tuples into a single sampled signal.
+The raw column data give us tuples of the form `(time, x_position, y_position)` which PsychoPy records once per frame.
+But the frame timing is not guaranteed to be regular -- it's likely to have some jitter, and we may occasionally drop frames.
 Moreover, the times are only recoded when PsychoPy is waiting for a response.
 There are large gaps in the mouse data between trials.
 
-Pyramid's [SparseSignal](../../src/pyramid/neutral_zone/transformers/standard_transformers.py) transformer can take events like these and interpolate them to present a continuous, regularly-sampled signal.
-In this example:
- - the interpolated `sample_frequency` is `60` Hz
- - `fill_with: null` means interpolate gaps linearly rather than filling with a placeholder
+It's easier to think of mouse position as a continuos signal that tracks the x and y coordinates of the cursor.
+Pyramid's [SparseSignal](../../src/pyramid/neutral_zone/transformers/standard_transformers.py) can interpolate jittered or incomplete tuples like these and present them as one regularly-sampled signal.
+For `mouse_position`:
+ - the interpolated `sample_frequency` is chosen as `60` Hz
+ - `fill_with: null` means interpolate gaps linearly rather than filling gaps with a placeholder
  - the interpolated signal will have two channels with `channel_ids` `x` and `y`
 
 ## trials
@@ -175,7 +177,9 @@ trials:
 We'll use `trial_started` events declared above in the `readers` section to mark the beginning and end of each trial.
 We'll use `cue` events to align the data within each trial -- each trial will use the cue event time as its zero time.
 
-Continuing in the same `trials` section, we configure a few expressions to process and annotate each trial.
+### trial enhancers
+
+Continuing in the same `trials` section, we configure a few expressions to inspect and annotate each trial.
 See [ExpressionEnhancer](../../src/pyramid/trials/standard_enhancers.py) for more about using Python expressions to process each trial.
 
 ```
@@ -202,20 +206,22 @@ See [ExpressionEnhancer](../../src/pyramid/trials/standard_enhancers.py) for mor
 ```
 
 These `enhancers` are processed in order from top to bottom.
-The `expression` is a line of Python code to run for each trial.
+The `expression` is a line of Python code to run for each trial.  It has access to buffers declared above in the `readers` section, like `clicked_name`, `correct_target`, and `cue`.
+
 The `value_name` is the name of the enhancement to add to each trial, with the result of the `expression`.
-The `when` is another line of Python code that tells whether to bother running the `expression` that follows.
+
+The `when` is another line of Python code that returns `True` or `False`, telling Pyramid whether evaluate the `expression` that follows.
 
 In this example:
- 1. Annotated every trial as a `complete_trial` or not, based on whether the participant clicked on something.
- 1. On `complete_trial`s, compare the `correct_target` name to the actual `clicked_name` and annotate whether the trial was `correct`.
- 1. On `complete_trial`s, subtract the `clicked_name`'s event time to the `cue`'s start time, to compute a `reaction_time`.
- 1. On `complete_trial`s, compare the promp and the cue and annotate whether the trial was a `miscue` trial.
+ 1. Annotate every trial as a `complete_trial` or not, based on whether the participant clicked on something.
+ 1. When `complete_trial` is true, compare the `correct_target` name to the actual `clicked_name` and annotate whether the trial was `correct`.
+ 1. When `complete_trial` is true, subtract the `cue`'s start time from the `clicked_name` event time, to compute a `reaction_time`.
+ 1. When `complete_trial` is true, compare the promp and the cue and annotate whether the trial was a `miscue` trial.
 
 ## Running Pyramid
 
 Here's how to run Pyramid using the YAML config above, for a particular session of data.
-We'll use the `--readers` option to tell Pyramid which data file to process.
+We'll use the `--readers` option to tell Pyramid which session's data file to process.
 
 Process the "all correct" session:
 ```
@@ -229,7 +235,9 @@ cd pyramid/docs/psychopy-demo/
 pyramid convert --trial-file some_errors.json --experiment hello_pyramid.yaml --readers wide_reader.csv_file=data/350024_hello_pyramid_2024-06-25_11h22.12.994.csv
 ```
 
-You can process your own session data using similar commands, substituting `--trial-file my_data.json` for the Pyramid output trial file, and `--readers wide_reader.csv_file=data/my_data.csv` for your session data CSV file.
+You can process your own session data using similar commands by substituting:
+ -  `--trial-file my_data.json` for the Pyramid output trial file
+ - `--readers wide_reader.csv_file=data/my_data.csv` for your session data CSV file
 
 You can also try running the Pyramid in `gui` mode to see rough plots of data from each trial.
 
@@ -241,7 +249,7 @@ pyramid gui --trial-file some_errors.json --experiment hello_pyramid.yaml --read
 
 # Analyzing Trials File in Matlab
 
-Once you've generated a trial file above, you can do some task analysys.
+Once you've generated a trial file above, you can do some analysis.
 Hopefully the trial structure and consistent data model of Pyramid trial files will make analysis easier and more fun!
 
 Here's an example of how to load a trial file in Matlab and create a behavior plot.
@@ -249,13 +257,13 @@ See the Matlab script [plot_hello_pyramid.m](./plot_hello_pyramid.m) here in thi
 
 To use this in Matlab you can:
  - open Matlab
- - cd to this folder demo folder, `pyramid/docs/psychopy-demo/`
- - add Pyramid trial file utils to the Matlab path, `pyramid/matlab/`
+ - cd to this demo folder, `pyramid/docs/psychopy-demo/`
+ - add Pyramid trial file utils to the Matlab path in `pyramid/matlab/`
 
 Near the top of `plot_hello_pyramid.m` you can choose which session to plot.
 The default assumes you've run either the "all correct" or "some errors" example session from this repo.
-But you can plot your own session data by substituting `session_file = 'my_data.json';`
+You can plot your own session data by substituting `session_file = 'my_data.json';`
 
-This will plot mouse trails and reaction times, separated by trials with good cue vs miscue.
+This will plot mouse trails and reaction times, separtely for good cue vs miscue trials.
 
 ![Matlab plot of Hello Pyramid session mouse trails and reaction times by cue vs miscue](./images/behavior-plot.png "Hello Pyramid session behavior")
