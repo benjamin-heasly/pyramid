@@ -4,6 +4,7 @@
         "end_time": 1.0,
         "wrt_time": 0.0,
         "numeric_events": {
+            "delimiters": [],
             "bar": [[0.1, 1.0]],
             "bar_2": [[0.1, -22.0]]
         },
@@ -31,6 +32,7 @@
         "end_time": 2.0,
         "wrt_time": 1.5,
         "numeric_events": {
+            "delimiters": [[-0.5, 1010.0], [0.0, 42.0]],
             "bar": [],
             "bar_2": []
         },
@@ -58,6 +60,7 @@
         "end_time": 3.0,
         "wrt_time": 2.5,
         "numeric_events": {
+            "delimiters": [[-0.5, 1010.0], [0.0, 42.0], [0.10000000000000009, 42.0]],
             "bar": [],
             "bar_2": []
         },
@@ -85,6 +88,7 @@
         "end_time": null,
         "wrt_time": 3.5,
         "numeric_events": {
+            "delimiters": [[-0.5, 1010.0], [0.0, 42.0]],
             "bar": [[-0.3999999999999999, 0.0]],
             "bar_2": [[-0.3999999999999999, -20.0]]
         },

@@ -192,11 +192,6 @@ def test_configure_trials():
     expected_trial_delimiter = TrialDelimiter(named_buffers["start"], start_value=1010)
     assert trial_delimiter == expected_trial_delimiter
 
-    expected_other_buffers = {
-        name: value
-        for name, value in named_buffers.items()
-        if name != "start" and name != "wrt"
-    }
     expected_enhancers = {
         TrialDurationEnhancer(): None,
         TrialDurationEnhancer(default_duration=1.0): TrialExpression(expression="1==2", default_value=False)
@@ -207,7 +202,7 @@ def test_configure_trials():
     expected_trial_extractor = TrialExtractor(
         named_buffers["wrt"],
         wrt_value=42,
-        named_buffers=expected_other_buffers,
+        named_buffers=named_buffers,
         enhancers=expected_enhancers,
         collecters=expected_collecters
     )
@@ -305,11 +300,6 @@ def test_from_yaml_and_reader_overrides(fixture_path):
 
     expected_trial_delimiter = TrialDelimiter(expected_named_buffers["start"], start_value=1010)
 
-    expected_other_buffers = {
-        name: value
-        for name, value in expected_named_buffers.items()
-        if name != "start" and name != "wrt"
-    }
     expected_enhancers = {
         TrialDurationEnhancer(): None,
         TrialDurationEnhancer(default_duration=1.0): TrialExpression(expression="1==2", default_value=False)
@@ -320,7 +310,7 @@ def test_from_yaml_and_reader_overrides(fixture_path):
     expected_trial_extractor = TrialExtractor(
         expected_named_buffers["wrt"],
         wrt_value=42,
-        named_buffers=expected_other_buffers,
+        named_buffers=expected_named_buffers,
         enhancers=expected_enhancers,
         collecters=expected_collecters
     )

@@ -43,13 +43,10 @@ experiment_config = {
     "readers": {
         "delimiter_reader": {
             "class": "pyramid.neutral_zone.readers.csv.CsvNumericEventReader",
-            "args": {"result_name": "start"},
-            "extra_buffers": {
-                "wrt": {"reader_result_name": "start"},
-            },
+            "args": {"result_name": "delimiters"},
             "sync": {
                 "is_reference": True,
-                "buffer_name": "start",
+                "buffer_name": "delimiters",
                 "filter": "value[0] == 42"
             }
         },
@@ -89,9 +86,9 @@ experiment_config = {
         },
     },
     "trials": {
-        "start_buffer": "start",
+        "start_buffer": "delimiters",
         "start_value": 1010,
-        "wrt_buffer": "wrt",
+        "wrt_buffer": "delimiters",
         "wrt_value": 42,
         "enhancers": [
             {

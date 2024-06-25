@@ -613,9 +613,6 @@ def configure_trials(
     wrt_value = trials_config.get("wrt_value", None)
     wrt_value_index = trials_config.get("wrt_value_index", 0)
 
-    other_buffers = {name: buffer for name, buffer in named_buffers.items()
-                     if name != start_buffer_name and name != wrt_buffer_name}
-
     enhancers = {}
     enhancers_config = trials_config.get("enhancers", [])
     logging.info(f"Using {len(enhancers_config)} per-trial enhancers.")
@@ -668,7 +665,7 @@ def configure_trials(
         wrt_buffer=named_buffers[wrt_buffer_name],
         wrt_value=wrt_value,
         wrt_value_index=wrt_value_index,
-        named_buffers=other_buffers,
+        named_buffers=named_buffers,
         enhancers=enhancers,
         collecters=collecters
     )

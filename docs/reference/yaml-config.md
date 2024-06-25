@@ -296,9 +296,6 @@ As these events come in, Pyramid will create new trials.
 For each trial, Pyramid will query all the buffers in *The Neutral Zone* for data between delimiting events.
 It will populate each trial with copies of all the query results, using the same buffer names.
 
-By default, `start_buffer` events are only used for delimiting trials, and not included in trials themselves.
-To include delimiting events in trials, add an extra buffer with `reader_result_name` that matches `start_buffer`.
-
 The optional `wrt_buffer` key tells Pyramid to align trial data with respect to (wrt) an event in the trial.
 This buffer would have been configured in the `readers` section above.
 The `wrt_value` key tells Pyramid that only events with value `42` are trial-aligning events.
