@@ -4,6 +4,7 @@ Pyramid is tool for declarative neuro data synthesis and processing as trials.
 
 The name "Pyramid" is a pun on "Python" and "FIRA", where FIRA is a set of long-standing Matlab analysis tools used by the [Gold Lab](https://github.com/TheGoldLab/Lab_Matlab_Utilities) at UPenn.  Pyramid is intended as a successor to FIRA.
 
+Please see below for an [Overview](#overview), links to current [Documentation](#documentation), and [Installation](#installation) instructions.
 
 # Overview
 
@@ -131,28 +132,34 @@ Python users can import Pyramid's own [trial_file](./src/pyramid/trials/trial_fi
 
 Matlab users can add the [matlab/](./matlab/) subfolder of this repo to the Matlab path and use the `TrialFile` Matlab class to iterate over trials.
 
-
 # Documentation
 
-Here are some docs with details about how to use Pyramid and examples you can run.
+Here are links to the Pyramid documentation we have so far.
+For now, it's pretty low-tech with READMEs and examples located here in this repo.
 
-For installation instructions, see [Installation](#installation) below.
+We have the [Overview](#overview) diagram and high-level descriptions above.
 
-## Declarative Confituration with YAML
+We have [Installation](#installation) instructions below.
 
-All of the steps descried above can be confgiured and customized declaratively, via a YAML file.
-The Pyramid YAML file for your experiment / paradigm is what drive's Pyramid's behavior.
-It captures the outline and the details of what you want Pyramid to do.
+## Reference
 
-For a detailed, informal schema of Pyramid YAML files -- expected syntax, what's supported, links to code, etc. -- please see the [yaml-schema.md](./docs/reference/yaml-schema.md) here in this repo.
+We have reference documentation for the Pyramid [command line interface](./docs/reference/command-line-interface.md) and [YAML configuration](./docs/reference/pyramid-schema.yaml), including a detailed, informal [schema doc](./docs/reference/pyramid-schema.yaml).
 
-## Tutorial and examples
+## Demos
 
-The [docs/](./docs/) folder of this repo contains several working examples that you can use to try workign with Pyramid.
+We also have several working examples that you can try reading through and running yourself.
 You might start with these two:
 
- - [core-demo](./docs/core-demo/) is a minimal example that parses a few csvs into trials.
- - [psychopy-demo](./docs/psychopy-demo/) is a more realistic demo that you can use to analyze a simple PsychoPy task.
+ - [core-demo](./docs/core-demo/README.md) is a minimal example that parses a few CSV files into trials.
+ - [psychopy-demo](./docs/psychopy-demo/README.md) is a more realistic demo that includes an actual PsychPy task you can play through.
+
+Other demos are aimed at specific features or use cases:
+
+ - [plexon-demo](./docs/plexon-demo/README.md) shows how to read events, spike events, and signals from a [Plexon](https://plexon.com/) `.plx` file.
+ - [phy-plexon-demo](./docs/phy-plexon-demo/README.md) shows how to combine Plexon `.plx` data with curated sorting results from [Phy](https://github.com/cortex-lab/phy).
+ - [signal-demo](./docs/signal-demo/README.md) shows how to plot signal data and align data between readers to account for clock drift/offset.
+ - [smooth-demo](./docs/smooth-demo/README.md) shows how to apply smoothing and global normalization to a signal.
+ - [open-ephys-zmq-demo](./docs/open-ephys-zmq-demo/README.md) shows how to plot live data from an Open Ephys [ZMQ Interface](https://open-ephys.github.io/gui-docs/User-Manual/Plugins/ZMQ-Interface.html).
 
 # Installation
 
