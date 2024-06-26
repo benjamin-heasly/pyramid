@@ -12,7 +12,7 @@ This demo assumes some data files from the [Gold Lab](https://www.med.upenn.edu/
 The pipeline used to get from raw Plexon to sorted Phy output is not included here, and neither are the data files!
 So, this demo is most relevant for members of the Gold Lab.
 
-This might still be useful to others, as an example of how to configure Pyramid with Phy data.
+This might still be useful to others as an example of how to configure Pyramid with Phy data.
 This demo will refer to data at the following locations, which you should change for your own setup:
 
 ```

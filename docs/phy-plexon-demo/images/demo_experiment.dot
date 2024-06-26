@@ -4,14 +4,17 @@ digraph demo_experiment {
 	edge [fontname=Arial penwidth=2.0]
 	subgraph cluster_buffers {
 		graph [bgcolor=lightgray color=transparent fontname=Arial label=buffers margin=20 rank=same]
-		event_list [label="NumericEventList|<plexon_sig001>plexon_sig001|<plexon_sig002>plexon_sig002|<plexon_sig003>plexon_sig003|<plexon_sig004>plexon_sig004|<plexon_sig005>plexon_sig005|<plexon_sig006>plexon_sig006|<plexon_sig007>plexon_sig007|<plexon_sig008>plexon_sig008|<plexon_sig009>plexon_sig009|<plexon_sig010>plexon_sig010|<plexon_sig011>plexon_sig011|<plexon_sig012>plexon_sig012|<plexon_sig013>plexon_sig013|<plexon_sig014>plexon_sig014|<plexon_sig015>plexon_sig015|<plexon_sig016>plexon_sig016|<delimiter>delimiter|<phy_clusters>phy_clusters"]
+		numeric_event_list [label="NumericEventList|<plexon_sig001>plexon_sig001|<plexon_sig002>plexon_sig002|<plexon_sig003>plexon_sig003|<plexon_sig004>plexon_sig004|<plexon_sig005>plexon_sig005|<plexon_sig006>plexon_sig006|<plexon_sig007>plexon_sig007|<plexon_sig008>plexon_sig008|<plexon_sig009>plexon_sig009|<plexon_sig010>plexon_sig010|<plexon_sig011>plexon_sig011|<plexon_sig012>plexon_sig012|<plexon_sig013>plexon_sig013|<plexon_sig014>plexon_sig014|<plexon_sig015>plexon_sig015|<plexon_sig016>plexon_sig016|<delimiter>delimiter|<phy_clusters>phy_clusters"]
 	}
 	trial_delimiter [label="TrialDelimiter|start = 1005"]
-	event_list:delimiter:e -> trial_delimiter
+	numeric_event_list:delimiter:e -> trial_delimiter
 	trial_extractor [label="TrialExtractor|wrt = 1010"]
-	event_list:delimiter:e -> trial_extractor
+	numeric_event_list:delimiter:e -> trial_extractor
 	subgraph cluster_enhancers {
 		graph [bgcolor=lightgray color=transparent fontname=Arial label=enhancers margin=20 rank=same]
+	}
+	subgraph cluster_collecters {
+		graph [bgcolor=lightgray color=transparent fontname=Arial label=collecters margin=20 rank=same]
 	}
 	subgraph cluster_readers {
 		graph [bgcolor=lightgray color=transparent fontname=Arial label=readers margin=20 rank=same]
@@ -25,22 +28,22 @@ digraph demo_experiment {
 		plexon_reader_results [label="<plexon_sig001>plexon_sig001|<plexon_sig002>plexon_sig002|<plexon_sig003>plexon_sig003|<plexon_sig004>plexon_sig004|<plexon_sig005>plexon_sig005|<plexon_sig006>plexon_sig006|<plexon_sig007>plexon_sig007|<plexon_sig008>plexon_sig008|<plexon_sig009>plexon_sig009|<plexon_sig010>plexon_sig010|<plexon_sig011>plexon_sig011|<plexon_sig012>plexon_sig012|<plexon_sig013>plexon_sig013|<plexon_sig014>plexon_sig014|<plexon_sig015>plexon_sig015|<plexon_sig016>plexon_sig016|<delimiter>delimiter"]
 		phy_reader_results [label="<phy_clusters>phy_clusters"]
 	}
-	plexon_reader_results:plexon_sig001:e -> event_list:plexon_sig001:w
-	plexon_reader_results:plexon_sig002:e -> event_list:plexon_sig002:w
-	plexon_reader_results:plexon_sig003:e -> event_list:plexon_sig003:w
-	plexon_reader_results:plexon_sig004:e -> event_list:plexon_sig004:w
-	plexon_reader_results:plexon_sig005:e -> event_list:plexon_sig005:w
-	plexon_reader_results:plexon_sig006:e -> event_list:plexon_sig006:w
-	plexon_reader_results:plexon_sig007:e -> event_list:plexon_sig007:w
-	plexon_reader_results:plexon_sig008:e -> event_list:plexon_sig008:w
-	plexon_reader_results:plexon_sig009:e -> event_list:plexon_sig009:w
-	plexon_reader_results:plexon_sig010:e -> event_list:plexon_sig010:w
-	plexon_reader_results:plexon_sig011:e -> event_list:plexon_sig011:w
-	plexon_reader_results:plexon_sig012:e -> event_list:plexon_sig012:w
-	plexon_reader_results:plexon_sig013:e -> event_list:plexon_sig013:w
-	plexon_reader_results:plexon_sig014:e -> event_list:plexon_sig014:w
-	plexon_reader_results:plexon_sig015:e -> event_list:plexon_sig015:w
-	plexon_reader_results:plexon_sig016:e -> event_list:plexon_sig016:w
-	plexon_reader_results:delimiter:e -> event_list:delimiter:w
-	phy_reader_results:phy_clusters:e -> event_list:phy_clusters:w
+	plexon_reader_results:plexon_sig001:e -> numeric_event_list:plexon_sig001:w
+	plexon_reader_results:plexon_sig002:e -> numeric_event_list:plexon_sig002:w
+	plexon_reader_results:plexon_sig003:e -> numeric_event_list:plexon_sig003:w
+	plexon_reader_results:plexon_sig004:e -> numeric_event_list:plexon_sig004:w
+	plexon_reader_results:plexon_sig005:e -> numeric_event_list:plexon_sig005:w
+	plexon_reader_results:plexon_sig006:e -> numeric_event_list:plexon_sig006:w
+	plexon_reader_results:plexon_sig007:e -> numeric_event_list:plexon_sig007:w
+	plexon_reader_results:plexon_sig008:e -> numeric_event_list:plexon_sig008:w
+	plexon_reader_results:plexon_sig009:e -> numeric_event_list:plexon_sig009:w
+	plexon_reader_results:plexon_sig010:e -> numeric_event_list:plexon_sig010:w
+	plexon_reader_results:plexon_sig011:e -> numeric_event_list:plexon_sig011:w
+	plexon_reader_results:plexon_sig012:e -> numeric_event_list:plexon_sig012:w
+	plexon_reader_results:plexon_sig013:e -> numeric_event_list:plexon_sig013:w
+	plexon_reader_results:plexon_sig014:e -> numeric_event_list:plexon_sig014:w
+	plexon_reader_results:plexon_sig015:e -> numeric_event_list:plexon_sig015:w
+	plexon_reader_results:plexon_sig016:e -> numeric_event_list:plexon_sig016:w
+	plexon_reader_results:delimiter:e -> numeric_event_list:delimiter:w
+	phy_reader_results:phy_clusters:e -> numeric_event_list:phy_clusters:w
 }
