@@ -143,7 +143,7 @@ We have [Installation](#installation) instructions below.
 
 ## Reference
 
-We have reference documentation for the Pyramid [command line interface](./docs/reference/command-line-interface.md) and [YAML configuration](./docs/reference/pyramid-schema.yaml), including a detailed, informal [schema doc](./docs/reference/pyramid-schema.yaml).
+We have reference documentation for the Pyramid [command line interface](./docs/reference/command-line-interface.md) and [YAML configuration](./docs/reference/yaml-config.md), including a detailed, informal [schema doc](./docs/reference/pyramid-schema.yaml).
 
 ## Demos
 
