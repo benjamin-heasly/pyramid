@@ -411,6 +411,35 @@ class WideCsvEventReader(Reader):
 
     The PsychoPy "long-wide" output format is one example of a "wide" CSV with columns like these, which
     WideCsvEventReader supports.
+
+    Args:
+        csv_file            Name of a CSV file to read from.
+        file_finder:        Utility to find() files in the conigured Pyramid configured search path.
+                            Pyramid will automatically create and pass in the file_finder for you.
+        first_row_is_header Whether the CSV file has column names in the first line (default True).
+        column_config       Dictionary describing how to interpret the CSV columns -- see below (default {}).
+        dialect             CSV format dialect to pass to the underlying CSV reader (default 'excel')/
+        fmtparams           Additional CSV format keword args to pass to the underlying CSV reader (default {}).
+
+    column_config should be a dictionary describing how to interpret the CSV colums and create buffers.
+    The dictionary keys should be buffer names to create and fill with data.
+    The values should be dictionaries with the following keys:
+        numeric         True or False, whether to parse numbers and read numeric events (True) or read raw text events (False) (default False).
+        unpack_lists    Whether to unpack cells that contain [comma, separated, lists] and create an event for each list element (default False).
+        column_selector List of string column names or int column indices for which columns to read into the buffer.
+
+    Here's an example column_config:
+
+    my_column_config = {
+        'my_numeric_buffer': {
+            'numeric': True,
+            'unpack_lists': True,
+            'column_selector': [3, 1, 2]
+        },
+        'my_text_buffer': {
+            'column_selector': ['timestamp_column', 'text_column']
+        }
+    }
     """
 
     def __init__(

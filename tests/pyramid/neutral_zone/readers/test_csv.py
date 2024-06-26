@@ -5,7 +5,7 @@ from pytest import fixture, raises
 
 from pyramid.model.events import NumericEventList, TextEventList
 from pyramid.model.signals import SignalChunk
-from pyramid.neutral_zone.readers.csv import CsvNumericEventReader, CsvTextEventReader, CsvSignalReader
+from pyramid.neutral_zone.readers.csv import CsvNumericEventReader, CsvTextEventReader, CsvSignalReader, WideCsvEventReader
 
 
 @fixture
@@ -692,3 +692,178 @@ def test_signals_with_list_data(fixture_path):
         assert exception_info.errisinstance(StopIteration)
 
     assert reader.reader.file_stream is None
+
+
+def test_wide_csv_event_reader(fixture_path):
+    csv_file = Path(fixture_path, 'wide_events', 'wide.csv').as_posix()
+
+    column_config = {
+        "times_only": {
+            "numeric": True,
+            "column_selector": ["time"]
+        },
+        "numeric_scalars": {
+            "numeric": True,
+            "column_selector": ["time", "numeric_2", "numeric_1"]
+        },
+        "text_scalars_1": {
+            "column_selector": ["time", "text_1"]
+        },
+        "text_scalars_2": {
+            "column_selector": ["time", "text_2"]
+        },
+        "numeric_lists": {
+            "numeric": True,
+            "unpack_lists": True,
+            "column_selector": ["list_times", "list_elements_1", "list_elements_2"]
+        }
+    }
+
+    with WideCsvEventReader(csv_file=csv_file, column_config=column_config) as reader:
+        initial = reader.get_initial()
+        expected_initial = {
+            "times_only": NumericEventList.empty(0),
+            "numeric_scalars": NumericEventList.empty(2),
+            "text_scalars_1": TextEventList.empty(),
+            "text_scalars_2": TextEventList.empty(),
+            "numeric_lists": NumericEventList.empty(2),
+        }
+        assert initial == expected_initial
+
+        # Read 10 rows...
+        result_0 = reader.read_next()
+        assert np.array_equal(result_0["times_only"].times(), [0])
+        assert np.array_equal(result_0["numeric_scalars"].times(), [0])
+        assert np.array_equal(result_0["numeric_scalars"].values(0), [1000])
+        assert np.array_equal(result_0["numeric_scalars"].values(1), [100])
+        assert np.array_equal(result_0["text_scalars_1"].times(), [0])
+        assert np.array_equal(result_0["text_scalars_1"].values(), ["zero"])
+        assert np.array_equal(result_0["text_scalars_2"].times(), [0])
+        assert np.array_equal(result_0["text_scalars_2"].values(), ["a"])
+        assert np.array_equal(result_0["numeric_lists"].times(), [0.0, 0.1, 0.2])
+        assert np.array_equal(result_0["numeric_lists"].values(0), [0, 1, 2])
+        assert np.array_equal(result_0["numeric_lists"].values(1), [-0, -1, -2])
+
+        result_1 = reader.read_next()
+        assert np.array_equal(result_1["times_only"].times(), [1])
+        assert np.array_equal(result_1["numeric_scalars"].times(), [1])
+        assert np.array_equal(result_1["numeric_scalars"].values(0), [1001])
+        assert np.array_equal(result_1["numeric_scalars"].values(1), [101])
+        assert np.array_equal(result_1["text_scalars_1"].times(), [1])
+        assert np.array_equal(result_1["text_scalars_1"].values(), ["one"])
+        assert np.array_equal(result_1["text_scalars_2"].times(), [1])
+        assert np.array_equal(result_1["text_scalars_2"].values(), ["b"])
+        assert np.array_equal(result_1["numeric_lists"].times(), [1.0, 1.1, 1.2])
+        assert np.array_equal(result_1["numeric_lists"].values(0), [3, 4, 5])
+        assert np.array_equal(result_1["numeric_lists"].values(1), [-3, -4, -5])
+
+        result_2 = reader.read_next()
+        assert np.array_equal(result_2["times_only"].times(), [2])
+        assert np.array_equal(result_2["numeric_scalars"].times(), [2])
+        assert np.array_equal(result_2["numeric_scalars"].values(0), [1002])
+        assert np.array_equal(result_2["numeric_scalars"].values(1), [102])
+        assert np.array_equal(result_2["text_scalars_1"].times(), [2])
+        assert np.array_equal(result_2["text_scalars_1"].values(), ["two"])
+        assert np.array_equal(result_2["text_scalars_2"].times(), [2])
+        assert np.array_equal(result_2["text_scalars_2"].values(), ["c"])
+        assert np.array_equal(result_2["numeric_lists"].times(), [2.0, 2.1, 2.2])
+        assert np.array_equal(result_2["numeric_lists"].values(0), [6, 7, 8])
+        assert np.array_equal(result_2["numeric_lists"].values(1), [-6, -7, -8])
+
+        result_3 = reader.read_next()
+        assert np.array_equal(result_3["times_only"].times(), [3])
+        assert np.array_equal(result_3["numeric_scalars"].times(), [3])
+        assert np.array_equal(result_3["numeric_scalars"].values(0), [1003])
+        assert np.array_equal(result_3["numeric_scalars"].values(1), [103])
+        assert np.array_equal(result_3["text_scalars_1"].times(), [3])
+        assert np.array_equal(result_3["text_scalars_1"].values(), ["three"])
+        assert np.array_equal(result_3["text_scalars_2"].times(), [3])
+        assert np.array_equal(result_3["text_scalars_2"].values(), ["d"])
+        assert np.array_equal(result_3["numeric_lists"].times(), [3.0, 3.1, 3.2])
+        assert np.array_equal(result_3["numeric_lists"].values(0), [9, 10, 11])
+        assert np.array_equal(result_3["numeric_lists"].values(1), [-9, -10, -11])
+
+        result_4 = reader.read_next()
+        assert np.array_equal(result_4["times_only"].times(), [4])
+        assert np.array_equal(result_4["numeric_scalars"].times(), [4])
+        assert np.array_equal(result_4["numeric_scalars"].values(0), [1004])
+        assert np.array_equal(result_4["numeric_scalars"].values(1), [104])
+        assert np.array_equal(result_4["text_scalars_1"].times(), [4])
+        assert np.array_equal(result_4["text_scalars_1"].values(), ["four"])
+        assert np.array_equal(result_4["text_scalars_2"].times(), [4])
+        assert np.array_equal(result_4["text_scalars_2"].values(), ["e"])
+        assert np.array_equal(result_4["numeric_lists"].times(), [4.0, 4.1, 4.2])
+        assert np.array_equal(result_4["numeric_lists"].values(0), [12, 13, 14])
+        assert np.array_equal(result_4["numeric_lists"].values(1), [-12, -13, -14])
+
+        result_5 = reader.read_next()
+        assert np.array_equal(result_5["times_only"].times(), [5])
+        assert np.array_equal(result_5["numeric_scalars"].times(), [5])
+        assert np.array_equal(result_5["numeric_scalars"].values(0), [1005])
+        assert np.array_equal(result_5["numeric_scalars"].values(1), [105])
+        assert np.array_equal(result_5["text_scalars_1"].times(), [5])
+        assert np.array_equal(result_5["text_scalars_1"].values(), ["five"])
+        assert np.array_equal(result_5["text_scalars_2"].times(), [5])
+        assert np.array_equal(result_5["text_scalars_2"].values(), ["f"])
+        assert np.array_equal(result_5["numeric_lists"].times(), [5.0, 5.1, 5.2])
+        assert np.array_equal(result_5["numeric_lists"].values(0), [15, 16, 17])
+        assert np.array_equal(result_5["numeric_lists"].values(1), [-15, -16, -17])
+
+        result_6 = reader.read_next()
+        assert np.array_equal(result_6["times_only"].times(), [6])
+        assert np.array_equal(result_6["numeric_scalars"].times(), [6])
+        assert np.array_equal(result_6["numeric_scalars"].values(0), [1006])
+        assert np.array_equal(result_6["numeric_scalars"].values(1), [106])
+        assert np.array_equal(result_6["text_scalars_1"].times(), [6])
+        assert np.array_equal(result_6["text_scalars_1"].values(), ["six"])
+        assert np.array_equal(result_6["text_scalars_2"].times(), [6])
+        assert np.array_equal(result_6["text_scalars_2"].values(), ["g"])
+        assert np.array_equal(result_6["numeric_lists"].times(), [6.0, 6.1, 6.2])
+        assert np.array_equal(result_6["numeric_lists"].values(0), [18, 19, 20])
+        assert np.array_equal(result_6["numeric_lists"].values(1), [-18, -19, -20])
+
+        result_7 = reader.read_next()
+        assert np.array_equal(result_7["times_only"].times(), [7])
+        assert np.array_equal(result_7["numeric_scalars"].times(), [7])
+        assert np.array_equal(result_7["numeric_scalars"].values(0), [1007])
+        assert np.array_equal(result_7["numeric_scalars"].values(1), [107])
+        assert np.array_equal(result_7["text_scalars_1"].times(), [7])
+        assert np.array_equal(result_7["text_scalars_1"].values(), ["seven"])
+        assert np.array_equal(result_7["text_scalars_2"].times(), [7])
+        assert np.array_equal(result_7["text_scalars_2"].values(), ["h"])
+        assert np.array_equal(result_7["numeric_lists"].times(), [7.0, 7.1, 7.2])
+        assert np.array_equal(result_7["numeric_lists"].values(0), [21, 22, 23])
+        assert np.array_equal(result_7["numeric_lists"].values(1), [-21, -22, -23])
+
+        result_8 = reader.read_next()
+        assert np.array_equal(result_8["times_only"].times(), [8])
+        assert np.array_equal(result_8["numeric_scalars"].times(), [8])
+        assert np.array_equal(result_8["numeric_scalars"].values(0), [1008])
+        assert np.array_equal(result_8["numeric_scalars"].values(1), [108])
+        assert np.array_equal(result_8["text_scalars_1"].times(), [8])
+        assert np.array_equal(result_8["text_scalars_1"].values(), ["eight"])
+        assert np.array_equal(result_8["text_scalars_2"].times(), [8])
+        assert np.array_equal(result_8["text_scalars_2"].values(), ["i"])
+        assert np.array_equal(result_8["numeric_lists"].times(), [8.0, 8.1, 8.2])
+        assert np.array_equal(result_8["numeric_lists"].values(0), [24, 25, 26])
+        assert np.array_equal(result_8["numeric_lists"].values(1), [-24, -25, -26])
+
+        result_9 = reader.read_next()
+        assert np.array_equal(result_9["times_only"].times(), [9])
+        assert np.array_equal(result_9["numeric_scalars"].times(), [9])
+        assert np.array_equal(result_9["numeric_scalars"].values(0), [1009])
+        assert np.array_equal(result_9["numeric_scalars"].values(1), [109])
+        assert np.array_equal(result_9["text_scalars_1"].times(), [9])
+        assert np.array_equal(result_9["text_scalars_1"].values(), ["nine"])
+        assert np.array_equal(result_9["text_scalars_2"].times(), [9])
+        assert np.array_equal(result_9["text_scalars_2"].values(), ["j"])
+        assert np.array_equal(result_9["numeric_lists"].times(), [9.0, 9.1, 9.2])
+        assert np.array_equal(result_9["numeric_lists"].values(0), [27, 28, 29])
+        assert np.array_equal(result_9["numeric_lists"].values(1), [-27, -28, -29])
+
+        # ...then be done.
+        with raises(StopIteration) as exception_info:
+            reader.read_next()
+        assert exception_info.errisinstance(StopIteration)
+
+    assert all([reader.reader.file_stream is None for reader in reader.readers])
