@@ -11,8 +11,8 @@ clear
 clc
 
 %session_file = 'my_data.json';
-session_file = 'some_errors.json';
-%session_file = 'all_correct.json';
+%session_file = 'some_errors.json';
+session_file = 'all_correct.json';
 
 trial_file = TrialFile(session_file);
 trials = trial_file.read();
