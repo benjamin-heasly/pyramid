@@ -41,9 +41,9 @@ From this graph, we can see that Pyramid intends to:
 
  - read event data from 3 different CSV files
  - deal events as they arrive into 4 different named buffers
- - transform event values on the way into one of those buffers, but leave the others "as is"
- - delimit trials based on events in the buffer named "delimiter"
- - align data within each trial based on other events in the same "delimiter" buffer
+ - transform event values on the way into the "bar_2" buffer, but leave the others as they are
+ - delimit trials based on `1010` events in the buffer named "delimiter"
+ - align data within each trial based `42` events in the same "delimiter" buffer
  - add additional data to trials from buffers named "foo", "bar", and "bar_2"
 
 
@@ -54,7 +54,7 @@ Each experiment design or rig setup would have its own YAML file to capture and 
 
 The main sections of each YAML file are:
 
- - `experiment` -- basic description of the experiment design and lab, suitable for including in an NWB file.
+ - `experiment` -- basic description of the experiment design and lab
  - `readers` -- full description of data sources to read from and how to map and transform data from those sources into named buffers
  - `trials` -- how to delimit trials in time, how to align data within each trial, and optionally how to enhance each trial with additional name-value pairs
  - `plotters` -- optionally, how to visualize trials as they arrive
@@ -72,17 +72,17 @@ Since the CSVs in this demo are small, we can just look at them here and get a s
 [delimiter.csv](delimiter.csv) determines the structure of trials over time.
 
 ```
-time,   value
-1.0,    1010
-1.5,    42
-2.0,    1010
-2.5,    42
-2.6,    42
-3.0,    1010
-3.5,    42
+time, value
+1.0,  1010
+1.5,  42
+2.0,  1010
+2.5,  42
+2.6,  42
+3.0,  1010
+3.5,  42
 ```
 
-Each row is interpreted as one event.  The first column has the event time stamp, the second column has a numeric event value.
+Each row is interpreted as one event.  The first column has the event timestamp, the second column has a numeric event value.
 The first header row is ignored.
 
 For the demo experiment Pyramid will treat events with value `1010` as trial starts and ends.
@@ -118,9 +118,9 @@ As a result, some of the aligned timestamps work out to be positive and some wil
 These ones will be numeric events, with a timestamp one numeric value per row.
 
 ```
-time,   value
-0.1,    1
-3.1,    0
+time, value
+0.1,  1
+3.1,  0
 ```
 
 Some `bar` events will arrive during trials 0 and 3, but not during 1 or 2.
@@ -150,41 +150,41 @@ For this demo the trial file is not very long, so here's what it should look lik
   "start_time": 0.0,
   "end_time": 1.0,
   "wrt_time": 0.0,
-  "numeric_events": {"bar": [[0.1, 1.0]], "bar_2": [[0.1, -22.0]]},
+  "numeric_events": {"delimiter": [], "bar": [[0.1, 1.0]], "bar_2": [[0.1, -22.0]]},
   "text_events": {"foo": {"timestamp_data": [0.2], "text_data": ["red"]}}
 }
 {
   "start_time": 1.0,
   "end_time": 2.0,
   "wrt_time": 1.5,
-  "numeric_events": {"bar": [], "bar_2": []},
+  "numeric_events": {"delimiter": [[-0.5, 1010.0], [0.0, 42.0]], "bar": [], "bar_2": []},
   "text_events": {"foo": {"timestamp_data": [-0.3, -0.2], "text_data": ["red", "green"]}}
 }
 {
   "start_time": 2.0,
   "end_time": 3.0,
   "wrt_time": 2.5,
-  "numeric_events": {"bar": [], "bar_2": []},
+  "numeric_events": {"delimiter": [[-0.5, 1010.0], [0.0, 42.0], [0.1, 42.0]], "bar": [], "bar_2": []},
   "text_events": {"foo": {"timestamp_data": [-0.3, -0.2], "text_data": ["red", "green"]}}
 }
 {
   "start_time": 3.0,
   "end_time": null,
   "wrt_time": 3.5,
-  "numeric_events": {"bar": [[-0.4, 0.0]], "bar_2": [[-0.4, -20.0]]},
+  "numeric_events": {"delimiter": [[-0.5, 1010.0], [0.0, 42.0]], "bar": [[-0.4, 0.0]], "bar_2": [[-0.4, -20.0]]}, 
   "text_events": {"foo": {"timestamp_data": [], "text_data": []}}
 }
 ```
 
-Pyramid wrote each trial delimited during the `convert` run to one line in the trial file.  This follows the [JSON Lines](https://jsonlines.org/) convention where each line of the file is a valid JSON object.  The JSON above is formatted mildly, just for clarity.
+Pyramid wrote each trial it found during the `convert` run to one line in the trial file.  This follows the [JSON Lines](https://jsonlines.org/) convention where each line of the file is a valid JSON object.  The JSON above is formatted mildly, just for clarity.
 
 We got 4 trials as expected, delimited by start and end times that fall on whole-numbered seconds.
-Trials 1-3 have wrt times that falls between the start and end.
+Trials 1-3 have wrt times that fall between the start and end.
 Data from the `foo`, `bar`, and `bar_2` buffers are assigned to each trial based on start and end times, then aligned to the wrt time.
 
 ## running with plotters
 
-Pyramid `convert` is intended for offline batch processing, when you want things to run as fast as the data will allow.
+Pyramid `convert` is intended for offline batch processing, when you want things to run as fast as possible.
 
 Pyramid also has a `gui` mode which is intended for online, interactive processing.
 In `gui` mode Pyramid produces the same trial file as `convert` mode, and also brings up figure windows with plots that update after each trial.
@@ -196,7 +196,7 @@ pyramid gui --trial-file demo_trials.json --experiment demo_experiment.yaml --re
 This command is identical to the `convert` command above, except for the mode argument, which is now `gui`.
 
 A figure window should open and update every second as new trials arrive.
-Custom plots can also be created in Pyton code and called for from the `plotters` section of the experiment YAML.
+Custom plots can also be created in Python and called for from the `plotters` section of the experiment YAML.
 
 ### simulating delay
 
@@ -209,7 +209,7 @@ Delay simulation is handy for demo purposes, and optional, and only happens if a
 It should be possible to read a JSON trial file in a variety of environments, not just Pyramid or Python.
 Pyramid includes [a bit of Matlab code](https://github.com/benjamin-heasly/pyramid/tree/main/matlab) for reading trials as a Matlab struct array.
 
-If you add `pyramid/matlab` and its subfolders to your Matlab path, then you should be able to read a trial file like this:
+If you add `pyramid/matlab` to your Matlab path, then you should be able to read a trial file like this:
 
 ```
 >> trialFile = TrialFile('demo_trials.json');
@@ -234,6 +234,7 @@ events =
 
   1×4 struct array with fields:
 
+    delimiter
     bar
     bar_2
 ```
@@ -299,6 +300,7 @@ events =
 
     bar
     bar_2
+    delimiter
 
 >> trials = trialFile.read(@(trial) trial.start_time < 3)
 
