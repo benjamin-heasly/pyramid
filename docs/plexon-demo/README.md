@@ -45,7 +45,7 @@ The experiment YAML file [demo_experiment.yaml](demo_experiment.yaml) tells Pyra
 
 ### experiment: ###
 
-The `experiment:` section is just metadata about the experiment itself suitable for inclusion in an NWB file, and displayed in Pyramids BasicInfoPlotter, below.
+The `experiment` section is just metadata about the experiment itself suitable for inclusion in an NWB file, and displayed in Pyramids BasicInfoPlotter, below.
 
 ```
 experiment:
@@ -63,7 +63,7 @@ experiment:
 
 ### readers: ###
 
-The `readers:` section tells Pyramid to read a Plexon file, and which event, spike, and AD signal channels to take:
+The `readers` section tells Pyramid to read a Plexon file, and which event, spike, and AD signal channels to take:
 
  - For `spikes` it will take `all` of the channels present in the file.
  - For `events` it will take only the `Strobed` channel and give it the name `ecodes`.  It will also make a separate copy the `ecodes` buffer, named `delimiter`.
@@ -107,7 +107,7 @@ readers:
 
 ### trials: ###
 
-The `trials:` section tells Pyramid how to delimit trials in time based on raw event data, and how to build up each trial using rule-based configuration as well as custom code.
+The `trials` section tells Pyramid how to delimit trials in time based on raw event data, and how to build up each trial using rule-based configuration as well as custom code.
 
 To delimit trials in time, Pyramid will look at the `delimiter` buffer.  Events with value `1005` will mark the boundary between trials, and events with value `1010` will mark the zero-time within each trial.
 

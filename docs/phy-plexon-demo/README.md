@@ -45,7 +45,7 @@ The experiment YAML file [demo_experiment.yaml](demo_experiment.yaml) tells Pyra
 
 ### readers: ###
 
-The `readers:` section tells Pyramid to read a Plexon file, and which events and spikes to keep:
+The `readers` section tells Pyramid to read a Plexon file, and which events and spikes to keep:
 
  - For `spikes` it will take `all` of the channels present in the file.  Each spike channel will go to its own Pyramid buffer, automatically named with a `plexon_` prefix.
  - For `events` it will take only the `Strobed` channel and give it the name `delimiter`.
@@ -74,7 +74,7 @@ readers:
       cluster_filter: KSLabel=='good'
 ```
 
-The `readers:` section also tells Pyramid to read a folder of Phy files and to put those spike events into a Pyramid buffer named `phy_clusters`.
+The `readers` section also tells Pyramid to read a folder of Phy files and to put those spike events into a Pyramid buffer named `phy_clusters`.
 Futhermore, it tells Pyramid to filter the clusters and only keep those that have a `KSLabel` property equal to `'good'`.
 
 Pyramid supports cluster filtering by reading Phy's `cluster_*` CSV or TSV files, and building up a dictionary of info about each cluster.

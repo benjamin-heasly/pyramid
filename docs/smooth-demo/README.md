@@ -58,7 +58,7 @@ Collecters work like this:
 
 [SignalNormalizer](https://github.com/benjamin-heasly/pyramid/blob/main/src/pyramid/trials/standard_collecters.py#L47) is a standard Pyramid collecter that implements signal rescaling by overall range, as described here.
 
-Collecters can be added to an experiment in the same way as per-trial enhancers and adjusters, in the experiment YAML `trials:` section.
+Collecters can be added to an experiment in the same way as per-trial enhancers and adjusters, in the experiment YAML `trials` section.
 
 ```
 trials:

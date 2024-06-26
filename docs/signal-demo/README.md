@@ -14,10 +14,10 @@ This part will read from two CSV files:
 Pyramid will read in the delimiter events and signal data, partition them into trials, and plot signal chunks for each trial.
 
 The second part of the demo imagines that the delimiter and signal CSVs were measured by different clocks.
-It shows how Pyramid can estimate clock drift and apply a drift correction to each trial.
-To do the drift estimation it adds a third file that partitions the demo time range into trials, from the perspective of the signal clock.
+It shows how Pyramid can estimate clock drift/offset and apply an offset correction to each trial.
+To do the offset estimation it adds a third file that partitions the demo time range into trials, from the perspective of the signal clock.
 
- - [signal_sync.csv](signal_sync.csv) contains .
+ - [signal_sync.csv](signal_sync.csv) contains sync events from the same imaginary clock as `signal.csv`, and corresponding to sync events in `delimiter.csv` that would have been measured by a different clock.
 
 ## reading and plotting signals
 
@@ -29,7 +29,6 @@ cd pyramid/docs/signal-demo
 pyramid graph --graph-file demo_experiment.png --experiment demo_experiment.yaml
 ```
 
-`demo_experiment.png`
 ![Graph of Pyramid Readers, Buffers, and Trial configuration for first part of signal demo.](demo_experiment.png "Overview of first part of signal demo")
 
 This reflects much of the config set up in [demo_experiment.yaml](demo_experiment.yaml), which is the source of truth for this part of the demo.  Pyramid will read delimiting events from one `delimiter.csv` and signal data from `signal.csv`.  In practice the specific files to read from could be specified on the Pyramid command line with the `--readers` argument.  For this demo, it's easier just to put the file names in the YAML.
@@ -46,14 +45,14 @@ The other figure will show signal chunks assigned to each trial.
 
 ![Plot of signal chunks, drifting trial after trial.](demo-signal-drifting.png "Plot of drifting signal chunks")
 
-The trials will update every few seconds as trials occur, in this demo every 6.28 or `2pi` seconds.
+The plots will update every few seconds as trials occur, in this demo every 6.28 or `2pi` seconds.
 Note that the sinusoidal signal appears to drif, trial after trial.
 This is intentional, for demo purposes -- the sinusoids were computed with a period shorter than 1 trial, by a factor of 0.95.
 This clock drift rate of 0.95 is pretty huge, exaggerated to make it pop out visually.
 
 ## estimating and correcting for clock drift
 
-Pyramid has a way to esimate clock drift between readers and to apply a drift correction per trial.
+Pyramid has a way to esimate clock drift between readers and to apply an offset correction per trial.
 Let's see it work, first, then look at how it works and how to set it up.
 
 The second part of this demo uses a modified experiment YAML file, `demo_experiment_with_sync.yaml`.
@@ -88,7 +87,7 @@ With smaller, more realistic drift rates, the drift within a trial should be sma
 
 ## configuring drift estimation
 
-Pyramid drift estimation and correction is configured within the `readers:` section of experiment yaml, using a `sync:` section.
+Pyramid drift estimation and correction is configured within the `readers` section of experiment yaml, using a `sync` subsection section.
 Here is the relevant configuration used in this example for each reader:
 
 ### delimiter_reader
@@ -107,7 +106,7 @@ readers:
       filter: value[0] == 1
 ```
 The `delimiter_reader` reads trial-delimiting events from `delimiter.csv` into a Pyramid buffer named `delimiter`.
-It looks for sync events with value `1` within this buffer and Pyramid stores these events as they arrive.
+It looks for sync events with value `1` within this buffer and Pyramid stores these sync events as they arrive.
 This reader is distinguised as the reference reader, to which other clocks will be compared and aligned.
 
 ### signal_reader
@@ -144,35 +143,39 @@ readers:
 ```
 The `signal_sync_reader` is new for the second part of this demo.
 It reads trial-delimiting events from `signal_sync.csv` into a Pyramid buffer named `sync`.
-It also looks for sync events with value `1` within its, and Pyramid stores these along with corresponding reference events.
-This reader will be compared and aligned to the reference `delimiter_reader`, above.
+It looks for sync events with value `1` within its `sync` buffer.
+
+To align data between clocks, Pyramid will compare these sync events with corresponding events from the `delimiter_reader`, above.
 
 The data for this reader in `signal_sync.csv` are similar to the data for `delimiter_reader` in `delimiter.csv`, above.
 Both partition about a minute of time into 10 trials.
 Whereas `delimiter.csv` contains reference times, `signal_sync.csv` contains times as if read by a separate clock, drifting at a rate of 0.95.
 Pyramid treats these as independent measurements of the same "true" events, by different clocks.
 It treats the differences between corresponding sync events as measurements of clock drift.
-For each trial, it uses the most recent drift estimate, up to that point, to select and shift data from each reader to align with the reference.
+
+For each trial it selects a pair of corresponding sync events seen up to that point and uses the time difference between corresponding events as a clock offset correction to apply to reader data for the trial.
 
 ## choosing corresponding sync events
 
-Here's how Pyramid computes the drift estimate for each trial:
- - It compares each "other" reader, with its associated data buffers, to the reference reader.
- - It considers the latest sync event from the reference reader and finds the event from the other reader that's nearest in time (raw, uncorrected time).  This gives one candidate pair of events.
- - It considers the latest sync event from the other reader and finds the event from the reference reader that's nearest in time.  This gives another candidate pair of events (quite possibly the same as the first).
- - Between the two candidate pairs, it chooses the pair with the smallest difference in time.
- - For this pair, the time of the other reader minus the time of the reference reader is the clock drift.
- - It discounts the clock drift when quering buffers associated with the other reader for trial data.
- - It shifts data obtained from each buffer by the same clock drift.
+Pyramid has a few strategies for paring up sync events between readers so that events in the pair represent the same real-world event.
 
-This approach assumes that drift over all is small, less than half the duration of a trial.
-This should allow some robustness in case readers record different numbers of sync events (starting at different times, or dropping events occasionally).
+In this demo it chooses pairs based on closeness in time.
+This assumes both clocks start near time 0, and that clock drift is overall small.
+In that case, events with nearby timestamps should correspond to the same real-world sync events.
+
+It's possible that different clocks will start at different times, not near the same time 0.
+In this case closeness in time is not a good proxy for "same real event".
+It's also possible that readers will record different numbers of sync events at the start of an session, or occasionally miss events during a session.
+
+For these trickier cases Pyramid supports pairing up sync events based on a user-defined key, instead of the event time itself.
+More details about pairing strategies are in the code at [sync.py](../../src/pyramid/neutral_zone/readers/sync.py).
+
 
 ## misc. details and observations
 
 This demo chooses the sinusoid peak as the clock drift "true" event in each trial.
 It uses the same peak as the "wrt" time for each trial.
-As a result, the aligned peaks always occur exactly at zero, on each trial.
+As a result the aligned peaks always occur exactly at zero, on each trial.
 
 Pyramid doesn't stretch or rescale data at all, it only shifts.
 So trial duration is conserved, whether a reader has clock drift or not.
@@ -182,6 +185,6 @@ As long as drift is small compared to the duration of a trial, this raggedness s
 This demo uses an exaggerated drift rate, so the raggedness is clearly visible.
 
 This demo also uses a low sample rate, 10Hz, for the sinusoidal signal.
-When selecting data for each trial, the signal buffers "round in" to a whole number of samples.
+When selecting data for each trial the signal buffers "round in" to a whole number of samples.
 This results in signal chunks a fractional sample shorter than the nominal trial duration.
 This exaggerates the signal raggedness at the edges, somewhat.
