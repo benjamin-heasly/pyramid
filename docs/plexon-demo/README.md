@@ -78,7 +78,7 @@ readers:
     args:
       # Override plx_file on cli with: --readers plexon_reader.plx_file=my_real_file.plx
       plx_file: my_file.plx
-      spikes: "all"
+      spikes: all
       events:
         Strobed: ecodes
       signals:
@@ -113,10 +113,11 @@ To delimit trials in time, Pyramid will look at the `delimiter` buffer.  Events 
 
 To build each trial Pyramid will use two standard, rule-based enhancers and two custom code enhancers.  All of the enchancers will add some name-value pairs to each trial, indicating things like events of interest, trial scores, saccades, etc.
 
- - A standard, rule-based [PairedCodesEnhancer](https://github.com/benjamin-heasly/pyramid/blob/main/src/pyramid/trials/standard_enhancers.py#L39) will look for numeric events that encode property-value pairs for each trial.  The names and encodings for these are declared in two tables, [config/main-ecode-rules.csv](config/main-ecode-rules.csv) and [config/special-ecode-rules.csv](config/special-ecode-rules.csv).
- - A standard, rule-based [EventTimesEnhancer](https://github.com/benjamin-heasly/pyramid/blob/main/src/pyramid/trials/standard_enhancers.py#L122) will look for named events of interest and record any occurrence times within each trial.  The names and encodings for these are declared in the same two tables, [config/main-ecode-rules.csv](config/main-ecode-rules.csv) and [config/special-ecode-rules.csv](config/special-ecode-rules.csv).
- - A standard [ExpressionEnhancer](https://github.com/benjamin-heasly/pyramid/blob/main/src/pyramid/trials/standard_enhancers.py#L189) will evaluate a given expression against each trial and add the result to each trial as 'actual_task', which will drive conditional enhancements below.
- - A custom [SaccadesEnhancer](hhttps://github.com/benjamin-heasly/pyramid/blob/main/docs/plexon-demo/custom_enhancers.py#L149) will examine the `gaze_x` and `gaze_y` AD signals for each trial and extract saccades.  Each saccade will be a dictionary of saccade parameters like `t_start`, `x_end`, `y_end`, etc.  The custom Python code for this is here in this folder, in [config/custom_enhancers.py](config/custom_enhancers.py).  This will only run for trials `when` the value of `actual_task` is true, and at least one `fp_off` time is present.
+ - A standard, rule-based [PairedCodesEnhancer](../../src/pyramid/trials/standard_enhancers.py) will look for numeric events that encode property-value pairs for each trial.  The names and encodings for these are declared in two tables, [config/main-ecode-rules.csv](./config/main-ecode-rules.csv) and [config/special-ecode-rules.csv](./config/special-ecode-rules.csv).
+ - A standard, rule-based [EventTimesEnhancer](../../src/pyramid/trials/standard_enhancers.py) will look for named events of interest and record any occurrence times within each trial.  The names and encodings for these are declared in the same two tables, [config/main-ecode-rules.csv](config/main-ecode-rules.csv) and [config/special-ecode-rules.csv](config/special-ecode-rules.csv).
+ - A standard [ExpressionEnhancer](../../src/pyramid/trials/standard_enhancers.py) will evaluate a given expression against each trial and add the result to each trial as `actual_task`, which will drive conditional enhancements below.
+ - A standard [SignalSmoother](../../src/pyramid/trials/standard_adjusters.py) will apply Gaussian smoothing to gaze signal channels.
+ - A standard [SaccadesEnhancer](../../src/pyramid/trials/standard_enhancers.py) will examine the `gaze_x` and `gaze_y` AD signals for each trial and extract saccades.  Each saccade will be a dictionary of saccade parameters like `t_start`, `x_end`, `y_end`, etc.  This will only run for trials `when` the value of `actual_task` is true, and at least one `fp_off` time is present.
  - Another [CustomEnhancer](https://github.com/benjamin-heasly/pyramid/blob/main/docs/plexon-demo/custom_enhancers.py#L25) will examine all of the trial data and enchancements above and compute experiment-specific labels, scores, etc.  The Python code for this is in the same file, [config/custom_enhancers.py](config/custom_enhancers.py).  This will only run for trials `when` the value of `actual_task` is true.
 
 ```
@@ -142,10 +143,29 @@ trials:
       args:
         expression: task_id > 0
         value_name: actual_task
-      # Custom enchancers can be located in any specified "package path", eg the current folder.
-    - class: custom_enhancers.SaccadesEnhancer
-      package_path: .
+      # Standard adjusters come along with the Pyramid code.
+    - class: pyramid.trials.standard_adjusters.SignalSmoother
+      args:
+        buffer_name: gaze_x
+        filter_type: gaussian
+        gaussian_std: 5
+    - class: pyramid.trials.standard_adjusters.SignalSmoother
+      args:
+        buffer_name: gaze_y
+        filter_type: gaussian
+        gaussian_std: 5
+      # Standard adjusters come along with the Pyramid code.
+    - class: pyramid.trials.standard_enhancers.SaccadesEnhancer
       when: actual_task and len(fp_off) > 0
+      args:
+        x_buffer_name: gaze_x
+        x_channel_id: 49
+        y_buffer_name: gaze_y
+        y_channel_id: 50
+        fp_off_name: fp_off
+        all_off_name: all_off
+        velocity_threshold_deg_per_s: 250
+        acceleration_threshold_deg_per_s2: 6
       # Custom enchancers can be located in any specified "package path", eg the current folder.
     - class: custom_enhancers.CustomEnhancer
       package_path: .
@@ -173,7 +193,7 @@ plotters:
       xmin: -1.0
       xmax: 5.0
       match_pattern: ecodes
-    # Plot spike data with channels and units on the y-axis.
+    # Plot spike data as raster with trials on the y-axis.
   - class: pyramid.plotters.standard_plotters.SpikeEventsPlotter
     args:
       xmin: -1.0
@@ -207,32 +227,32 @@ plotters:
           x_end: y_end
 ```
 #### BasicInfoPlotter
-The [BasicInfoPlotter](https://github.com/benjamin-heasly/pyramid/blob/main/src/pyramid/plotters/standard_plotters.py#L35) shows Pyramid's overall progress through the Plexon file along with static metadata about the experiment and subject.  It also has a `Quit` button -- _wow!_
+The [BasicInfoPlotter](../../src/pyramid/plotters/standard_plotters.py) shows Pyramid's overall progress through the Plexon file along with static metadata about the experiment and subject.  It also has a `Quit` button -- _wow!_
 
 ![Pyramid BasicInfoPlotter with static and progress info and Quit button.](images/BasicInfoPlotter.png "Pyramid BasicInfoPlotter")
 
 #### SignalChunksPlotter
-The [SignalChunksPlotter](https://github.com/benjamin-heasly/pyramid/blob/main/src/pyramid/plotters/standard_plotters.py#L188) shows gaze signal traces over time, aligned to the zero-time for each trial.  The most recent trial is in full color, on top of 10 recent trials which are partially transparent.
+The [SignalChunksPlotter](../../src/pyramid/plotters/standard_plotters.py) shows gaze signal traces over time, aligned to the zero-time for each trial.  The most recent trial is in full color, on top of 10 recent trials which are partially transparent.
 
 ![Pyramid SignalChunksPlotter with gaze signal data.](images/SignalChunksPlotter.png "Pyramid SignalChunksPlotter")
 
 #### NumericEventsPlotter
-The [NumericEventsPlotter](https://github.com/benjamin-heasly/pyramid/blob/main/src/pyramid/plotters/standard_plotters.py#L100) shows event times and raw numeric values for the `ecodes` buffer which came from the original Plexon `Strobed` channel.  The most recent trial is in full color, on top of 10 recent trials which are smaller and partially transparent.
+The [NumericEventsPlotter](../../src/pyramid/plotters/standard_plotters.py) shows event times and raw numeric values for the `ecodes` buffer which came from the original Plexon `Strobed` channel.  The most recent trial is in full color, on top of 10 recent trials which are smaller and partially transparent.
 
 ![Pyramid NumericEventsPlotter for ecode event times and raw numeric values.](images/NumericEventsPlotter_ecodes.png "Pyramid NumericEventsPlotter for ecodes")
 
 #### SpikeEventsPlotter
-The [SpikeEventsPlotter](https://github.com/benjamin-heasly/pyramid/blob/main/src/pyramid/plotters/standard_plotters.py#L486) shows spike event times from all Plexon spike channels, with trial number on the vertical axis.  Only spikes assigned to Plexon unit 1 are shown and the Plexon channels are color-coded in the legend.
+The [SpikeEventsPlotter](../../src/pyramid/plotters/standard_plotters.py) shows spike event times from all Plexon spike channels, with trial number on the vertical axis.  Only spikes assigned to Plexon unit 1 are shown and the Plexon channels are color-coded in the legend.
 
 ![Pyramid SpikeEventsPlotter for spike event times over trials.](images/SpikeEventsPlotter.png "Pyramid SpikeEventsPlotter")
 
 #### EnhancementTimesPlotter
-The [EnhancementTimesPlotter](https://github.com/benjamin-heasly/pyramid/blob/main/src/pyramid/plotters/standard_plotters.py#L278) shows the names and times for events of interest within each trial.  All trial enhancements that were placed into the `time` category are shown, including rule-based enhancements declared in [config/main-ecode-rules.csv](config/main-ecode-rules.csv) and [config/special-ecode-rules.csv](config/special-ecode-rules.csv) and custom enhancements created from [config/custom_enhancers.py](config/custom_enhancers.py).  The most recent trial is in full color, on top of 10 recent trials which are smaller and partially transparent.
+The [EnhancementTimesPlotter](../../src/pyramid/plotters/standard_plotters.py) shows the names and times for events of interest within each trial.  All trial enhancements that were placed into the `time` category are shown, including rule-based enhancements declared in [config/main-ecode-rules.csv](config/main-ecode-rules.csv) and [config/special-ecode-rules.csv](config/special-ecode-rules.csv) and custom enhancements created from [config/custom_enhancers.py](config/custom_enhancers.py).  The most recent trial is in full color, on top of 10 recent trials which are smaller and partially transparent.
 
 ![Pyramid EnhancementTimesPlotter for named events of interest within each trial.](images/EnhancementTimesPlotter.png "Pyramid EnhancementTimesPlotter")
 
 #### EnhancementXYPlotter
-The [EnhancementXYPlotter](https://github.com/benjamin-heasly/pyramid/blob/main/src/pyramid/plotters/standard_plotters.py#L367) shows 2D/XY values of interest from each trial.  Specific values to plot are declared by name:
+The [EnhancementXYPlotter](../../src/pyramid/plotters/standard_plotters.py) shows 2D/XY values of interest from each trial.  Specific values to plot are declared by name:
 
  - `fp_x`/`fp_y`, `t1_x`/`t1_y`, and `t2_x`/`t2_y` are plotted as individual points
  - `scored_saccade` is plotted as a group of several points and shown as a line.  To show direction, the last point in the line gets a marker.
@@ -266,20 +286,3 @@ pyramid convert --trial-file demo_experiment.hdf5 --experiment demo_experiment.y
 ```
 
 This won't plot anything, and will convert the Plexon file to a trial file as fast as it can.
-
-### record and restore figure window positions
-
-In case you get tired of rearranging plot figure windows, you can pass a `plot-positions` YAML file to Pyramid.
-
-```
-pyramid gui --trial-file demo_experiment.hdf5 --experiment demo_experiment.yaml --readers plexon_reader.plx_file=~/data/MrM/Raw/MM_2022_08_05_REC.plx --plot-positions plot_positions.yaml --search-path ./config
-```
-
-When a `plot-positions` YAML file is passed in, Pyramid will record and restore figure positions as follows:
-
- - On the first run, when the `plot-positions` YAML file doesn't exist yet, Pyramid will open figures in the default locations.
- - When exiting, Pyramid will record the current, user-arranged location of each figure window to the YAML file.
- - On subsequent runs, when the YAML file exists, restore each figure to its recorded location.
-
-This seems to work pretty well and has been tested on a Linux machine and a macOS machine.
-But this is only best-effort because matplotlib doesn't fully support arranging figure windows (as of writing in August 2023).

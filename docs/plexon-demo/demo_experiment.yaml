@@ -63,10 +63,29 @@ trials:
       args:
         expression: task_id > 0
         value_name: actual_task
-      # Custom enchancers can be located in any specified "package path", eg the current folder.
-    - class: custom_enhancers.SaccadesEnhancer
-      package_path: .
+      # Standard adjusters come along with the Pyramid code.
+    - class: pyramid.trials.standard_adjusters.SignalSmoother
+      args:
+        buffer_name: gaze_x
+        filter_type: gaussian
+        gaussian_std: 5
+    - class: pyramid.trials.standard_adjusters.SignalSmoother
+      args:
+        buffer_name: gaze_y
+        filter_type: gaussian
+        gaussian_std: 5
+      # Standard adjusters come along with the Pyramid code.
+    - class: pyramid.trials.standard_enhancers.SaccadesEnhancer
       when: actual_task and len(fp_off) > 0
+      args:
+        x_buffer_name: gaze_x
+        x_channel_id: 49
+        y_buffer_name: gaze_y
+        y_channel_id: 50
+        fp_off_name: fp_off
+        all_off_name: all_off
+        velocity_threshold_deg_per_s: 250
+        acceleration_threshold_deg_per_s2: 6
       # Custom enchancers can be located in any specified "package path", eg the current folder.
     - class: custom_enhancers.CustomEnhancer
       package_path: .
