@@ -1,6 +1,6 @@
 # Smooth Signals Demo
 
-Here's a demo / example of Pyramid signal smoothing and normalizing, using a per-trial "adjuster" and an after-the-fact "collecter".
+Here's an example of Pyramid signal smoothing using a per-trial "adjuster" and global normalization using an after-the-fact "collecter".
 
 ## overview
 

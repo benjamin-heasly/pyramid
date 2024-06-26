@@ -14,7 +14,7 @@ digraph demo_experiment {
 	trial_extractor:e -> enhancer_0:w
 	subgraph cluster_enhancers {
 		graph [bgcolor=lightgray color=transparent fontname=Arial label=enhancers margin=20 rank=same]
-		enhancer_0 [label="SignalSmoother|buffer_name: smoothed\l|kernel_size: 20\l"]
+		enhancer_0 [label="SignalSmoother|buffer_name: smoothed\l|filter_type: boxcar\l|window_size: 20\l"]
 	}
 	trial_extractor:e -> collecter_0:w
 	subgraph cluster_collecters {

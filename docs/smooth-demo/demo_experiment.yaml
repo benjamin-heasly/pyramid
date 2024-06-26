@@ -36,7 +36,8 @@ trials:
     - class: pyramid.trials.standard_adjusters.SignalSmoother
       args:
         buffer_name: smoothed
-        kernel_size: 20
+        filter_type: boxcar
+        window_size: 20
   collecters:
     - class: pyramid.trials.standard_collecters.SignalNormalizer
       args:
