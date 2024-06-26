@@ -14,7 +14,6 @@ This is a work in progress, a starting point as we test the OpenEphysZmqReader w
 
 The experiment YAML file [demo_experiment.yaml](demo_experiment.yaml).  I think we'll hack this up as we test.
 
-
 ## running it
 
 Here's how to run Pyramid in `gui` mode, which should plot the data from Open Ephys GUI.
